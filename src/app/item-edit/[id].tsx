@@ -41,69 +41,66 @@ export default function EditSaveScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.sheet} edges={['bottom']}>
-      {/* Keeps the Save button above the keyboard while typing a tag or a note. */}
-      <KeyboardAvoidingView
-        style={styles.sheet}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={sheet.keyboardOffset}
-      >
-        <View style={styles.content}>
-          <Text variant="sheetTitle" accessibilityRole="header">
-            {TITLES[field] ?? TITLES.note}
-          </Text>
+    <View style={styles.sheet}>
+      <Text variant="sheetTitle" accessibilityRole="header">
+        {TITLES[field] ?? TITLES.note}
+      </Text>
 
-          {save && field === 'collection' ? (
-            <View style={[styles.block, styles.pills]}>
-              <CollectionPills
-                collections={collections}
-                selectedId={save.collection_id}
-                edgeInset={sheet.paddingX}
-                onSelect={(collectionId) => updateSave.mutate({ collection_id: collectionId })}
-                onCreate={(name) =>
-                  createCollection.mutate(name, { onSuccess: (c) => updateSave.mutate({ collection_id: c.id }) })
-                }
-              />
-            </View>
-          ) : null}
-
-          {save && field === 'tags' ? (
-            <View style={styles.block}>
-              <TagEditor tags={tags ?? save.tags} onChange={setTags} draft={tagDraft} onDraftChange={setTagDraft} />
-            </View>
-          ) : null}
-
-          {save && field === 'note' ? (
-            <TextInput
-              value={note ?? save.note ?? ''}
-              onChangeText={setNote}
-              placeholder="Why you saved it"
-              placeholderTextColor={colors.secondary}
-              multiline
-              autoFocus
-              textAlignVertical="top"
-              accessibilityLabel="Note"
-              style={[styles.block, styles.note]}
-            />
-          ) : null}
-
-          {error ? (
-            <Text variant="secondary" style={styles.error} accessibilityLiveRegion="polite">
-              {error}
-            </Text>
-          ) : null}
+      {save && field === 'collection' ? (
+        <View style={[styles.block, styles.pills]}>
+          <CollectionPills
+            collections={collections}
+            selectedId={save.collection_id}
+            edgeInset={sheet.paddingX}
+            onSelect={(collectionId) => updateSave.mutate({ collection_id: collectionId })}
+            onCreate={(name) =>
+              createCollection.mutate(name, { onSuccess: (c) => updateSave.mutate({ collection_id: c.id }) })
+            }
+          />
         </View>
-        <View style={styles.footer}>
-          <Button label={field === 'collection' ? 'Done' : 'Save'} onPress={done} busy={updateSave.isPending} />
+      ) : null}
+
+      {save && field === 'tags' ? (
+        <View style={styles.block}>
+          <TagEditor tags={tags ?? save.tags} onChange={setTags} draft={tagDraft} onDraftChange={setTagDraft} />
         </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      ) : null}
+
+      {save && field === 'note' ? (
+        <TextInput
+          value={note ?? save.note ?? ''}
+          onChangeText={setNote}
+          placeholder="Why you saved it"
+          placeholderTextColor={colors.secondary}
+          multiline
+          autoFocus
+          textAlignVertical="top"
+          accessibilityLabel="Note"
+          style={[styles.block, styles.note]}
+        />
+      ) : null}
+
+      {error ? (
+        <Text variant="secondary" style={styles.error} accessibilityLiveRegion="polite">
+          {error}
+        </Text>
+      ) : null}
+
+      {/* Right under the field, like the paste sheet, so the keyboard never covers it. */}
+      <View style={styles.button}>
+        <Button label={field === 'collection' ? 'Done' : 'Save'} onPress={done} busy={updateSave.isPending} />
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  sheet: { flex: 1, backgroundColor: colors.background },
-  content: { flex: 1, paddingTop: spacing.sheetTop, paddingHorizontal: sheet.paddingX },
+  sheet: {
+    flex: 1,
+    backgroundColor: colors.background,
+    paddingTop: spacing.sheetTop,
+    paddingHorizontal: sheet.paddingX,
+  },
   block: { marginTop: spacing.sectionGap },
   // The pill row scrolls edge to edge, so it undoes the sheet's side padding.
   pills: { marginHorizontal: -sheet.paddingX },
@@ -119,5 +116,5 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   error: { marginTop: spacing.errorTop },
-  footer: { paddingHorizontal: sheet.paddingX, paddingBottom: sheet.bottom },
+  button: { marginTop: spacing.sectionGap },
 });
