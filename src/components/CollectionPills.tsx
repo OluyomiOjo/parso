@@ -18,7 +18,11 @@ type Props = {
 export function CollectionPills({ collections, selectedId, onSelect, onCreate, edgeInset = 0 }: Props) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
-  const ordered = [...collections].sort((a, b) => Number(b.id === selectedId) - Number(a.id === selectedId));
+  // The collection the save started in goes first. Moving it doesn't reorder the pills, so the row
+  // never shifts under the finger or leaves the selected pill scrolled out of view.
+  const [firstId, setFirstId] = useState(selectedId);
+  if (firstId === null && selectedId !== null) setFirstId(selectedId);
+  const ordered = [...collections].sort((a, b) => Number(b.id === firstId) - Number(a.id === firstId));
 
   const submit = () => {
     if (name.trim()) onCreate(name.trim());
