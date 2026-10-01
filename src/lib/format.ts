@@ -27,6 +27,16 @@ export function itemLabel(kind: string, source: string, url: string | null): str
   return KIND_LABELS[kind] ?? sourceLabel(source, url);
 }
 
+export const saveCount = (n: number) => `${n} ${n === 1 ? 'save' : 'saves'}`;
+
+// The collection filter's segments, in this order, shown only for kinds the collection has.
+export const KIND_FILTERS = [
+  { kind: 'link', label: 'Links' },
+  { kind: 'image', label: 'Photos' },
+  { kind: 'screenshot', label: 'Screens' },
+  { kind: 'text', label: 'Notes' },
+] as const;
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;

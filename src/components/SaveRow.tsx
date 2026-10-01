@@ -1,11 +1,13 @@
-import { Image, StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { LinkIcon } from '@/icons/LinkIcon';
 import { itemLabel, relativeTime } from '@/lib/format';
 import { displayUrl } from '@/lib/links';
 import type { SaveListItem } from '@/lib/saves';
-import { colors, radius, size, spacing, tabularNums } from '@/theme';
+import { colors, radius, size, spacing } from '@/theme';
 
+import { SourceLine } from './SourceLine';
 import { Text } from './Text';
 
 export function SaveRow({ save, thumbnailUrl }: { save: SaveListItem; thumbnailUrl?: string }) {
@@ -14,7 +16,15 @@ export function SaveRow({ save, thumbnailUrl }: { save: SaveListItem; thumbnailU
   const meta = `${itemLabel(save.kind, save.source, save.url)}, ${relativeTime(save.created_at)}`;
 
   return (
-    <View style={styles.row} accessible accessibilityLabel={`${title}. ${meta}`}>
+    // Opens the save sheet, where the save can be moved to another collection. Saves still being
+    // inserted (optimistic rows) have no server id yet, so they can't be opened.
+    <Pressable
+      onPress={() => router.push(`/save/${save.id}`)}
+      disabled={save.id.startsWith('pending-')}
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${meta}`}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+    >
       {thumbnailUrl ? (
         <Image source={{ uri: thumbnailUrl }} style={styles.thumb} accessibilityIgnoresInvertColors />
       ) : (
@@ -31,11 +41,9 @@ export function SaveRow({ save, thumbnailUrl }: { save: SaveListItem; thumbnailU
             {save.snippet}
           </Text>
         ) : null}
-        <Text variant="rowMeta" color={colors.secondary} numberOfLines={1} style={tabularNums}>
-          {meta}
-        </Text>
+        <SourceLine kind={save.kind} source={save.source} text={meta} />
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -55,5 +63,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  pressed: { backgroundColor: colors.background },
   text: { flex: 1 },
 });

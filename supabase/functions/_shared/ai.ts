@@ -12,6 +12,7 @@ export type SaveDescription = {
   summary: string;
   tags: string[];
   collection: string;
+  collection_description: string; // stored only when the collection has none yet
 };
 
 export type DescribeInput = {
@@ -38,13 +39,17 @@ const MODELS: Record<Provider, { id: string; inputPerM: number; outputPerM: numb
 const SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['title', 'snippet', 'summary', 'tags', 'collection'],
+  required: ['title', 'snippet', 'summary', 'tags', 'collection', 'collection_description'],
   properties: {
     title: { type: 'string', description: 'What this is, in at most 60 characters.' },
     snippet: { type: 'string', description: 'One line that adds a useful detail, at most 80 characters.' },
     summary: { type: 'string', description: 'One or two short sentences, never more.' },
     tags: { type: 'array', items: { type: 'string' }, description: 'At most 5 lowercase tags.' },
     collection: { type: 'string', description: 'An existing collection name, or a new short one.' },
+    collection_description: {
+      type: 'string',
+      description: 'One sentence on what belongs in the chosen collection, "Parso files ... here.", at most 90 characters.',
+    },
   },
 } as const;
 
@@ -56,6 +61,7 @@ For each save you get the link, whatever public details could be fetched, someti
 - summary: one or two short sentences, never more, on what it is and why someone would come back to it.
 - tags: up to 5 lowercase words or short phrases someone might search for. Include the main subject and type (for example "recipe", "pasta").
 - collection: reuse an existing collection whenever it fits, even loosely. Only when none fits, invent a short, broad name of one or two words in sentence case (for example "Recipes", "Travel", "Home ideas", "Fitness", "Reading list"). Pick by what the thing is about, not where it was posted.
+- collection_description: one sentence on what belongs in the chosen collection in general, not this one save, in the form "Parso files anything that looks like a recipe here." At most 90 characters.
 
 For screenshots and photos, read any visible text in the image and use it; it is often the most useful detail.
 
@@ -74,6 +80,14 @@ export function firstSentences(text: string, max: number): string {
   return text.trim().split(SENTENCE_END).slice(0, max).join(' ');
 }
 
+const DESCRIPTION_MAX = 90;
+
+// Never shown cut off: a description that's too long is dropped, and the next save writes another.
+function shortDescription(text: string): string {
+  const sentence = firstSentences(text, 1);
+  return sentence.length <= DESCRIPTION_MAX ? sentence : '';
+}
+
 // Capitalise the first letter only, so acronyms like "UX design" survive.
 const capitalised = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
@@ -87,6 +101,7 @@ export function tidy(raw: SaveDescription): SaveDescription {
     summary: firstSentences(raw.summary, 2),
     tags: [...new Set(raw.tags.map((t) => t.trim().toLowerCase()).filter(Boolean))].slice(0, 5),
     collection: capitalised(cut(raw.collection.trim(), 40)) || 'Saved',
+    collection_description: shortDescription(raw.collection_description),
   };
 }
 

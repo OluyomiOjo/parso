@@ -6,6 +6,7 @@ import { displayUrl } from '@/lib/links';
 import type { SaveDetail } from '@/lib/saves';
 import { colors, radius, sheet, size } from '@/theme';
 
+import { SourceLine } from './SourceLine';
 import { Text } from './Text';
 
 export function SheetPreview({ save, thumbnailUrl }: { save: SaveDetail; thumbnailUrl?: string }) {
@@ -23,9 +24,12 @@ export function SheetPreview({ save, thumbnailUrl }: { save: SaveDetail; thumbna
         <Text variant="rowTitle" numberOfLines={1}>
           {title}
         </Text>
-        <Text variant="secondary" color={colors.secondary} numberOfLines={1}>
-          {itemLabel(save.kind, save.source, save.url)}
-        </Text>
+        <SourceLine
+          kind={save.kind}
+          source={save.source}
+          text={itemLabel(save.kind, save.source, save.url)}
+          variant="secondary"
+        />
       </View>
     </View>
   );

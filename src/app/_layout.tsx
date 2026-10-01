@@ -35,6 +35,7 @@ function RootStack() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="paste" options={{ presentation: 'modal' }} />
         <Stack.Screen name="save/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="collection-rename/[id]" options={{ presentation: 'modal' }} />
       </Stack.Protected>
       <Stack.Protected guard={session === null}>
         <Stack.Screen name="welcome" />

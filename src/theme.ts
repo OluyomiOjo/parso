@@ -13,6 +13,21 @@ export const colors = {
   dashedBorder: '#B9BDC5', // "Or paste a link" outline, from design/3b
 } as const;
 
+// Source icons only, in each platform's own solid colour (owner-approved exception to the one-accent rule).
+export const brandColors = {
+  instagram: '#E4405F',
+  tiktok: '#000000',
+  x: '#000000',
+  threads: '#000000',
+  youtube: '#FF0000',
+  facebook: '#0866FF',
+  pinterest: '#BD081C',
+  linkedin: '#0A66C2',
+  reddit: '#FF4500',
+  spotify: '#1DB954',
+  whatsapp: '#25D366',
+} as const;
+
 // Family names match each TTF's PostScript name, so the same name works on iOS and Android.
 // Never combine these with fontWeight: Android ignores it for custom fonts.
 export const fonts = {
@@ -47,6 +62,7 @@ export const type = {
   sheetTitle: { fontFamily: fonts.extrabold, fontSize: 28, lineHeight: 34, letterSpacing: -0.9 },
   sheetLabel: { fontFamily: fonts.bold, fontSize: 15, lineHeight: 20, letterSpacing: -0.2 }, // "Note", "Remind me"
   pill: { fontFamily: fonts.semibold, fontSize: 15, lineHeight: 20 },
+  cardTitle: { fontFamily: fonts.semibold, fontSize: 17, lineHeight: 22, letterSpacing: -0.3 },
 } satisfies Record<string, TextStyle>;
 
 export type TypeVariant = keyof typeof type;
@@ -104,6 +120,8 @@ export const size = {
   thumbIcon: 22, // placeholder icon inside an empty thumbnail
   iconStroke: 1.8,
   fieldHeight: 52,
+  sourceIcon: 14, // brand mark before the source in meta lines
+  sourceIconGap: 5,
 } as const;
 
 // Save sheet layout, measured from design/2. Save from any app@2x.png.
@@ -148,5 +166,40 @@ export const welcome = {
   highlightPadX: 2,
 } as const;
 
-export const theme = { colors, fonts, type, tabularNums, spacing, radius, size, welcome, sheet } as const;
+// Collection cards (home row and Collections tab), measured from design/3. Home@2x.png.
+export const card = {
+  width: 150, // home row; the Collections tab fits two per line
+  padding: 12,
+  tile: 38,
+  tileGap: 4,
+  tileRadius: 8,
+  tileIcon: 18,
+  tilesToName: 12,
+  gap: 10, // between cards
+} as const;
+
+// Collection screen, measured from design/5. Collection@2x.png.
+export const collectionScreen = {
+  headerToTitle: 16,
+  titleToDescription: 6,
+  descriptionToFilter: 20,
+  filterHeight: 38,
+  filterRadius: 10,
+  filterToList: 20,
+} as const;
+
+export const theme = {
+  colors,
+  brandColors,
+  fonts,
+  type,
+  tabularNums,
+  spacing,
+  radius,
+  size,
+  welcome,
+  sheet,
+  card,
+  collectionScreen,
+} as const;
 export default theme;

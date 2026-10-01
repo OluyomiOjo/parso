@@ -108,6 +108,13 @@ export type Database = {
             foreignKeyName: "saves_collection_id_fkey"
             columns: ["collection_id"]
             isOneToOne: false
+            referencedRelation: "collection_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saves_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
             referencedRelation: "collections"
             referencedColumns: ["id"]
           },
@@ -115,7 +122,18 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      collection_overview: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string | null
+          last_saved_at: string | null
+          name: string | null
+          recent: Json | null
+          save_count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       tags_to_text: { Args: { tags: string[] }; Returns: string }

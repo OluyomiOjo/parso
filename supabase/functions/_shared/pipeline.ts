@@ -122,16 +122,20 @@ export async function logRun(
   });
 }
 
-async function findOrCreateCollection(db: SupabaseClient, userId: string, name: string): Promise<string> {
-  const { data: existing } = await db.from('collections').select('id, name').eq('user_id', userId);
-  const match = existing?.find((c) => c.name.toLowerCase() === name.toLowerCase());
-  if (match) return match.id;
-  const { data, error } = await db.from('collections').insert({ user_id: userId, name }).select('id').single();
-  if (data) return data.id;
+type CollectionRef = { id: string; description: string | null };
+
+async function findOrCreateCollection(db: SupabaseClient, userId: string, name: string): Promise<CollectionRef> {
+  const find = async () => {
+    const { data } = await db.from('collections').select('id, name, description').eq('user_id', userId);
+    return data?.find((c) => c.name.toLowerCase() === name.toLowerCase());
+  };
+  const existing = await find();
+  if (existing) return existing;
+  const { data, error } = await db.from('collections').insert({ user_id: userId, name }).select('id, description').single();
+  if (data) return data;
   // Another save created the same collection a moment ago (unique on lower(name)): use that one.
-  const { data: again } = await db.from('collections').select('id, name').eq('user_id', userId);
-  const raced = again?.find((c) => c.name.toLowerCase() === name.toLowerCase());
-  if (raced) return raced.id;
+  const raced = await find();
+  if (raced) return raced;
   throw new Error(`Couldn't create collection: ${error?.message}`);
 }
 
@@ -162,7 +166,16 @@ export async function processSave(db: SupabaseClient, saveId: string, provider: 
   }
   await logRun(db, save, 'live', provider, result, null, prepared);
 
-  const collectionId = await findOrCreateCollection(db, save.user_id, result.output.collection);
+  const collection = await findOrCreateCollection(db, save.user_id, result.output.collection);
+  // Written once; a description the person already has (or one from an earlier save) is kept.
+  if (!collection.description && result.output.collection_description) {
+    await db
+      .from('collections')
+      .update({ description: result.output.collection_description })
+      .eq('id', collection.id)
+      .eq('user_id', save.user_id)
+      .is('description', null);
+  }
   const thumbnailPath = prepared.image ? await storeThumbnail(db, save, prepared.image) : null;
   const { title, snippet, summary, tags } = result.output;
   await db
@@ -173,7 +186,7 @@ export async function processSave(db: SupabaseClient, saveId: string, provider: 
       snippet,
       summary,
       tags,
-      collection_id: collectionId,
+      collection_id: collection.id,
       ...(thumbnailPath ? { thumbnail_path: thumbnailPath } : {}),
       processed_at: new Date().toISOString(),
     })

@@ -15,6 +15,9 @@ const LIST_COLUMNS = 'id, kind, source, url, title, snippet, thumbnail_path, cre
 const LIST_LIMIT = 50;
 
 const savesKey = (userId: string | undefined) => ['saves', userId] as const;
+const collectionSavesKey = (userId: string | undefined, collectionId: string) =>
+  [...savesKey(userId), 'collection', collectionId] as const;
+const COLLECTION_LIMIT = 200;
 const saveKey = (id: string) => ['save', id] as const;
 
 export type SaveDetail = Pick<
@@ -34,6 +37,25 @@ export function useSaves() {
         .select(LIST_COLUMNS)
         .order('created_at', { ascending: false })
         .limit(LIST_LIMIT);
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useCollectionSaves(collectionId: string) {
+  const { session } = useSession();
+  const userId = session?.user.id;
+  return useQuery({
+    queryKey: collectionSavesKey(userId, collectionId),
+    enabled: Boolean(userId),
+    queryFn: async (): Promise<SaveListItem[]> => {
+      const { data, error } = await supabase
+        .from('saves')
+        .select(LIST_COLUMNS)
+        .eq('collection_id', collectionId)
+        .order('created_at', { ascending: false })
+        .limit(COLLECTION_LIMIT);
       if (error) throw error;
       return data;
     },
@@ -162,6 +184,7 @@ export function useUpdateSave(id: string) {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: saveKey(id) });
       queryClient.invalidateQueries({ queryKey: savesKey(session?.user.id) });
+      queryClient.invalidateQueries({ queryKey: ['collections', session?.user.id] }); // counts and tiles
     },
   });
 }

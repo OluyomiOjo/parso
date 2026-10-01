@@ -75,7 +75,7 @@ Designs live in the Parso App Screens canvas (Clean page). Exported PNGs of each
 3. Home ("My Parsos"): search field, reminder card, Collections row, Recent list.
 3b. Home empty state: "Save your first thing" with share-sheet instructions and "Or paste a link".
 4. Search: focused search field, kind filter pills, result count, best match with large image, other results as list rows.
-5. Collection: back and share buttons, name, description line, segmented filter by kind, list rows.
+5. Collection: back and rename buttons (the design's share button waits until sharing is in scope), name, description line (written by the AI once per collection), segmented filter by kind, list rows.
 6. Save detail: full-width image, source line, title, summary, details panel (Collection, Tags, Reminder, Note), fixed "Open in [source]" button.
 
 Tab bar: My Parsos, Search, Collections, You.
@@ -121,6 +121,8 @@ Highlighter rules (the one bold element):
 Brand assets in `/assets/brand`: `parso_logo_new.png` (yellow icon plus wordmark), `icon.png` (yellow bookmark), `icon-black.png`. Use the black icon at sizes under 24pt or on white where yellow is hard to see. The bookmark shape in the tab bar and illustrations follows the logo (flat top, notched bottom that rises to the right).
 
 Do not use: ALL-CAPS labels, text joined with middle dots, emoji in UI, gradients, colored single words in headlines, drop shadows on list panels, more than one accent color.
+
+Owner-approved exception: source icons (Instagram, TikTok, X, LinkedIn and so on) before the source in meta lines are drawn in each platform's own solid brand colour, about 14pt, from `brandColors` in `theme.ts`. Solid only, never the gradient versions. Websites, photos, screenshots and notes use grey glyphs.
 
 ## Copy rules
 
