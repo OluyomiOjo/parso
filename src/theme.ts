@@ -188,6 +188,24 @@ export const collectionScreen = {
   filterToList: 20,
 } as const;
 
+// Search screen, measured from design/4. Search@2x.png.
+export const search = {
+  fieldHeight: 48,
+  fieldRadius: 16,
+  fieldBorder: 2, // focused field on the Search tab
+  fieldPaddingX: 14,
+  iconGap: 10,
+  icon: 20,
+  clearIcon: 16,
+  fieldToPills: 16,
+  pillsToCount: 16,
+  countToResults: 12,
+  bestMatchPadding: 16,
+  bestMatchTextGap: 2,
+  bestMatchToList: 16,
+  debounceMs: 300,
+} as const;
+
 export const theme = {
   colors,
   brandColors,
@@ -201,5 +219,6 @@ export const theme = {
   sheet,
   card,
   collectionScreen,
+  search,
 } as const;
 export default theme;

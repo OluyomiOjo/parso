@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import type { Collection } from '@/lib/collections';
-import { colors, radius, sheet, size, type } from '@/theme';
+import { colors, sheet, size, type } from '@/theme';
 
-import { Text } from './Text';
+import { Pill, pillStyles } from './Pill';
 
 type Props = {
   collections: Collection[];
@@ -44,7 +44,7 @@ export function CollectionPills({ collections, selectedId, onSelect, onCreate, e
           returnKeyType="done"
           maxLength={40}
           accessibilityLabel="New collection name"
-          style={[styles.pill, styles.input]}
+          style={styles.input}
         />
       </View>
     );
@@ -59,28 +59,16 @@ export function CollectionPills({ collections, selectedId, onSelect, onCreate, e
       {ordered.map((c) => {
         const selected = c.id === selectedId;
         return (
-          <Pressable
+          <Pill
             key={c.id}
+            label={c.name}
+            selected={selected}
             onPress={() => onSelect(c.id)}
-            accessibilityRole="button"
-            accessibilityState={{ selected }}
             accessibilityLabel={selected ? `${c.name}, current collection` : `Move to ${c.name}`}
-            style={[styles.pill, selected ? styles.selected : styles.unselected]}
-          >
-            <Text variant="pill" color={selected ? colors.onInk : colors.ink}>
-              {c.name}
-            </Text>
-          </Pressable>
+          />
         );
       })}
-      <Pressable
-        onPress={() => setAdding(true)}
-        accessibilityRole="button"
-        accessibilityLabel="New collection"
-        style={[styles.pill, styles.unselected]}
-      >
-        <Text variant="pill">New</Text>
-      </Pressable>
+      <Pill label="New" onPress={() => setAdding(true)} accessibilityLabel="New collection" />
     </ScrollView>
   );
 }
@@ -88,15 +76,8 @@ export function CollectionPills({ collections, selectedId, onSelect, onCreate, e
 const styles = StyleSheet.create({
   row: { gap: sheet.pillGap },
   newRow: { flexDirection: 'row' },
-  pill: {
-    height: size.pillHeight,
-    borderRadius: radius.pill,
-    paddingHorizontal: sheet.pillPaddingX,
-    justifyContent: 'center',
-  },
-  selected: { backgroundColor: colors.ink },
-  unselected: { backgroundColor: colors.surface, borderWidth: size.hairline, borderColor: colors.controlBorder },
   input: {
+    ...pillStyles.shape,
     flex: 1,
     fontFamily: type.pill.fontFamily,
     fontSize: type.pill.fontSize,

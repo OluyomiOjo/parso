@@ -1,8 +1,10 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
 import { describeSave, type DescribeResult, type Provider } from './ai.ts';
+import { embed, toVector } from './embeddings.ts';
 import { downloadImage, extensionFor, type ImageData } from './image.ts';
 import { fetchLinkMetadata } from './metadata.ts';
+import { PLATFORM_NAMES } from './sources.ts';
 
 export type Save = {
   id: string;
@@ -12,12 +14,6 @@ export type Save = {
   url: string | null;
   raw_text: string | null;
   processed_at: string | null;
-};
-
-const PLATFORM_NAMES: Record<string, string> = {
-  instagram: 'Instagram', tiktok: 'TikTok', x: 'X', threads: 'Threads', youtube: 'YouTube',
-  facebook: 'Facebook', pinterest: 'Pinterest', linkedin: 'LinkedIn', reddit: 'Reddit',
-  spotify: 'Spotify', safari: 'Safari', whatsapp: 'WhatsApp', other: 'Website',
 };
 
 // Service-role client: bypasses RLS, so every query below filters by the save's own user_id.
@@ -192,4 +188,65 @@ export async function processSave(db: SupabaseClient, saveId: string, provider: 
     })
     .eq('id', save.id)
     .eq('user_id', save.user_id);
+
+  await storeEmbedding(db, save.id, save.user_id).catch((error) => console.error('embedding failed', save.id, error));
+}
+
+type EmbeddableSave = {
+  id: string;
+  user_id: string;
+  kind: string;
+  source: string;
+  title: string | null;
+  snippet: string | null;
+  summary: string | null;
+  tags: string[];
+  note: string | null;
+  raw_text: string | null;
+  collections: { name: string } | null;
+};
+
+const EMBED_COLUMNS = 'id, user_id, kind, source, title, snippet, summary, tags, note, raw_text, collections(name)';
+
+// Everything a person might search for, as one text: what it is, where it came from and where it's filed.
+function embeddingText(save: EmbeddableSave): string {
+  const from = save.kind === 'link' ? PLATFORM_NAMES[save.source] ?? 'Website' : save.kind;
+  return [
+    save.title,
+    save.snippet,
+    save.summary,
+    save.tags.length ? `Tags: ${save.tags.join(', ')}` : null,
+    `From: ${from}`,
+    save.collections ? `Collection: ${save.collections.name}` : null,
+    save.note ? `Note: ${save.note}` : null,
+    save.raw_text,
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+async function writeEmbeddings(db: SupabaseClient, saves: EmbeddableSave[]) {
+  if (!saves.length) return;
+  const vectors = await embed(saves.map(embeddingText));
+  for (const [i, save] of saves.entries()) {
+    await db.from('saves').update({ embedding: toVector(vectors[i]) }).eq('id', save.id).eq('user_id', save.user_id);
+  }
+}
+
+async function storeEmbedding(db: SupabaseClient, saveId: string, userId: string) {
+  const { data } = await db.from('saves').select(EMBED_COLUMNS).eq('id', saveId).eq('user_id', userId).single();
+  if (data) await writeEmbeddings(db, [data as unknown as EmbeddableSave]);
+}
+
+// Backfill: embeds filed saves that have none. Never re-runs the AI, so nothing is re-filed.
+export async function embedMissing(db: SupabaseClient): Promise<number> {
+  const { data, error } = await db
+    .from('saves')
+    .select(EMBED_COLUMNS)
+    .not('processed_at', 'is', null)
+    .is('embedding', null)
+    .limit(100);
+  if (error) throw error;
+  await writeEmbeddings(db, (data ?? []) as unknown as EmbeddableSave[]);
+  return data?.length ?? 0;
 }

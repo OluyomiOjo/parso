@@ -5,12 +5,15 @@ import { LinkIcon } from '@/icons/LinkIcon';
 import { itemLabel, relativeTime } from '@/lib/format';
 import { displayUrl } from '@/lib/links';
 import type { SaveListItem } from '@/lib/saves';
+import { termsFor, type Match } from '@/lib/search';
 import { colors, radius, size, spacing } from '@/theme';
 
+import { HighlightedText } from './HighlightedText';
 import { SourceLine } from './SourceLine';
-import { Text } from './Text';
 
-export function SaveRow({ save, thumbnailUrl }: { save: SaveListItem; thumbnailUrl?: string }) {
+type Props = { save: SaveListItem; thumbnailUrl?: string; matches?: Match[] };
+
+export function SaveRow({ save, thumbnailUrl, matches = [] }: Props) {
   // Until processing (step 4) writes a title, the URL is the title.
   const title = save.title ?? (save.url ? displayUrl(save.url) : 'Saving…');
   const meta = `${itemLabel(save.kind, save.source, save.url)}, ${relativeTime(save.created_at)}`;
@@ -33,15 +36,17 @@ export function SaveRow({ save, thumbnailUrl }: { save: SaveListItem; thumbnailU
         </View>
       )}
       <View style={styles.text}>
-        <Text variant="rowTitle" numberOfLines={1}>
-          {title}
-        </Text>
+        <HighlightedText variant="rowTitle" numberOfLines={1} text={title} terms={termsFor(matches, 'title')} />
         {save.snippet ? (
-          <Text variant="secondary" color={colors.secondary} numberOfLines={1}>
-            {save.snippet}
-          </Text>
+          <HighlightedText
+            variant="secondary"
+            color={colors.secondary}
+            numberOfLines={1}
+            text={save.snippet}
+            terms={termsFor(matches, 'snippet')}
+          />
         ) : null}
-        <SourceLine kind={save.kind} source={save.source} text={meta} />
+        <SourceLine kind={save.kind} source={save.source} text={meta} highlight={termsFor(matches, 'source')} />
       </View>
     </Pressable>
   );

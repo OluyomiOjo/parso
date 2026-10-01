@@ -6,6 +6,7 @@ import { IconButton } from '@/components/IconButton';
 import { ListPanel } from '@/components/ListPanel';
 import { PasteLinkButton } from '@/components/PasteLinkButton';
 import { SaveRow } from '@/components/SaveRow';
+import { SearchFieldButton } from '@/components/SearchField';
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { Text } from '@/components/Text';
@@ -16,6 +17,7 @@ import { card, colors, size, spacing } from '@/theme';
 
 const openPaste = () => router.push('/paste');
 const openCollections = () => router.navigate('/collections');
+const openSearch = () => router.navigate('/search');
 
 export default function HomeScreen() {
   const { data: saves, isPending, isError, isRefetching, refetch } = useSaves();
@@ -58,6 +60,9 @@ export default function HomeScreen() {
           </Text>
         ) : hasSaves ? (
           <>
+            <View style={styles.section}>
+              <SearchFieldButton onPress={openSearch} />
+            </View>
             {collections?.length ? (
               <View style={styles.section}>
                 <View style={[styles.heading, styles.headingRow]}>

@@ -32,13 +32,13 @@ Automatic background screenshot import, web app, browser extension, sharing or c
 - Share extension: expo-share-intent 8.x (supports SDK 57). On iOS, sharing opens the Parso app, which shows the save sheet; the owner chose this over a custom in-extension view (no maintained package supports SDK 57). App Group `group.ai.parso.app`. expo-image-manipulator shrinks shared photos before upload.
 - Supabase: Auth, Postgres, Storage (thumbnails, images), pgvector, Edge Functions.
 - AI: OpenAI GPT-6 Luna (`gpt-6-luna`) from Supabase Edge Functions only, never from the app, through the `npm:openai` package. The owner chose it over Claude Haiku 4.5 after a side-by-side test on real saves in step 4 (similar quality, about 9 times cheaper). All AI calls go through `describeSave()` in `supabase/functions/_shared/ai.ts`, so the provider can be swapped there.
-- Embeddings for search: an embeddings provider called from Edge Functions (Voyage AI is the default choice). Keep the provider behind one function so it can be swapped.
+- Embeddings for search: OpenAI `text-embedding-3-small` at 1024 dimensions, called from Edge Functions only (owner-approved in step 7 over Voyage AI: reuses the OpenAI key, $0.02 per million tokens). Keep it behind `embed()` in `supabase/functions/_shared/embeddings.ts` so it can be swapped.
 - Notifications: expo-notifications (local scheduled notifications for reminders).
 - Fonts: Inter loaded with expo-font and bundled in the app.
 - Launch screen and system appearance: expo-splash-screen, expo-system-ui.
 - Auth: @supabase/supabase-js with @react-native-async-storage/async-storage for the session, expo-apple-authentication and @react-native-google-signin/google-signin for native sign-in, expo-crypto for the Apple nonce.
 - State and data: TanStack Query for server data. No Redux.
-- Secrets live in environment variables and Supabase secrets. Never commit keys. Never put the Claude or embeddings key in the app bundle.
+- Secrets live in environment variables and Supabase secrets. Never commit keys. Never put the AI or embeddings key in the app bundle.
 
 Ask before adding any dependency not listed here.
 
