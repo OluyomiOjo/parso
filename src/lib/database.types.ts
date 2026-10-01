@@ -51,6 +51,7 @@ export type Database = {
           id: string
           kind: string
           note: string | null
+          preview_image_url: string | null
           processed_at: string | null
           raw_text: string | null
           reminder_at: string | null
@@ -71,6 +72,7 @@ export type Database = {
           id?: string
           kind: string
           note?: string | null
+          preview_image_url?: string | null
           processed_at?: string | null
           raw_text?: string | null
           reminder_at?: string | null
@@ -91,6 +93,7 @@ export type Database = {
           id?: string
           kind?: string
           note?: string | null
+          preview_image_url?: string | null
           processed_at?: string | null
           raw_text?: string | null
           reminder_at?: string | null

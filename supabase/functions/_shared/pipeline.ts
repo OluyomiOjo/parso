@@ -13,6 +13,7 @@ export type Save = {
   source: string;
   url: string | null;
   raw_text: string | null;
+  preview_image_url: string | null;
   processed_at: string | null;
 };
 
@@ -72,10 +73,15 @@ async function downloadUpload(db: SupabaseClient, save: Save): Promise<ImageData
   return { bytes: new Uint8Array(await data.arrayBuffer()), mediaType: 'image/jpeg' };
 }
 
+// The page's own preview image, or else the one the phone found when sharing from Safari.
+async function linkImage(pageImage: string | undefined, sharedImage: string | null): Promise<ImageData | null> {
+  return (pageImage ? await downloadImage(pageImage) : null) ?? (sharedImage ? await downloadImage(sharedImage) : null);
+}
+
 export async function prepare(db: SupabaseClient, save: Save): Promise<PreparedSave> {
   const isImage = IMAGE_KINDS.has(save.kind);
   const meta = save.url && !isImage ? await fetchLinkMetadata(save.url, save.source) : {};
-  const image = isImage ? await downloadUpload(db, save) : meta.imageUrl ? await downloadImage(meta.imageUrl) : null;
+  const image = isImage ? await downloadUpload(db, save) : await linkImage(meta.imageUrl, save.preview_image_url);
   const lines = [
     isImage ? `Shared item: a ${save.kind === 'screenshot' ? 'screenshot' : 'photo'} from the phone` : null,
     save.url ? `Link: ${save.url}` : null,
@@ -146,7 +152,7 @@ async function storeThumbnail(db: SupabaseClient, save: Save, image: ImageData):
 export async function processSave(db: SupabaseClient, saveId: string, provider: Provider) {
   const { data: save } = await db
     .from('saves')
-    .select('id, user_id, kind, source, url, raw_text, processed_at')
+    .select('id, user_id, kind, source, url, raw_text, preview_image_url, processed_at')
     .eq('id', saveId)
     .single<Save>();
   if (!save || save.processed_at) return;
@@ -251,4 +257,28 @@ export async function embedMissing(db: SupabaseClient): Promise<number> {
   if (error) throw error;
   await writeEmbeddings(db, (data ?? []) as unknown as EmbeddableSave[]);
   return data?.length ?? 0;
+}
+
+// Backfill: adds a picture to filed link saves that have none (for example X posts saved before X pictures
+// were read). Only the picture is fetched and stored; nothing else about the save changes.
+export async function thumbnailMissing(db: SupabaseClient): Promise<number> {
+  const { data, error } = await db
+    .from('saves')
+    .select('id, user_id, kind, source, url, raw_text, preview_image_url, processed_at')
+    .eq('kind', 'link')
+    .not('processed_at', 'is', null)
+    .is('thumbnail_path', null)
+    .limit(50);
+  if (error) throw error;
+  let added = 0;
+  for (const save of (data ?? []) as Save[]) {
+    if (!save.url) continue;
+    const meta = await fetchLinkMetadata(save.url, save.source);
+    const image = await linkImage(meta.imageUrl, save.preview_image_url);
+    const path = image ? await storeThumbnail(db, save, image) : null;
+    if (!path) continue;
+    await db.from('saves').update({ thumbnail_path: path }).eq('id', save.id).eq('user_id', save.user_id);
+    added++;
+  }
+  return added;
 }

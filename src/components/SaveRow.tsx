@@ -11,9 +11,15 @@ import { colors, radius, size, spacing } from '@/theme';
 import { HighlightedText } from './HighlightedText';
 import { SourceLine } from './SourceLine';
 
-type Props = { save: SaveListItem; thumbnailUrl?: string; matches?: Match[]; onOpen?: () => void };
+type Props = {
+  save: SaveListItem;
+  thumbnailUrl?: string;
+  matches?: Match[];
+  onOpen?: () => void;
+  titleLines?: number; // search uses 2, so a matched word isn't cut off
+};
 
-export function SaveRow({ save, thumbnailUrl, matches = [], onOpen }: Props) {
+export function SaveRow({ save, thumbnailUrl, matches = [], onOpen, titleLines = 1 }: Props) {
   // Until processing (step 4) writes a title, the URL is the title.
   const title = save.title ?? (save.url ? displayUrl(save.url) : 'Saving…');
   const meta = `${itemLabel(save.kind, save.source, save.url)}, ${relativeTime(save.created_at)}`;
@@ -39,7 +45,12 @@ export function SaveRow({ save, thumbnailUrl, matches = [], onOpen }: Props) {
         </View>
       )}
       <View style={styles.text}>
-        <HighlightedText variant="rowTitle" numberOfLines={1} text={title} terms={termsFor(matches, 'title')} />
+        <HighlightedText
+          variant="rowTitle"
+          numberOfLines={titleLines}
+          text={title}
+          terms={termsFor(matches, 'title')}
+        />
         {save.snippet ? (
           <HighlightedText
             variant="secondary"

@@ -46,7 +46,7 @@ Ask before adding any dependency not listed here.
 ## Data model (Supabase)
 
 - `collections`: id, user_id, name, description, is_smart (bool), created_at.
-- `saves`: id, user_id, collection_id, kind (link | image | screenshot | text), source (instagram | tiktok | x | threads | youtube | facebook | pinterest | linkedin | reddit | spotify | safari | whatsapp | other), url, title, snippet, summary, tags (text[]), note, thumbnail_path, raw_text, reminder_at (timestamptz, nullable), created_at, processed_at, embedding (vector).
+- `saves`: id, user_id, collection_id, kind (link | image | screenshot | text), source (instagram | tiktok | x | threads | youtube | facebook | pinterest | linkedin | reddit | spotify | safari | whatsapp | other), url, title, snippet, summary, tags (text[]), note, thumbnail_path, raw_text, reminder_at (timestamptz, nullable), preview_image_url (the page's og:image as iOS read it when shared from Safari; used when a site refuses our server), created_at, processed_at, embedding (vector).
 - Row Level Security on every table: users read and write only their own rows.
 - Full-text index on title, snippet, summary, tags, note, raw_text.
 
@@ -112,7 +112,7 @@ Shape and spacing:
 - List panels: one white panel, radius 18, rows separated by 1px dividers. Do not wrap each row in its own card.
 - Buttons: height 52, radius 14, black fill, white text 16/600.
 - Pills: height 36, radius 18; selected is black fill, unselected white with control border.
-- Thumbnails: 56 in rows, radius 10. Best-match image full width, 176 tall.
+- Thumbnails: 72 in rows (owner asked for bigger pictures in step 10; the designs show 56), radius 10. Best-match image full width, 176 tall.
 - Minimum touch target 44.
 
 Highlighter rules (the one bold element):

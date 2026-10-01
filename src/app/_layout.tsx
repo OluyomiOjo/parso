@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 
 import { ShareHandler } from '@/components/ShareHandler';
 import { AuthProvider, useSession } from '@/lib/auth';
+import { IntroProvider, useIntro } from '@/lib/intro';
 import { configureNotifications, useReminderSync, useReminderTaps } from '@/lib/reminders';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/theme';
@@ -23,7 +24,9 @@ supabase.auth.onAuthStateChange((event) => {
 });
 
 function RootStack() {
-  const { session, loading } = useSession();
+  const { session, loading: sessionLoading } = useSession();
+  const { seen: introSeen } = useIntro();
+  const loading = sessionLoading || introSeen === null;
 
   useEffect(() => {
     if (!loading) SplashScreen.hideAsync();
@@ -41,7 +44,10 @@ function RootStack() {
         <Stack.Screen name="item/[id]" />
         <Stack.Screen name="item-edit/[id]" options={{ presentation: 'modal' }} />
       </Stack.Protected>
-      <Stack.Protected guard={session === null}>
+      <Stack.Protected guard={session === null && !introSeen}>
+        <Stack.Screen name="intro" />
+      </Stack.Protected>
+      <Stack.Protected guard={session === null && introSeen === true}>
         <Stack.Screen name="welcome" />
       </Stack.Protected>
     </Stack>
@@ -60,10 +66,12 @@ export default function RootLayout() {
     <ShareIntentProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <StatusBar style="dark" />
-          <RootStack />
-          <ShareHandler />
-          <Reminders />
+          <IntroProvider>
+            <StatusBar style="dark" />
+            <RootStack />
+            <ShareHandler />
+            <Reminders />
+          </IntroProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ShareIntentProvider>

@@ -28,6 +28,30 @@ function canonicalXUrl(url: string): string {
   return match ? `https://x.com/${match[1]}/status/${match[2]}` : url;
 }
 
+// X's oEmbed has no picture. X's own embed widget reads this public endpoint, which has the post's photo
+// or video preview, and the author's profile picture for text-only posts.
+function xSyndicationToken(id: string): string {
+  return ((Number(id) / 1e15) * Math.PI).toString(36).replace(/(0+|\.)/g, '');
+}
+
+async function xImage(url: string): Promise<string | undefined> {
+  const id = /(?:x|twitter)\.com\/[^/?#]+\/status\/(\d+)/i.exec(url)?.[1];
+  if (!id) return undefined;
+  const res = await fetchWithTimeout(
+    `https://cdn.syndication.twimg.com/tweet-result?id=${id}&token=${xSyndicationToken(id)}`,
+    'application/json',
+  );
+  if (!res) return undefined;
+  try {
+    const data = await res.json();
+    const media = (data.mediaDetails ?? []) as { media_url_https?: string }[];
+    const profile = data.user?.profile_image_url_https as string | undefined;
+    return media[0]?.media_url_https ?? profile?.replace('_normal.', '_400x400.');
+  } catch {
+    return undefined;
+  }
+}
+
 // Pages that only show a login wall to anonymous visitors; fetching them adds nothing.
 const LOGIN_WALLED = new Set(['facebook']);
 
@@ -179,6 +203,7 @@ export async function fetchLinkMetadata(url: string, source: string): Promise<Li
     siteName: oembed.siteName ?? page.siteName,
     imageUrl: oembed.imageUrl ?? page.imageUrl,
   };
+  if (source === 'x' && !merged.imageUrl) merged.imageUrl = await xImage(url);
   merged.imageUrl = absolutize(merged.imageUrl, url);
   return merged;
 }

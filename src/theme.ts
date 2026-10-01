@@ -54,6 +54,10 @@ export const type = {
   // Welcome screen, measured from design/1. Welcome and sign in@2x.png.
   welcomeTitle: { fontFamily: fonts.extrabold, fontSize: 42, lineHeight: 43, letterSpacing: -1.2 },
   welcomeBody: { fontFamily: fonts.regular, fontSize: 17, lineHeight: 24.5 },
+  introBody: { fontFamily: fonts.regular, fontSize: 17, lineHeight: 25 },
+  skip: { fontFamily: fonts.semibold, fontSize: 16, lineHeight: 20 },
+  firstRunTitle: { fontFamily: fonts.bold, fontSize: 22, lineHeight: 28, letterSpacing: -0.5 },
+  firstRunStep: { fontFamily: fonts.medium, fontSize: 16, lineHeight: 22 },
   demoQuery: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 20 },
   demoTitle: { fontFamily: fonts.semibold, fontSize: 15, lineHeight: 20, letterSpacing: -0.2 },
   demoMeta: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18 },
@@ -105,7 +109,7 @@ export const radius = {
 export const size = {
   buttonHeight: 52,
   pillHeight: 36,
-  thumb: 56,
+  thumb: 72, // list rows (owner asked for bigger pictures in step 10; the design had 56)
   bestMatchHeight: 176,
   minTouch: 44,
   hairline: 1,
@@ -243,6 +247,43 @@ export const reminderCard = {
   buttonPaddingX: 16,
 } as const;
 
+// Intro screens, measured from design/0.1 to 0.3 Intro@2x.png. The illustration colours are the designs' own
+// and are used only inside the drawings.
+export const intro = {
+  circle: 254,
+  skipTop: 20, // below the safe area
+  circleToTitle: 56,
+  titleToBody: 10,
+  bodyMaxWidth: 290,
+  dotsToButton: 28,
+  dot: 6,
+  dotActiveWidth: 22,
+  dotGap: 6,
+  bottom: 8,
+} as const;
+
+export const illustration = {
+  circle: '#E3E5E9',
+  line: '#1C1C1E',
+  photo: '#F1D6C0',
+  photoDot: '#E3A878',
+  bar: '#C5C9D1',
+  label: '#CFDDF3',
+  stroke: 6, // in the drawings' own units (2x points)
+} as const;
+
+// First-run card on My Parsos, measured from design/3b. Home, first run@2x.png.
+export const firstRun = {
+  padding: 20,
+  titleToBody: 12,
+  bodyToSteps: 16,
+  stepGap: 12,
+  stepIcon: 22,
+  stepIconGap: 14,
+  stepsToButton: 20,
+  cardToPaste: 20,
+} as const;
+
 export const theme = {
   colors,
   brandColors,
@@ -260,5 +301,8 @@ export const theme = {
   detail,
   segmented,
   reminderCard,
+  intro,
+  illustration,
+  firstRun,
 } as const;
 export default theme;

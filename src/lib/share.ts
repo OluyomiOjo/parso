@@ -46,8 +46,17 @@ async function saveImage(file: NonNullable<ShareIntent['files']>[number], userId
     .upload(`${userId}/${id}.jpg`, base64ToBytes(result.base64).buffer as ArrayBuffer, { contentType: 'image/jpeg' });
   if (uploadError) return { error: "Couldn't upload the image. Check your connection and share it again." };
 
-  const { error } = await supabase.from('saves').insert({ id, kind: isScreenshot ? 'screenshot' : 'image', source: 'other' });
+  const { error } = await supabase
+    .from('saves')
+    .insert({ id, kind: isScreenshot ? 'screenshot' : 'image', source: 'other' });
   return error ? { error: "Couldn't save the image. Share it again." } : { saveId: id };
+}
+
+// The page's own preview picture, as iOS read it when sharing from Safari. The server uses it for sites
+// that refuse servers (Medium, for example). Only full https links fit the database's rule.
+function sharedPreviewImage(intent: ShareIntent): string | null {
+  const image = intent.meta?.['og:image'] ?? intent.meta?.['twitter:image'];
+  return image && /^https:\/\//i.test(image) && image.length <= 2048 ? image : null;
 }
 
 async function saveLinkOrText(intent: ShareIntent): Promise<ShareResult> {
@@ -61,12 +70,20 @@ async function saveLinkOrText(intent: ShareIntent): Promise<ShareResult> {
     .from('saves')
     .insert(
       url
-        ? { kind: 'link', source: detectSource(url), url, raw_text: extra ? extra.slice(0, MAX_TEXT) : null }
+        ? {
+            kind: 'link',
+            source: detectSource(url),
+            url,
+            raw_text: extra ? extra.slice(0, MAX_TEXT) : null,
+            preview_image_url: sharedPreviewImage(intent),
+          }
         : { kind: 'text', source: 'other', raw_text: text.slice(0, MAX_TEXT) },
     )
     .select('id')
     .single();
-  return error || !data ? { error: "Couldn't save that. Check your connection and share it again." } : { saveId: data.id };
+  return error || !data
+    ? { error: "Couldn't save that. Check your connection and share it again." }
+    : { saveId: data.id };
 }
 
 export async function saveShare(intent: ShareIntent, userId: string): Promise<ShareResult> {

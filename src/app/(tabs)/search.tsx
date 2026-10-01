@@ -111,6 +111,7 @@ export default function SearchScreen() {
                       key={r.id}
                       save={r}
                       matches={r.matches}
+                      titleLines={2}
                       onOpen={rememberQuery}
                       thumbnailUrl={r.thumbnail_path ? thumbnails?.[r.thumbnail_path] : undefined}
                     />

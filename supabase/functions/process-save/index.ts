@@ -1,6 +1,14 @@
 // Called by the database trigger on every new save (see migration 0005). Replies straight away and
 // processes in the background, so the trigger's HTTP call never waits on the AI.
-import { admin, embedMissing, getConfig, processSave, secretMatches, storeEmbedding } from '../_shared/pipeline.ts';
+import {
+  admin,
+  embedMissing,
+  getConfig,
+  processSave,
+  secretMatches,
+  storeEmbedding,
+  thumbnailMissing,
+} from '../_shared/pipeline.ts';
 
 // Provided by the Supabase Edge Runtime: keeps the worker alive until the promise settles.
 declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void };
@@ -16,8 +24,14 @@ Deno.serve(async (req) => {
   let saveId: unknown;
   let embedMissingOnly: unknown;
   let embedSaveId: unknown;
+  let thumbnailsOnly: unknown;
   try {
-    ({ save_id: saveId, embed_missing: embedMissingOnly, embed_save: embedSaveId } = await req.json());
+    ({
+      save_id: saveId,
+      embed_missing: embedMissingOnly,
+      embed_save: embedSaveId,
+      thumbnail_missing: thumbnailsOnly,
+    } = await req.json());
   } catch {
     return new Response('Bad request', { status: 400 });
   }
@@ -25,6 +39,11 @@ Deno.serve(async (req) => {
   if (embedMissingOnly === true) {
     const count = await embedMissing(db);
     return Response.json({ embedded: count });
+  }
+  // One-off backfill: pictures for filed link saves that have none. The AI does not run.
+  if (thumbnailsOnly === true) {
+    const added = await thumbnailMissing(db);
+    return Response.json({ added });
   }
   // After a person edits tags, note or collection (trigger in migration 0011): refresh that save's search
   // data only. The AI does not run again.

@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { CollectionCard } from '@/components/CollectionCard';
+import { FirstSaveCard } from '@/components/FirstSaveCard';
 import { IconButton } from '@/components/IconButton';
 import { ListPanel } from '@/components/ListPanel';
 import { PasteLinkButton } from '@/components/PasteLinkButton';
@@ -15,7 +16,7 @@ import { LinkIcon } from '@/icons/LinkIcon';
 import { useCollectionOverview } from '@/lib/collections';
 import { useNextReminder } from '@/lib/reminders';
 import { useSaves, useSavesLiveUpdates, useThumbnailUrls } from '@/lib/saves';
-import { card, colors, size, spacing } from '@/theme';
+import { card, colors, firstRun, size, spacing } from '@/theme';
 
 const openPaste = () => router.push('/paste');
 const openCollections = () => router.navigate('/collections');
@@ -117,7 +118,10 @@ export default function HomeScreen() {
           </>
         ) : (
           <View style={styles.section}>
-            <PasteLinkButton onPress={openPaste} />
+            <FirstSaveCard />
+            <View style={styles.paste}>
+              <PasteLinkButton onPress={openPaste} />
+            </View>
           </View>
         )}
       </ScrollView>
@@ -138,6 +142,7 @@ const styles = StyleSheet.create({
   },
   section: { marginTop: spacing.sectionGapLarge },
   reminder: { marginTop: spacing.sectionGap },
+  paste: { marginTop: firstRun.cardToPaste },
   heading: {
     paddingHorizontal: spacing.titleInset,
     marginBottom: spacing.headingToPanel,

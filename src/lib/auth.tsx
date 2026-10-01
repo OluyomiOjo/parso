@@ -90,3 +90,14 @@ export async function signOut() {
   if (isGoogleConfigured) await GoogleSignin.signOut().catch(() => undefined);
   await supabase.auth.signOut();
 }
+
+export const DELETE_ACCOUNT_FAILED = "Couldn't delete your account. Check your connection and try again.";
+
+// Removes the account and everything in it (saves, collections, pictures) on the server, then forgets the
+// session on this phone. Apple requires apps with sign-in to offer this.
+export async function deleteAccount() {
+  const { error } = await supabase.functions.invoke('delete-account');
+  if (error) throw new Error(DELETE_ACCOUNT_FAILED);
+  if (isGoogleConfigured) await GoogleSignin.signOut().catch(() => undefined);
+  await supabase.auth.signOut({ scope: 'local' }); // the account no longer exists on the server
+}
