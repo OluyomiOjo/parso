@@ -19,7 +19,7 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#FFCC2A"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -36,6 +36,15 @@
             "./assets/fonts/Inter-Bold.ttf",
             "./assets/fonts/Inter-ExtraBold.ttf"
           ]
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/brand/icon-black.png",
+          "imageWidth": 117,
+          "resizeMode": "contain",
+          "backgroundColor": "#F2F3F5"
         }
       ]
     ],
