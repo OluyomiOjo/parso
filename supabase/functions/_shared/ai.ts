@@ -57,6 +57,8 @@ For each save you get the link, whatever public details could be fetched, someti
 - tags: up to 5 lowercase words or short phrases someone might search for. Include the main subject and type (for example "recipe", "pasta").
 - collection: reuse an existing collection whenever it fits, even loosely. Only when none fits, invent a short, broad name of one or two words in sentence case (for example "Recipes", "Travel", "Home ideas", "Fitness", "Reading list"). Pick by what the thing is about, not where it was posted.
 
+For screenshots and photos, read any visible text in the image and use it; it is often the most useful detail.
+
 Only use facts that appear in the text or the image. When the details are thin, describe only what is actually there (for example "Video from @WilliamsRuto on X") and never guess the topic from the account, the link or general knowledge.`;
 
 function userText(input: DescribeInput): string {

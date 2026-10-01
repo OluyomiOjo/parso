@@ -66,12 +66,24 @@ export function secretMatches(given: string | null, expected: string): boolean {
 
 export type PreparedSave = { text: string; image: ImageData | null; collections: string[] };
 
+const IMAGE_KINDS = new Set(['image', 'screenshot']);
+
+// Photos and screenshots shared into Parso: the app uploads them to uploads/<user_id>/<save_id>.jpg
+// before inserting the save, so the file is there when this runs.
+async function downloadUpload(db: SupabaseClient, save: Save): Promise<ImageData | null> {
+  const { data, error } = await db.storage.from('uploads').download(`${save.user_id}/${save.id}.jpg`);
+  if (error || !data) return null;
+  return { bytes: new Uint8Array(await data.arrayBuffer()), mediaType: 'image/jpeg' };
+}
+
 export async function prepare(db: SupabaseClient, save: Save): Promise<PreparedSave> {
-  const meta = save.url ? await fetchLinkMetadata(save.url, save.source) : {};
-  const image = meta.imageUrl ? await downloadImage(meta.imageUrl) : null;
+  const isImage = IMAGE_KINDS.has(save.kind);
+  const meta = save.url && !isImage ? await fetchLinkMetadata(save.url, save.source) : {};
+  const image = isImage ? await downloadUpload(db, save) : meta.imageUrl ? await downloadImage(meta.imageUrl) : null;
   const lines = [
+    isImage ? `Shared item: a ${save.kind === 'screenshot' ? 'screenshot' : 'photo'} from the phone` : null,
     save.url ? `Link: ${save.url}` : null,
-    `Platform: ${PLATFORM_NAMES[save.source] ?? 'Website'}`,
+    isImage ? null : `Platform: ${PLATFORM_NAMES[save.source] ?? 'Website'}`,
     meta.siteName ? `Site: ${meta.siteName}` : null,
     meta.author ? `Author: ${meta.author}` : null,
     meta.title ? `Page title: ${meta.title}` : null,
