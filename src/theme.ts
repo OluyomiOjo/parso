@@ -71,9 +71,10 @@ export const size = {
   tabIcon: 24,
   tabIconStroke: 1.8,
   tabIconStrokeActive: 2.4,
-  tabBarPaddingTop: 10,
-  tabBarPaddingBottom: 6,
-  tabLabelGap: 4,
+  tabBarPaddingTop: 12,
+  tabBarPaddingBottom: 0, // the home-indicator inset already gives the space the design shows
+  tabBarPaddingX: 16,
+  tabLabelGap: 2,
 } as const;
 
 export const theme = { colors, fonts, type, tabularNums, spacing, radius, size } as const;

@@ -66,6 +66,7 @@ const styles = StyleSheet.create({
     borderTopWidth: size.hairline,
     borderTopColor: colors.divider,
     paddingTop: size.tabBarPaddingTop,
+    paddingHorizontal: size.tabBarPaddingX,
   },
   tab: {
     flex: 1,
