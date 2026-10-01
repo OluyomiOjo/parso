@@ -38,6 +38,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "48c93477-c9d9-40dc-a823-69c42e6ecbf8"
+      }
+    },
+    "owner": "pixanow"
   }
 }
