@@ -65,7 +65,7 @@
         }
       ],
       [
-        "./plugins/withShareExtensionLabel",
+        "./plugins/withShareExtensionFixes",
         {
           "label": "Parso"
         }

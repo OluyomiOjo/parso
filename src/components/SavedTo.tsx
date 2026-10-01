@@ -10,7 +10,7 @@ export function SavedTo({ collection }: { collection: string | null }) {
     <View style={styles.row} accessible accessibilityRole="header" accessibilityLabel={collection ? `Saved to ${collection}` : 'Saving'}>
       <Image source={require('../../assets/brand/icon.png')} style={styles.icon} resizeMode="contain" />
       {collection ? (
-        <Text variant="sheetTitle" numberOfLines={1} style={styles.text}>
+        <Text variant="sheetTitle" numberOfLines={2} style={styles.text}>
           Saved to <Text style={[type.sheetTitle, styles.mark]}>{` ${collection} `}</Text>
         </Text>
       ) : (
