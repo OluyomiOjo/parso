@@ -35,6 +35,7 @@ Automatic background screenshot import, web app, browser extension, sharing or c
 - Embeddings for search: an embeddings provider called from Edge Functions (Voyage AI is the default choice). Keep the provider behind one function so it can be swapped.
 - Notifications: expo-notifications (local scheduled notifications for reminders).
 - Fonts: Inter loaded with expo-font and bundled in the app.
+- Launch screen and system appearance: expo-splash-screen, expo-system-ui.
 - State and data: TanStack Query for server data. No Redux.
 - Secrets live in environment variables and Supabase secrets. Never commit keys. Never put the Claude or embeddings key in the app bundle.
 
