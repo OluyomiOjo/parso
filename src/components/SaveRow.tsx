@@ -1,7 +1,7 @@
 import { Image, StyleSheet, View } from 'react-native';
 
 import { LinkIcon } from '@/icons/LinkIcon';
-import { relativeTime, sourceLabel } from '@/lib/format';
+import { itemLabel, relativeTime } from '@/lib/format';
 import { displayUrl } from '@/lib/links';
 import type { SaveListItem } from '@/lib/saves';
 import { colors, radius, size, spacing, tabularNums } from '@/theme';
@@ -10,8 +10,8 @@ import { Text } from './Text';
 
 export function SaveRow({ save, thumbnailUrl }: { save: SaveListItem; thumbnailUrl?: string }) {
   // Until processing (step 4) writes a title, the URL is the title.
-  const title = save.title ?? (save.url ? displayUrl(save.url) : 'Untitled');
-  const meta = `${sourceLabel(save.source, save.url)}, ${relativeTime(save.created_at)}`;
+  const title = save.title ?? (save.url ? displayUrl(save.url) : 'Saving…');
+  const meta = `${itemLabel(save.kind, save.source, save.url)}, ${relativeTime(save.created_at)}`;
 
   return (
     <View style={styles.row} accessible accessibilityLabel={`${title}. ${meta}`}>

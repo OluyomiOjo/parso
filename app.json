@@ -47,6 +47,28 @@
           "resizeMode": "contain",
           "backgroundColor": "#F2F3F5"
         }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+            "NSExtensionActivationSupportsWebPageWithMaxCount": 1,
+            "NSExtensionActivationSupportsText": true,
+            "NSExtensionActivationSupportsImageWithMaxCount": 1
+          },
+          "iosAppGroupIdentifier": "group.ai.parso.app",
+          "androidIntentFilters": [
+            "text/*",
+            "image/*"
+          ]
+        }
+      ],
+      [
+        "./plugins/withShareExtensionLabel",
+        {
+          "label": "Parso"
+        }
       ]
     ],
     "experiments": {

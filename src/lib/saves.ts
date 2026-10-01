@@ -15,6 +15,12 @@ const LIST_COLUMNS = 'id, kind, source, url, title, snippet, thumbnail_path, cre
 const LIST_LIMIT = 50;
 
 const savesKey = (userId: string | undefined) => ['saves', userId] as const;
+const saveKey = (id: string) => ['save', id] as const;
+
+export type SaveDetail = Pick<
+  Tables<'saves'>,
+  'id' | 'kind' | 'source' | 'url' | 'title' | 'snippet' | 'tags' | 'note' | 'collection_id' | 'thumbnail_path' | 'processed_at'
+>;
 
 export function useSaves() {
   const { session } = useSession();
@@ -48,7 +54,12 @@ export function useSavesLiveUpdates() {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'saves', filter: `user_id=eq.${userId}` },
-        () => queryClient.invalidateQueries({ queryKey: savesKey(userId) }),
+        (payload) => {
+          queryClient.invalidateQueries({ queryKey: savesKey(userId) });
+          queryClient.invalidateQueries({ queryKey: ['collections', userId] }); // the AI may have made a new one
+          const id = (payload.new as { id?: string }).id;
+          if (id) queryClient.invalidateQueries({ queryKey: saveKey(id) });
+        },
       )
       .subscribe();
     return () => {
@@ -114,5 +125,43 @@ export function useCreateLinkSave() {
       queryClient.setQueryData(key, context?.previous);
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
+  });
+}
+
+export function useSave(id: string) {
+  return useQuery({
+    queryKey: saveKey(id),
+    queryFn: async (): Promise<SaveDetail> => {
+      const { data, error } = await supabase
+        .from('saves')
+        .select('id, kind, source, url, title, snippet, tags, note, collection_id, thumbnail_path, processed_at')
+        .eq('id', id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// Changes the person makes in the save sheet: move to a collection, add a note.
+export function useUpdateSave(id: string) {
+  const queryClient = useQueryClient();
+  const { session } = useSession();
+  return useMutation({
+    mutationFn: async (changes: Partial<Pick<SaveDetail, 'collection_id' | 'note'>>) => {
+      const { error } = await supabase.from('saves').update(changes).eq('id', id);
+      if (error) throw error;
+    },
+    onMutate: async (changes) => {
+      await queryClient.cancelQueries({ queryKey: saveKey(id) });
+      const previous = queryClient.getQueryData<SaveDetail>(saveKey(id));
+      if (previous) queryClient.setQueryData<SaveDetail>(saveKey(id), { ...previous, ...changes });
+      return { previous };
+    },
+    onError: (_error, _changes, context) => queryClient.setQueryData(saveKey(id), context?.previous),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: saveKey(id) });
+      queryClient.invalidateQueries({ queryKey: savesKey(session?.user.id) });
+    },
   });
 }

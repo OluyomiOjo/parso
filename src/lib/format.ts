@@ -20,6 +20,13 @@ export function sourceLabel(source: string, url: string | null): string {
   return (url && displayHost(url)) || 'Link';
 }
 
+const KIND_LABELS: Record<string, string> = { screenshot: 'Screenshot', image: 'Photo', text: 'Note' };
+
+// What a save is, for meta lines: the platform for links, otherwise the kind of thing shared.
+export function itemLabel(kind: string, source: string, url: string | null): string {
+  return KIND_LABELS[kind] ?? sourceLabel(source, url);
+}
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;

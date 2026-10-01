@@ -45,6 +45,8 @@ export const type = {
   legal: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 16 },
   rowMeta: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18 },
   sheetTitle: { fontFamily: fonts.extrabold, fontSize: 28, lineHeight: 34, letterSpacing: -0.9 },
+  sheetLabel: { fontFamily: fonts.bold, fontSize: 15, lineHeight: 20, letterSpacing: -0.2 }, // "Note", "Remind me"
+  pill: { fontFamily: fonts.semibold, fontSize: 15, lineHeight: 20 },
 } satisfies Record<string, TextStyle>;
 
 export type TypeVariant = keyof typeof type;
@@ -104,6 +106,26 @@ export const size = {
   fieldHeight: 52,
 } as const;
 
+// Save sheet layout, measured from design/2. Save from any app@2x.png.
+export const sheet = {
+  paddingX: 20,
+  paddingTop: 20,
+  previewThumb: 48,
+  previewGap: 12,
+  previewToSavedTo: 16,
+  savedToIcon: 26,
+  savedToGap: 12, // icon to "Saved to"
+  savedToToPills: 12,
+  pillsToTags: 12,
+  tagsToNote: 20,
+  labelToField: 8,
+  noteHeight: 48,
+  pillGap: 8,
+  pillPaddingX: 12,
+  bottom: 8, // below Done, above the home indicator
+  highlightPadX: 4,
+} as const;
+
 // Welcome screen layout, measured from the design.
 export const welcome = {
   logoTop: 16, // below the safe area
@@ -126,5 +148,5 @@ export const welcome = {
   highlightPadX: 2,
 } as const;
 
-export const theme = { colors, fonts, type, tabularNums, spacing, radius, size, welcome } as const;
+export const theme = { colors, fonts, type, tabularNums, spacing, radius, size, welcome, sheet } as const;
 export default theme;

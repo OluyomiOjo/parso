@@ -1,9 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
+import { ShareIntentProvider } from 'expo-share-intent';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
+import { ShareHandler } from '@/components/ShareHandler';
 import { AuthProvider, useSession } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/theme';
@@ -32,6 +34,7 @@ function RootStack() {
       <Stack.Protected guard={session !== null}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="paste" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="save/[id]" options={{ presentation: 'modal' }} />
       </Stack.Protected>
       <Stack.Protected guard={session === null}>
         <Stack.Screen name="welcome" />
@@ -42,11 +45,14 @@ function RootStack() {
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <StatusBar style="dark" />
-        <RootStack />
-      </AuthProvider>
-    </QueryClientProvider>
+    <ShareIntentProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <StatusBar style="dark" />
+          <RootStack />
+          <ShareHandler />
+        </AuthProvider>
+      </QueryClientProvider>
+    </ShareIntentProvider>
   );
 }

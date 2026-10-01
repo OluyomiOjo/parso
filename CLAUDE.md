@@ -29,7 +29,7 @@ Automatic background screenshot import, web app, browser extension, sharing or c
 
 - Expo (latest stable SDK), TypeScript, expo-router for navigation.
 - EAS preview builds (internal distribution, JavaScript bundled in) from day one. The owner is not technical and has no computer running a dev server, so every build must run on its own. Claude runs all EAS commands from the cloud session (EXPO_TOKEN and the App Store Connect API key are environment variables). Expo Go cannot run the share extension.
-- Share extension: expo-share-intent (or current maintained equivalent). Verify it supports the current SDK before installing.
+- Share extension: expo-share-intent 8.x (supports SDK 57). On iOS, sharing opens the Parso app, which shows the save sheet; the owner chose this over a custom in-extension view (no maintained package supports SDK 57). App Group `group.ai.parso.app`. expo-image-manipulator shrinks shared photos before upload.
 - Supabase: Auth, Postgres, Storage (thumbnails, images), pgvector, Edge Functions.
 - AI: OpenAI GPT-6 Luna (`gpt-6-luna`) from Supabase Edge Functions only, never from the app, through the `npm:openai` package. The owner chose it over Claude Haiku 4.5 after a side-by-side test on real saves in step 4 (similar quality, about 9 times cheaper). All AI calls go through `describeSave()` in `supabase/functions/_shared/ai.ts`, so the provider can be swapped there.
 - Embeddings for search: an embeddings provider called from Edge Functions (Voyage AI is the default choice). Keep the provider behind one function so it can be swapped.
