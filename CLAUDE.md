@@ -36,6 +36,7 @@ Automatic background screenshot import, web app, browser extension, sharing or c
 - Notifications: expo-notifications (local scheduled notifications for reminders).
 - Fonts: Inter loaded with expo-font and bundled in the app.
 - Launch screen and system appearance: expo-splash-screen, expo-system-ui.
+- Auth: @supabase/supabase-js with @react-native-async-storage/async-storage for the session, expo-apple-authentication and @react-native-google-signin/google-signin for native sign-in, expo-crypto for the Apple nonce.
 - State and data: TanStack Query for server data. No Redux.
 - Secrets live in environment variables and Supabase secrets. Never commit keys. Never put the Claude or embeddings key in the app bundle.
 

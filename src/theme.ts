@@ -35,6 +35,13 @@ export const type = {
   button: { fontFamily: fonts.semibold, fontSize: 16, lineHeight: 20 },
   tabLabel: { fontFamily: fonts.medium, fontSize: 11, lineHeight: 14 },
   tabLabelActive: { fontFamily: fonts.bold, fontSize: 11, lineHeight: 14 },
+  // Welcome screen, measured from design/1. Welcome and sign in@2x.png.
+  welcomeTitle: { fontFamily: fonts.extrabold, fontSize: 42, lineHeight: 43, letterSpacing: -1.7 },
+  welcomeBody: { fontFamily: fonts.regular, fontSize: 17, lineHeight: 24.5 },
+  demoQuery: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 20 },
+  demoTitle: { fontFamily: fonts.semibold, fontSize: 15, lineHeight: 20, letterSpacing: -0.2 },
+  demoMeta: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18 },
+  legal: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 16 },
 } satisfies Record<string, TextStyle>;
 
 export type TypeVariant = keyof typeof type;
@@ -52,6 +59,8 @@ export const spacing = {
   sectionGapLarge: 20,
   titleInset: 4, // titles and section headings sit 4 in from panel edges
   titleTop: 12, // space between safe area and screen title
+  buttonGap: 10, // between stacked full-width buttons
+  iconLabelGap: 8, // icon before a button label
 } as const;
 
 export const radius = {
@@ -59,6 +68,8 @@ export const radius = {
   button: 14,
   pill: 18,
   thumb: 10,
+  field: 12,
+  highlight: 3,
 } as const;
 
 export const size = {
@@ -75,7 +86,30 @@ export const size = {
   tabBarPaddingBottom: 0, // the home-indicator inset already gives the space the design shows
   tabBarPaddingX: 16,
   tabLabelGap: 2,
+  buttonIcon: 18,
 } as const;
 
-export const theme = { colors, fonts, type, tabularNums, spacing, radius, size } as const;
+// Welcome screen layout, measured from the design.
+export const welcome = {
+  logoTop: 16, // below the safe area
+  logoHeight: 28,
+  logoAspect: 1274 / 351, // parso_logo_new.png
+  titleTop: 52,
+  bodyTop: 18,
+  cardTop: 32,
+  cardPadding: 12,
+  fieldHeight: 44,
+  fieldPaddingX: 14,
+  fieldIcon: 18,
+  fieldIconGap: 9,
+  resultTop: 14,
+  resultPadding: 14, // around the result row inside the card
+  resultThumb: 52,
+  resultGap: 12,
+  legalTop: 20,
+  bottom: 8, // below the legal line, above the home indicator
+  highlightPadX: 2,
+} as const;
+
+export const theme = { colors, fonts, type, tabularNums, spacing, radius, size, welcome } as const;
 export default theme;
