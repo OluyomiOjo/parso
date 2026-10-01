@@ -1,0 +1,136 @@
+// Generated from the Supabase schema (generate_typescript_types). Regenerate after each migration.
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.18"
+  }
+  public: {
+    Tables: {
+      collections: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_smart: boolean
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_smart?: boolean
+          name: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_smart?: boolean
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      saves: {
+        Row: {
+          collection_id: string | null
+          created_at: string
+          embedding: string | null
+          fts: unknown
+          id: string
+          kind: string
+          note: string | null
+          processed_at: string | null
+          raw_text: string | null
+          reminder_at: string | null
+          snippet: string | null
+          source: string
+          summary: string | null
+          tags: string[]
+          thumbnail_path: string | null
+          title: string | null
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          collection_id?: string | null
+          created_at?: string
+          embedding?: string | null
+          fts?: unknown
+          id?: string
+          kind: string
+          note?: string | null
+          processed_at?: string | null
+          raw_text?: string | null
+          reminder_at?: string | null
+          snippet?: string | null
+          source?: string
+          summary?: string | null
+          tags?: string[]
+          thumbnail_path?: string | null
+          title?: string | null
+          url?: string | null
+          user_id?: string
+        }
+        Update: {
+          collection_id?: string | null
+          created_at?: string
+          embedding?: string | null
+          fts?: unknown
+          id?: string
+          kind?: string
+          note?: string | null
+          processed_at?: string | null
+          raw_text?: string | null
+          reminder_at?: string | null
+          snippet?: string | null
+          source?: string
+          summary?: string | null
+          tags?: string[]
+          thumbnail_path?: string | null
+          title?: string | null
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saves_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      tags_to_text: { Args: { tags: string[] }; Returns: string }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type PublicSchema = Database["public"]
+
+export type Tables<T extends keyof PublicSchema["Tables"]> = PublicSchema["Tables"][T]["Row"]
+export type TablesInsert<T extends keyof PublicSchema["Tables"]> = PublicSchema["Tables"][T]["Insert"]
+export type TablesUpdate<T extends keyof PublicSchema["Tables"]> = PublicSchema["Tables"][T]["Update"]

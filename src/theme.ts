@@ -10,6 +10,7 @@ export const colors = {
   divider: '#E1E3E7',
   controlBorder: '#CDD0D6',
   highlighter: '#FFCC2A',
+  dashedBorder: '#B9BDC5', // "Or paste a link" outline, from design/3b
 } as const;
 
 // Family names match each TTF's PostScript name, so the same name works on iOS and Android.
@@ -42,6 +43,8 @@ export const type = {
   demoTitle: { fontFamily: fonts.semibold, fontSize: 15, lineHeight: 20, letterSpacing: -0.2 },
   demoMeta: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18 },
   legal: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 16 },
+  rowMeta: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18 },
+  sheetTitle: { fontFamily: fonts.extrabold, fontSize: 28, lineHeight: 34, letterSpacing: -0.9 },
 } satisfies Record<string, TextStyle>;
 
 export type TypeVariant = keyof typeof type;
@@ -61,6 +64,13 @@ export const spacing = {
   titleTop: 12, // space between safe area and screen title
   buttonGap: 10, // between stacked full-width buttons
   iconLabelGap: 8, // icon before a button label
+  headingToPanel: 10, // section heading to the panel below it
+  rowPaddingX: 14,
+  rowPaddingY: 12.5,
+  rowGap: 12, // thumbnail to text
+  sheetTop: 24,
+  fieldPaddingX: 16,
+  errorTop: 8,
 } as const;
 
 export const radius = {
@@ -87,6 +97,11 @@ export const size = {
   tabBarPaddingX: 16,
   tabLabelGap: 2,
   buttonIcon: 18,
+  iconButton: 40, // round header button, e.g. paste a link
+  iconButtonIcon: 20,
+  thumbIcon: 22, // placeholder icon inside an empty thumbnail
+  iconStroke: 1.8,
+  fieldHeight: 52,
 } as const;
 
 // Welcome screen layout, measured from the design.
