@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 
 import type { Tables } from './database.types';
 import { useSession } from './auth';
@@ -29,6 +30,48 @@ export function useSaves() {
         .limit(LIST_LIMIT);
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+// Processing happens on the server after a save is created; refresh the list whenever one of
+// this user's saves changes so new titles and thumbnails appear without pulling down.
+export function useSavesLiveUpdates() {
+  const queryClient = useQueryClient();
+  const { session } = useSession();
+  const userId = session?.user.id;
+
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`saves:${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'saves', filter: `user_id=eq.${userId}` },
+        () => queryClient.invalidateQueries({ queryKey: savesKey(userId) }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient, userId]);
+}
+
+const SIGNED_URL_SECONDS = 60 * 60;
+
+// Thumbnails live in a private bucket; sign every path in the list with one request.
+export function useThumbnailUrls(paths: string[]) {
+  const sorted = [...new Set(paths)].sort();
+  return useQuery({
+    queryKey: ['thumbnails', sorted],
+    enabled: sorted.length > 0,
+    staleTime: (SIGNED_URL_SECONDS - 5 * 60) * 1000, // re-sign before the links expire
+    queryFn: async (): Promise<Record<string, string>> => {
+      const { data, error } = await supabase.storage.from('thumbnails').createSignedUrls(sorted, SIGNED_URL_SECONDS);
+      if (error) throw error;
+      const urls: Record<string, string> = {};
+      for (const item of data) if (item.path && item.signedUrl) urls[item.path] = item.signedUrl;
+      return urls;
     },
   });
 }

@@ -9,13 +9,17 @@ import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { Text } from '@/components/Text';
 import { LinkIcon } from '@/icons/LinkIcon';
-import { useSaves } from '@/lib/saves';
+import { useSaves, useSavesLiveUpdates, useThumbnailUrls } from '@/lib/saves';
 import { colors, size, spacing } from '@/theme';
 
 const openPaste = () => router.push('/paste');
 
 export default function HomeScreen() {
   const { data: saves, isPending, isError, isRefetching, refetch } = useSaves();
+  useSavesLiveUpdates();
+  const { data: thumbnails } = useThumbnailUrls(
+    (saves ?? []).flatMap((save) => (save.thumbnail_path ? [save.thumbnail_path] : [])),
+  );
   const hasSaves = (saves?.length ?? 0) > 0;
 
   return (
@@ -49,7 +53,11 @@ export default function HomeScreen() {
             </Text>
             <ListPanel>
               {saves!.map((save) => (
-                <SaveRow key={save.id} save={save} />
+                <SaveRow
+                  key={save.id}
+                  save={save}
+                  thumbnailUrl={save.thumbnail_path ? thumbnails?.[save.thumbnail_path] : undefined}
+                />
               ))}
             </ListPanel>
           </View>

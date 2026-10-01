@@ -4,8 +4,13 @@ const SOURCE_LABELS: Record<Exclude<Source, 'other'>, string> = {
   instagram: 'Instagram',
   tiktok: 'TikTok',
   x: 'X',
+  threads: 'Threads',
   youtube: 'YouTube',
   facebook: 'Facebook',
+  pinterest: 'Pinterest',
+  linkedin: 'LinkedIn',
+  reddit: 'Reddit',
+  spotify: 'Spotify',
   safari: 'Safari',
   whatsapp: 'WhatsApp',
 };

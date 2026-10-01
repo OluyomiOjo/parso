@@ -1,12 +1,30 @@
-export type Source = 'instagram' | 'tiktok' | 'x' | 'youtube' | 'facebook' | 'safari' | 'whatsapp' | 'other';
+export type Source =
+  | 'instagram'
+  | 'tiktok'
+  | 'x'
+  | 'threads'
+  | 'youtube'
+  | 'facebook'
+  | 'pinterest'
+  | 'linkedin'
+  | 'reddit'
+  | 'spotify'
+  | 'safari'
+  | 'whatsapp'
+  | 'other';
 
 // Hosts (and their subdomains) that map to a known source.
 const SOURCE_HOSTS: [Source, string[]][] = [
   ['instagram', ['instagram.com', 'instagr.am']],
   ['tiktok', ['tiktok.com']],
   ['x', ['x.com', 'twitter.com', 't.co']],
+  ['threads', ['threads.net', 'threads.com']],
   ['youtube', ['youtube.com', 'youtu.be']],
   ['facebook', ['facebook.com', 'fb.com', 'fb.watch']],
+  ['pinterest', ['pinterest.com', 'pinterest.co.uk', 'pinterest.ca', 'pinterest.com.au', 'pin.it']],
+  ['linkedin', ['linkedin.com', 'lnkd.in']],
+  ['reddit', ['reddit.com', 'redd.it']],
+  ['spotify', ['spotify.com', 'spotify.link']],
   ['whatsapp', ['whatsapp.com', 'wa.me']],
 ];
 
