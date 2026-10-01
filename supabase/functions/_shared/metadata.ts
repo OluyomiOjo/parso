@@ -22,6 +22,12 @@ const OEMBED: Record<string, (url: string) => string> = {
   spotify: (u) => `https://open.spotify.com/oembed?url=${encodeURIComponent(u)}`,
 };
 
+// X's oEmbed only accepts the plain post address, not /video/1 or /photo/1 or tracking parameters.
+function canonicalXUrl(url: string): string {
+  const match = /(?:x|twitter)\.com\/([^/?#]+)\/status\/(\d+)/i.exec(url);
+  return match ? `https://x.com/${match[1]}/status/${match[2]}` : url;
+}
+
 // Pages that only show a login wall to anonymous visitors; fetching them adds nothing.
 const LOGIN_WALLED = new Set(['facebook']);
 
@@ -94,12 +100,16 @@ export function parseMetaTags(html: string): LinkMetadata {
 async function fromOEmbed(source: string, url: string): Promise<LinkMetadata> {
   const endpoint = OEMBED[source];
   if (!endpoint) return {};
-  const res = await fetchWithTimeout(endpoint(url), 'application/json');
+  const res = await fetchWithTimeout(endpoint(source === 'x' ? canonicalXUrl(url) : url), 'application/json');
   if (!res) return {};
   try {
     const data = await res.json();
     // X returns the post text only inside its embed HTML.
-    const text = source === 'x' ? clean(/<p[^>]*>([\s\S]*?)<\/p>/i.exec(data.html ?? '')?.[1]) : undefined;
+    // A post with only media has just a pic.twitter.com link as its text; drop it.
+    const text =
+      source === 'x'
+        ? clean(/<p[^>]*>([\s\S]*?)<\/p>/i.exec(data.html ?? '')?.[1]?.replace(/pic\.twitter\.com\/\S+/g, ''))
+        : undefined;
     return {
       title: clean(data.title),
       description: text,

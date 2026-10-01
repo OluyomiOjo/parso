@@ -1,11 +1,10 @@
-// The one place that talks to an AI provider. describeSave() returns the same result shape for every provider,
-// so the provider can be swapped by changing the ai_provider setting.
-import Anthropic from 'npm:@anthropic-ai/sdk@^0';
+// The one place that talks to the AI provider. To swap providers, add a path here that returns the same
+// DescribeResult; nothing else in the pipeline depends on which model runs.
 import OpenAI from 'npm:openai@^6';
 
 import { toBase64, type ImageData } from './image.ts';
 
-export type Provider = 'anthropic' | 'openai';
+export type Provider = 'openai';
 
 export type SaveDescription = {
   title: string;
@@ -31,8 +30,8 @@ export type DescribeResult = {
   durationMs: number;
 };
 
+// Chosen by the owner after a side-by-side test against Claude Haiku 4.5 on real saves (step 4).
 const MODELS: Record<Provider, { id: string; inputPerM: number; outputPerM: number }> = {
-  anthropic: { id: 'claude-haiku-4-5-20251001', inputPerM: 1.0, outputPerM: 5.0 },
   openai: { id: 'gpt-6-luna', inputPerM: 0.1, outputPerM: 0.5 },
 };
 
@@ -43,7 +42,7 @@ const SCHEMA = {
   properties: {
     title: { type: 'string', description: 'What this is, in at most 60 characters.' },
     snippet: { type: 'string', description: 'One line that adds a useful detail, at most 80 characters.' },
-    summary: { type: 'string', description: 'At most two short sentences.' },
+    summary: { type: 'string', description: 'One or two short sentences, never more.' },
     tags: { type: 'array', items: { type: 'string' }, description: 'At most 5 lowercase tags.' },
     collection: { type: 'string', description: 'An existing collection name, or a new short one.' },
   },
@@ -53,65 +52,44 @@ const SYSTEM_PROMPT = `You file things people save from Instagram, TikTok, X, Yo
 
 For each save you get the link, whatever public details could be fetched, sometimes a preview image, and the person's existing collections. Write:
 - title: what the thing actually is, in plain words (for example "Garlic butter steak tortellini" or "5 quiet beaches near Lisbon"), not the page or account name. Sentence case, no emoji, no hashtags, at most 60 characters.
-- snippet: one line with the most useful detail (an ingredient, a place, a price, the key idea), at most 80 characters.
-- summary: at most two short sentences on what it is and why someone would come back to it.
+- snippet: one line with the most useful detail (an ingredient, a place, a price, a date, the key idea), at most 80 characters.
+- summary: one or two short sentences, never more, on what it is and why someone would come back to it.
 - tags: up to 5 lowercase words or short phrases someone might search for. Include the main subject and type (for example "recipe", "pasta").
-- collection: reuse an existing collection when it fits. Otherwise invent a short, broad name of one or two words in title case (for example "Recipes", "Travel", "Home ideas", "Fitness", "Reading list"). Prefer broad over narrow.
+- collection: reuse an existing collection whenever it fits, even loosely. Only when none fits, invent a short, broad name of one or two words in sentence case (for example "Recipes", "Travel", "Home ideas", "Fitness", "Reading list"). Pick by what the thing is about, not where it was posted.
 
-Use the image when the text is thin: describe what it shows. Never invent facts that aren't in the text or the image. If there is almost nothing to go on, say plainly what the link is (for example "Instagram reel from @avnstudio") and file it under a sensible broad collection.`;
+Only use facts that appear in the text or the image. When the details are thin, describe only what is actually there (for example "Video from @WilliamsRuto on X") and never guess the topic from the account, the link or general knowledge.`;
 
 function userText(input: DescribeInput): string {
   const collections = input.collections.length ? input.collections.join(', ') : 'none yet';
   return `${input.text}\nExisting collections: ${collections}`;
 }
 
-// Enforce the limits the schema can't express.
-function tidy(raw: SaveDescription): SaveDescription {
+// A sentence ends at . ! or ? followed by a space and a capital letter, digit or quote. Abbreviations
+// like "St." followed by a capitalised name can split early; that only makes a summary shorter.
+const SENTENCE_END = /(?<=[.!?])\s+(?=[A-Z0-9"“'‘(])/u;
+
+export function firstSentences(text: string, max: number): string {
+  return text.trim().split(SENTENCE_END).slice(0, max).join(' ');
+}
+
+// Capitalise the first letter only, so acronyms like "UX design" survive.
+const capitalised = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+
+// Enforce the limits the schema can't express. The summary is capped at two sentences whatever the
+// model returns (owner's rule).
+export function tidy(raw: SaveDescription): SaveDescription {
   const cut = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
   return {
     title: cut(raw.title.trim(), 60),
     snippet: cut(raw.snippet.trim(), 80),
-    summary: raw.summary.trim(),
+    summary: firstSentences(raw.summary, 2),
     tags: [...new Set(raw.tags.map((t) => t.trim().toLowerCase()).filter(Boolean))].slice(0, 5),
-    collection: cut(raw.collection.trim(), 40) || 'Saved',
+    collection: capitalised(cut(raw.collection.trim(), 40)) || 'Saved',
   };
 }
 
 const cost = (p: Provider, inTok: number, outTok: number) =>
   (inTok * MODELS[p].inputPerM + outTok * MODELS[p].outputPerM) / 1_000_000;
-
-async function viaAnthropic(input: DescribeInput): Promise<Omit<DescribeResult, 'durationMs'>> {
-  const client = new Anthropic(); // reads ANTHROPIC_API_KEY
-  const content: Anthropic.ContentBlockParam[] = [];
-  if (input.image) {
-    content.push({
-      type: 'image',
-      source: { type: 'base64', media_type: input.image.mediaType, data: toBase64(input.image.bytes) },
-    });
-  }
-  content.push({ type: 'text', text: userText(input) });
-
-  const response = await client.messages.create({
-    model: MODELS.anthropic.id,
-    max_tokens: 1024,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: 'user', content }],
-    output_config: { format: { type: 'json_schema', schema: SCHEMA } },
-  });
-  if (response.stop_reason === 'refusal') throw new Error('Declined by the model');
-  if (response.stop_reason === 'max_tokens') throw new Error('Output cut off');
-  const text = response.content.find((b) => b.type === 'text');
-  if (!text || text.type !== 'text') throw new Error('No text in response');
-  const { input_tokens, output_tokens } = response.usage;
-  return {
-    provider: 'anthropic',
-    model: MODELS.anthropic.id,
-    output: tidy(JSON.parse(text.text)),
-    inputTokens: input_tokens,
-    outputTokens: output_tokens,
-    costUsd: cost('anthropic', input_tokens, output_tokens),
-  };
-}
 
 async function viaOpenAI(input: DescribeInput): Promise<Omit<DescribeResult, 'durationMs'>> {
   const client = new OpenAI(); // reads OPENAI_API_KEY
@@ -147,6 +125,6 @@ async function viaOpenAI(input: DescribeInput): Promise<Omit<DescribeResult, 'du
 
 export async function describeSave(provider: Provider, input: DescribeInput): Promise<DescribeResult> {
   const started = Date.now();
-  const result = provider === 'openai' ? await viaOpenAI(input) : await viaAnthropic(input);
+  const result = await viaOpenAI(input);
   return { ...result, durationMs: Date.now() - started };
 }

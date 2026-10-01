@@ -31,7 +31,7 @@ Automatic background screenshot import, web app, browser extension, sharing or c
 - EAS preview builds (internal distribution, JavaScript bundled in) from day one. The owner is not technical and has no computer running a dev server, so every build must run on its own. Claude runs all EAS commands from the cloud session (EXPO_TOKEN and the App Store Connect API key are environment variables). Expo Go cannot run the share extension.
 - Share extension: expo-share-intent (or current maintained equivalent). Verify it supports the current SDK before installing.
 - Supabase: Auth, Postgres, Storage (thumbnails, images), pgvector, Edge Functions.
-- AI: Claude API from Supabase Edge Functions only, never from the app. Use a small fast model (claude-haiku-4-5-20251001) for per-save processing.
+- AI: OpenAI GPT-6 Luna (`gpt-6-luna`) from Supabase Edge Functions only, never from the app, through the `npm:openai` package. The owner chose it over Claude Haiku 4.5 after a side-by-side test on real saves in step 4 (similar quality, about 9 times cheaper). All AI calls go through `describeSave()` in `supabase/functions/_shared/ai.ts`, so the provider can be swapped there.
 - Embeddings for search: an embeddings provider called from Edge Functions (Voyage AI is the default choice). Keep the provider behind one function so it can be swapped.
 - Notifications: expo-notifications (local scheduled notifications for reminders).
 - Fonts: Inter loaded with expo-font and bundled in the app.
@@ -45,7 +45,7 @@ Ask before adding any dependency not listed here.
 ## Data model (Supabase)
 
 - `collections`: id, user_id, name, description, is_smart (bool), created_at.
-- `saves`: id, user_id, collection_id, kind (link | image | screenshot | text), source (instagram | tiktok | x | youtube | facebook | safari | whatsapp | other), url, title, snippet, summary, tags (text[]), note, thumbnail_path, raw_text, reminder_at (timestamptz, nullable), created_at, processed_at, embedding (vector).
+- `saves`: id, user_id, collection_id, kind (link | image | screenshot | text), source (instagram | tiktok | x | threads | youtube | facebook | pinterest | linkedin | reddit | spotify | safari | whatsapp | other), url, title, snippet, summary, tags (text[]), note, thumbnail_path, raw_text, reminder_at (timestamptz, nullable), created_at, processed_at, embedding (vector).
 - Row Level Security on every table: users read and write only their own rows.
 - Full-text index on title, snippet, summary, tags, note, raw_text.
 
@@ -54,8 +54,8 @@ Ask before adding any dependency not listed here.
 1. App inserts a save row immediately with whatever it has (URL, shared text, image). The user sees "Saved to ..." within one second; never block on AI.
 2. Edge Function `process-save` runs on insert:
    a. Fetch metadata: Open Graph tags; TikTok and other public oEmbed endpoints where available. Instagram often returns little without an approved Meta app: fall back to URL plus any shared caption text. Never scrape behind logins.
-   b. For images and screenshots: send the image to Claude for a description and any visible text.
-   c. Ask Claude for strict JSON: title, snippet (max 80 chars), summary (max 2 sentences), tags (max 5, lowercase), collection (existing name or a new short name).
+   b. For images and screenshots: send the image to the AI for a description and any visible text.
+   c. Ask the AI for strict JSON: title, snippet (max 80 chars), summary (max 2 sentences, enforced in code), tags (max 5, lowercase), collection (existing name or a new short name). Only facts from the fetched text or image; never guess a topic when the details are thin.
    d. Create the embedding, write everything back, set processed_at.
 3. The app updates the row live (Supabase realtime or refetch).
 

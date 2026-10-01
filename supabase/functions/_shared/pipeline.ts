@@ -29,7 +29,31 @@ export const admin = (): SupabaseClient =>
 export async function getConfig(db: SupabaseClient): Promise<{ secret: string; aiProvider: Provider }> {
   const { data, error } = await db.rpc('get_processing_config').single<{ secret: string; ai_provider: string }>();
   if (error || !data) throw new Error(`Config unavailable: ${error?.message}`);
-  return { secret: data.secret, aiProvider: data.ai_provider === 'openai' ? 'openai' : 'anthropic' };
+  return { secret: data.secret, aiProvider: 'openai' };
+}
+
+// Same host list as the app's src/lib/links.ts. Re-checked here so links saved by an older app build,
+// or short links the app can't recognise, still get the right platform.
+const SOURCE_HOSTS: [string, string[]][] = [
+  ['instagram', ['instagram.com', 'instagr.am']],
+  ['tiktok', ['tiktok.com']],
+  ['x', ['x.com', 'twitter.com', 't.co']],
+  ['threads', ['threads.net', 'threads.com']],
+  ['youtube', ['youtube.com', 'youtu.be']],
+  ['facebook', ['facebook.com', 'fb.com', 'fb.watch']],
+  ['pinterest', ['pinterest.com', 'pinterest.co.uk', 'pinterest.ca', 'pinterest.com.au', 'pin.it']],
+  ['linkedin', ['linkedin.com', 'lnkd.in']],
+  ['reddit', ['reddit.com', 'redd.it']],
+  ['spotify', ['spotify.com', 'spotify.link']],
+  ['whatsapp', ['whatsapp.com', 'wa.me']],
+];
+
+export function detectSource(url: string): string {
+  const host = /^https?:\/\/([^/?#:]+)/i.exec(url)?.[1]?.toLowerCase().replace(/^www\./, '') ?? '';
+  for (const [source, hosts] of SOURCE_HOSTS) {
+    if (hosts.some((h) => host === h || host.endsWith(`.${h}`))) return source;
+  }
+  return 'other';
 }
 
 // Constant-time comparison so the secret can't be guessed from response timing.
@@ -114,6 +138,7 @@ export async function processSave(db: SupabaseClient, saveId: string, provider: 
     .eq('id', saveId)
     .single<Save>();
   if (!save || save.processed_at) return;
+  if (save.source === 'other' && save.url) save.source = detectSource(save.url);
 
   const prepared = await prepare(db, save);
   let result: DescribeResult | null = null;
@@ -131,6 +156,7 @@ export async function processSave(db: SupabaseClient, saveId: string, provider: 
   await db
     .from('saves')
     .update({
+      source: save.source,
       title,
       snippet,
       summary,
