@@ -28,7 +28,7 @@ Automatic background screenshot import, web app, browser extension, sharing or c
 ## Stack
 
 - Expo (latest stable SDK), TypeScript, expo-router for navigation.
-- Development builds via EAS from day one. Expo Go cannot run the share extension.
+- EAS preview builds (internal distribution, JavaScript bundled in) from day one. The owner is not technical and has no computer running a dev server, so every build must run on its own. Claude runs all EAS commands from the cloud session (EXPO_TOKEN and the App Store Connect API key are environment variables). Expo Go cannot run the share extension.
 - Share extension: expo-share-intent (or current maintained equivalent). Verify it supports the current SDK before installing.
 - Supabase: Auth, Postgres, Storage (thumbnails, images), pgvector, Edge Functions.
 - AI: Claude API from Supabase Edge Functions only, never from the app. Use a small fast model (claude-haiku-4-5-20251001) for per-save processing.
@@ -131,7 +131,7 @@ Do not use: ALL-CAPS labels, text joined with middle dots, emoji in UI, gradient
 
 Build one slice at a time. Each slice ends with the app running on a device, a short summary of what changed, and a git commit. Do not start the next slice until the current one works.
 
-1. Project setup: Expo app, TypeScript, expo-router, Inter, design tokens in one `theme.ts`, tab bar with four empty screens. EAS development build running on an iPhone.
+1. Project setup: Expo app, TypeScript, expo-router, Inter, design tokens in one `theme.ts`, tab bar with four empty screens. EAS preview build running on an iPhone.
 2. Supabase: project, tables, RLS, Apple and Google sign in, welcome screen.
 3. Paste a link: save row created, Home list shows it (unprocessed title is the URL).
 4. `process-save` Edge Function: metadata, Claude JSON, collection assignment. Home updates when processing finishes.
