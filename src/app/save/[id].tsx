@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { CollectionPills } from '@/components/CollectionPills';
+import { RemindMe } from '@/components/RemindMe';
 import { SavedTo } from '@/components/SavedTo';
 import { SheetPreview } from '@/components/SheetPreview';
 import { Text } from '@/components/Text';
@@ -38,7 +39,10 @@ export default function SaveSheet() {
     <SafeAreaView style={styles.safe} edges={['bottom']}>
       {save ? (
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <SheetPreview save={save} thumbnailUrl={save.thumbnail_path ? thumbnails?.[save.thumbnail_path] : undefined} />
+          <SheetPreview
+            save={save}
+            thumbnailUrl={save.thumbnail_path ? thumbnails?.[save.thumbnail_path] : undefined}
+          />
           <View style={styles.savedTo}>
             <SavedTo collection={filed ? collection!.name : null} />
           </View>
@@ -62,6 +66,9 @@ export default function SaveSheet() {
               ) : null}
             </>
           ) : null}
+          <View style={styles.remind}>
+            <RemindMe save={save} track />
+          </View>
           <View style={styles.noteBlock}>
             <Text variant="sheetLabel" accessibilityRole="header">
               Note
@@ -93,6 +100,7 @@ const styles = StyleSheet.create({
   savedTo: { marginTop: sheet.previewToSavedTo },
   pills: { marginTop: sheet.savedToToPills, marginHorizontal: -sheet.paddingX },
   tags: { marginTop: sheet.pillsToTags },
+  remind: { marginTop: sheet.tagsToNote },
   noteBlock: { marginTop: sheet.tagsToNote, gap: sheet.labelToField },
   note: {
     height: sheet.noteHeight,

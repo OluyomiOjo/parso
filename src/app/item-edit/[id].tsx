@@ -5,14 +5,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { CollectionPills } from '@/components/CollectionPills';
+import { RemindMe } from '@/components/RemindMe';
 import { TagEditor, withTag } from '@/components/TagEditor';
 import { Text } from '@/components/Text';
 import { useCollections, useCreateCollection } from '@/lib/collections';
 import { useSave, useUpdateSave } from '@/lib/saves';
 import { colors, detail, radius, sheet, size, spacing, type } from '@/theme';
 
-type Field = 'collection' | 'tags' | 'note';
-const TITLES: Record<Field, string> = { collection: 'Collection', tags: 'Tags', note: 'Note' };
+type Field = 'collection' | 'tags' | 'reminder' | 'note';
+const TITLES: Record<Field, string> = { collection: 'Collection', tags: 'Tags', reminder: 'Reminder', note: 'Note' };
 const SAVE_FAILED = "Couldn't save the change. Check your connection and tap Save again.";
 
 // One sheet for the three things a person can change on the detail page.
@@ -66,6 +67,12 @@ export default function EditSaveScreen() {
         </View>
       ) : null}
 
+      {save && field === 'reminder' ? (
+        <View style={styles.block}>
+          <RemindMe save={save} />
+        </View>
+      ) : null}
+
       {save && field === 'note' ? (
         <TextInput
           value={note ?? save.note ?? ''}
@@ -88,7 +95,11 @@ export default function EditSaveScreen() {
 
       {/* Right under the field, like the paste sheet, so the keyboard never covers it. */}
       <View style={styles.button}>
-        <Button label={field === 'collection' ? 'Done' : 'Save'} onPress={done} busy={updateSave.isPending} />
+        <Button
+          label={field === 'collection' || field === 'reminder' ? 'Done' : 'Save'}
+          onPress={done}
+          busy={updateSave.isPending}
+        />
       </View>
     </View>
   );

@@ -185,8 +185,6 @@ export const collectionScreen = {
   headerToTitle: 16,
   titleToDescription: 6,
   descriptionToFilter: 20,
-  filterHeight: 38,
-  filterRadius: 10,
   filterToList: 20,
 } as const;
 
@@ -226,6 +224,25 @@ export const detail = {
   noteHeight: 140,
 } as const;
 
+// Segmented control: equal segments, the chosen one on a white chip (design 2 "Remind me", design 5 filter).
+export const segmented = {
+  height: 44,
+  radius: 12,
+  inset: 4, // track padding around the chips
+  chipRadius: 9,
+} as const;
+
+// Reminder card on My Parsos, measured from design/3. Home@2x.png.
+export const reminderCard = {
+  padding: 12,
+  tile: 44,
+  tileRadius: 12,
+  icon: 22,
+  gap: 12,
+  buttonHeight: 36,
+  buttonPaddingX: 16,
+} as const;
+
 export const theme = {
   colors,
   brandColors,
@@ -241,5 +258,7 @@ export const theme = {
   collectionScreen,
   search,
   detail,
+  segmented,
+  reminderCard,
 } as const;
 export default theme;

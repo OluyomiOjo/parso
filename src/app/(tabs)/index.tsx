@@ -5,6 +5,7 @@ import { CollectionCard } from '@/components/CollectionCard';
 import { IconButton } from '@/components/IconButton';
 import { ListPanel } from '@/components/ListPanel';
 import { PasteLinkButton } from '@/components/PasteLinkButton';
+import { ReminderCard } from '@/components/ReminderCard';
 import { SaveRow } from '@/components/SaveRow';
 import { SearchFieldButton } from '@/components/SearchField';
 import { Screen } from '@/components/Screen';
@@ -12,6 +13,7 @@ import { ScreenTitle } from '@/components/ScreenTitle';
 import { Text } from '@/components/Text';
 import { LinkIcon } from '@/icons/LinkIcon';
 import { useCollectionOverview } from '@/lib/collections';
+import { useNextReminder } from '@/lib/reminders';
 import { useSaves, useSavesLiveUpdates, useThumbnailUrls } from '@/lib/saves';
 import { card, colors, size, spacing } from '@/theme';
 
@@ -22,6 +24,7 @@ const openSearch = () => router.navigate('/search');
 export default function HomeScreen() {
   const { data: saves, isPending, isError, isRefetching, refetch } = useSaves();
   const { data: collections, refetch: refetchCollections } = useCollectionOverview();
+  const { data: nextReminder } = useNextReminder();
   useSavesLiveUpdates();
   // One signing request for the list and the collection tiles together.
   const { data: thumbnails } = useThumbnailUrls([
@@ -63,6 +66,11 @@ export default function HomeScreen() {
             <View style={styles.section}>
               <SearchFieldButton onPress={openSearch} />
             </View>
+            {nextReminder ? (
+              <View style={styles.reminder}>
+                <ReminderCard save={nextReminder} />
+              </View>
+            ) : null}
             {collections?.length ? (
               <View style={styles.section}>
                 <View style={[styles.heading, styles.headingRow]}>
@@ -129,6 +137,7 @@ const styles = StyleSheet.create({
     marginRight: spacing.titleInset,
   },
   section: { marginTop: spacing.sectionGapLarge },
+  reminder: { marginTop: spacing.sectionGap },
   heading: {
     paddingHorizontal: spacing.titleInset,
     marginBottom: spacing.headingToPanel,

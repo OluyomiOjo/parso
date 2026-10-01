@@ -13,6 +13,7 @@ import { ExternalLinkIcon } from '@/icons/ExternalLinkIcon';
 import { useCollections } from '@/lib/collections';
 import { itemLabel, openLabel, relativeTime } from '@/lib/format';
 import { displayUrl } from '@/lib/links';
+import { shortReminder } from '@/lib/reminderTime';
 import { DELETE_FAILED, useDeleteSave, useSave, useThumbnailUrls } from '@/lib/saves';
 import { colors, detail, size, spacing } from '@/theme';
 
@@ -53,7 +54,7 @@ export default function SaveDetailScreen() {
   const title = save.title ?? (save.url ? displayUrl(save.url) : 'Saving…');
   const collection = collections.find((c) => c.id === save.collection_id);
   const open = openLabel(save.kind, save.source, save.url);
-  const edit = (field: 'collection' | 'tags' | 'note') =>
+  const edit = (field: 'collection' | 'tags' | 'reminder' | 'note') =>
     router.push({ pathname: '/item-edit/[id]', params: { id: save.id, field } });
 
   const confirmDelete = () =>
@@ -121,6 +122,12 @@ export default function SaveDetailScreen() {
                   value: save.tags.length ? save.tags.join(', ') : null,
                   placeholder: 'Add tags',
                   onPress: () => edit('tags'),
+                },
+                {
+                  label: 'Reminder',
+                  value: save.reminder_at ? shortReminder(new Date(save.reminder_at)) : null,
+                  placeholder: 'Off',
+                  onPress: () => edit('reminder'),
                 },
                 { label: 'Note', value: save.note, placeholder: 'Add a note', onPress: () => edit('note') },
               ]}

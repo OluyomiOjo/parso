@@ -64,6 +64,8 @@
           ]
         }
       ],
+      "./plugins/withLocalNotificationsOnly",
+      "expo-notifications",
       [
         "./plugins/withShareExtensionFixes",
         {

@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 
 import { ShareHandler } from '@/components/ShareHandler';
 import { AuthProvider, useSession } from '@/lib/auth';
+import { configureNotifications, useReminderSync, useReminderTaps } from '@/lib/reminders';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/theme';
 
@@ -14,6 +15,7 @@ import { colors } from '@/theme';
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+configureNotifications();
 
 // Drop every cached list on sign-out, so the next account never sees the last one's saves.
 supabase.auth.onAuthStateChange((event) => {
@@ -46,6 +48,13 @@ function RootStack() {
   );
 }
 
+// Keeps the phone's reminder notifications in step with the saves, and opens a save from its notification.
+function Reminders() {
+  useReminderSync();
+  useReminderTaps();
+  return null;
+}
+
 export default function RootLayout() {
   return (
     <ShareIntentProvider>
@@ -54,6 +63,7 @@ export default function RootLayout() {
           <StatusBar style="dark" />
           <RootStack />
           <ShareHandler />
+          <Reminders />
         </AuthProvider>
       </QueryClientProvider>
     </ShareIntentProvider>

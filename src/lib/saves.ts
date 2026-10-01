@@ -36,10 +36,11 @@ export type SaveDetail = Pick<
   | 'thumbnail_path'
   | 'created_at'
   | 'processed_at'
+  | 'reminder_at'
 >;
 
 const DETAIL_COLUMNS =
-  'id, kind, source, url, title, snippet, summary, raw_text, tags, note, collection_id, thumbnail_path, created_at, processed_at';
+  'id, kind, source, url, title, snippet, summary, raw_text, tags, note, collection_id, thumbnail_path, created_at, processed_at, reminder_at';
 
 export function useSaves() {
   const { session } = useSession();
@@ -183,7 +184,7 @@ export function useUpdateSave(id: string) {
   const queryClient = useQueryClient();
   const { session } = useSession();
   return useMutation({
-    mutationFn: async (changes: Partial<Pick<SaveDetail, 'collection_id' | 'note' | 'tags'>>) => {
+    mutationFn: async (changes: Partial<Pick<SaveDetail, 'collection_id' | 'note' | 'tags' | 'reminder_at'>>) => {
       const { error } = await supabase.from('saves').update(changes).eq('id', id);
       if (error) throw error;
     },
