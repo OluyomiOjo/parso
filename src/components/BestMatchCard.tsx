@@ -10,7 +10,9 @@ import { HighlightedText } from './HighlightedText';
 import { SourceLine } from './SourceLine';
 
 // The top search result: a full-width picture, then the title and where it came from.
-export function BestMatchCard({ result, thumbnailUrl }: { result: SearchResult; thumbnailUrl?: string }) {
+type Props = { result: SearchResult; thumbnailUrl?: string; onOpen?: () => void };
+
+export function BestMatchCard({ result, thumbnailUrl, onOpen }: Props) {
   const title = result.title ?? (result.url ? displayUrl(result.url) : 'Saving…');
   const meta = [
     `${itemLabel(result.kind, result.source, result.url)}, saved ${relativeTime(result.created_at)}`,
@@ -18,7 +20,10 @@ export function BestMatchCard({ result, thumbnailUrl }: { result: SearchResult; 
   ].join('');
   return (
     <Pressable
-      onPress={() => router.push(`/save/${result.id}`)}
+      onPress={() => {
+        onOpen?.();
+        router.push(`/item/${result.id}`);
+      }}
       accessibilityRole="button"
       accessibilityLabel={`Best match: ${title}. ${meta}`}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}

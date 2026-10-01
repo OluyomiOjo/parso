@@ -14,10 +14,11 @@ type InputProps = {
   onChangeText: (text: string) => void;
   inputRef?: RefObject<TextInput | null>;
   autoFocus?: boolean;
+  onSubmit?: () => void;
 };
 
 // The Search tab's field: black outline, search icon, and a clear button once something is typed.
-export function SearchField({ value, onChangeText, inputRef, autoFocus }: InputProps) {
+export function SearchField({ value, onChangeText, inputRef, autoFocus, onSubmit }: InputProps) {
   return (
     <View style={[styles.field, styles.focused]}>
       <SearchIcon color={colors.ink} size={search.icon} strokeWidth={size.iconStroke} />
@@ -30,6 +31,7 @@ export function SearchField({ value, onChangeText, inputRef, autoFocus }: InputP
         autoFocus={autoFocus}
         autoCorrect={false}
         returnKeyType="search"
+        onSubmitEditing={onSubmit}
         clearButtonMode="never"
         accessibilityLabel="Search"
         style={styles.input}

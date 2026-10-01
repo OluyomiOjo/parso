@@ -59,6 +59,8 @@ export const type = {
   demoMeta: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18 },
   legal: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 16 },
   rowMeta: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18 },
+  detailLabel: { fontFamily: fonts.regular, fontSize: 16, lineHeight: 20 },
+  detailValue: { fontFamily: fonts.medium, fontSize: 16, lineHeight: 20 },
   sheetTitle: { fontFamily: fonts.extrabold, fontSize: 28, lineHeight: 34, letterSpacing: -0.9 },
   sheetLabel: { fontFamily: fonts.bold, fontSize: 15, lineHeight: 20, letterSpacing: -0.2 }, // "Note", "Remind me"
   pill: { fontFamily: fonts.semibold, fontSize: 15, lineHeight: 20 },
@@ -206,6 +208,24 @@ export const search = {
   debounceMs: 300,
 } as const;
 
+// Save detail screen, measured from design/6. Saved item@2x.png.
+export const detail = {
+  imageHeight: 340,
+  headerTop: 8, // below the safe area, for the round back button
+  imageToMeta: 20,
+  metaToTitle: 6,
+  titleToSummary: 10,
+  summaryToPanel: 16,
+  rowHeight: 51,
+  rowGap: 16, // label to value
+  panelToDelete: 8,
+  buttonAreaTop: 12, // above the fixed Open in … button
+  bottom: 8, // below it, above the home indicator
+  tagGap: 8,
+  tagRemoveIcon: 14,
+  noteHeight: 140,
+} as const;
+
 export const theme = {
   colors,
   brandColors,
@@ -220,5 +240,6 @@ export const theme = {
   card,
   collectionScreen,
   search,
+  detail,
 } as const;
 export default theme;

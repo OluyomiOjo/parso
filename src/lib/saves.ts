@@ -22,8 +22,24 @@ const saveKey = (id: string) => ['save', id] as const;
 
 export type SaveDetail = Pick<
   Tables<'saves'>,
-  'id' | 'kind' | 'source' | 'url' | 'title' | 'snippet' | 'tags' | 'note' | 'collection_id' | 'thumbnail_path' | 'processed_at'
+  | 'id'
+  | 'kind'
+  | 'source'
+  | 'url'
+  | 'title'
+  | 'snippet'
+  | 'summary'
+  | 'raw_text'
+  | 'tags'
+  | 'note'
+  | 'collection_id'
+  | 'thumbnail_path'
+  | 'created_at'
+  | 'processed_at'
 >;
+
+const DETAIL_COLUMNS =
+  'id, kind, source, url, title, snippet, summary, raw_text, tags, note, collection_id, thumbnail_path, created_at, processed_at';
 
 export function useSaves() {
   const { session } = useSession();
@@ -154,23 +170,20 @@ export function useSave(id: string) {
   return useQuery({
     queryKey: saveKey(id),
     queryFn: async (): Promise<SaveDetail> => {
-      const { data, error } = await supabase
-        .from('saves')
-        .select('id, kind, source, url, title, snippet, tags, note, collection_id, thumbnail_path, processed_at')
-        .eq('id', id)
-        .single();
+      const { data, error } = await supabase.from('saves').select(DETAIL_COLUMNS).eq('id', id).single();
       if (error) throw error;
       return data;
     },
   });
 }
 
-// Changes the person makes in the save sheet: move to a collection, add a note.
+// Changes the person makes in the save sheet or on the detail page: collection, note, tags. The database
+// refreshes the save's search data after each change (trigger in migration 0011).
 export function useUpdateSave(id: string) {
   const queryClient = useQueryClient();
   const { session } = useSession();
   return useMutation({
-    mutationFn: async (changes: Partial<Pick<SaveDetail, 'collection_id' | 'note'>>) => {
+    mutationFn: async (changes: Partial<Pick<SaveDetail, 'collection_id' | 'note' | 'tags'>>) => {
       const { error } = await supabase.from('saves').update(changes).eq('id', id);
       if (error) throw error;
     },
@@ -185,6 +198,34 @@ export function useUpdateSave(id: string) {
       queryClient.invalidateQueries({ queryKey: saveKey(id) });
       queryClient.invalidateQueries({ queryKey: savesKey(session?.user.id) });
       queryClient.invalidateQueries({ queryKey: ['collections', session?.user.id] }); // counts and tiles
+      queryClient.invalidateQueries({ queryKey: ['search', session?.user.id] });
+    },
+  });
+}
+
+export const DELETE_FAILED = "Couldn't delete this save. Check your connection and try again.";
+
+// Removes the save, then its pictures (thumbnail, and the original upload for photos and screenshots).
+// A picture left behind by a failed file delete is harmless: nothing points at it any more.
+export function useDeleteSave(save: Pick<SaveDetail, 'id' | 'kind' | 'thumbnail_path'> | undefined) {
+  const queryClient = useQueryClient();
+  const { session } = useSession();
+  const userId = session?.user.id;
+  return useMutation({
+    mutationFn: async () => {
+      if (!save || !userId) throw new Error(DELETE_FAILED);
+      const { error } = await supabase.from('saves').delete().eq('id', save.id);
+      if (error) throw new Error(DELETE_FAILED);
+      if (save.thumbnail_path) await supabase.storage.from('thumbnails').remove([save.thumbnail_path]);
+      if (save.kind === 'image' || save.kind === 'screenshot') {
+        await supabase.storage.from('uploads').remove([`${userId}/${save.id}.jpg`]);
+      }
+    },
+    onSuccess: () => {
+      if (save) queryClient.removeQueries({ queryKey: saveKey(save.id) });
+      queryClient.invalidateQueries({ queryKey: savesKey(userId) });
+      queryClient.invalidateQueries({ queryKey: ['collections', userId] });
+      queryClient.invalidateQueries({ queryKey: ['search', userId] });
     },
   });
 }

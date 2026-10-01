@@ -11,18 +11,21 @@ import { colors, radius, size, spacing } from '@/theme';
 import { HighlightedText } from './HighlightedText';
 import { SourceLine } from './SourceLine';
 
-type Props = { save: SaveListItem; thumbnailUrl?: string; matches?: Match[] };
+type Props = { save: SaveListItem; thumbnailUrl?: string; matches?: Match[]; onOpen?: () => void };
 
-export function SaveRow({ save, thumbnailUrl, matches = [] }: Props) {
+export function SaveRow({ save, thumbnailUrl, matches = [], onOpen }: Props) {
   // Until processing (step 4) writes a title, the URL is the title.
   const title = save.title ?? (save.url ? displayUrl(save.url) : 'Saving…');
   const meta = `${itemLabel(save.kind, save.source, save.url)}, ${relativeTime(save.created_at)}`;
 
   return (
-    // Opens the save sheet, where the save can be moved to another collection. Saves still being
-    // inserted (optimistic rows) have no server id yet, so they can't be opened.
+    // Opens the save's detail page. Saves still being inserted (optimistic rows) have no server id yet,
+    // so they can't be opened.
     <Pressable
-      onPress={() => router.push(`/save/${save.id}`)}
+      onPress={() => {
+        onOpen?.();
+        router.push(`/item/${save.id}`);
+      }}
       disabled={save.id.startsWith('pending-')}
       accessibilityRole="button"
       accessibilityLabel={`${title}. ${meta}`}

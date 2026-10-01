@@ -233,8 +233,10 @@ async function writeEmbeddings(db: SupabaseClient, saves: EmbeddableSave[]) {
   }
 }
 
-async function storeEmbedding(db: SupabaseClient, saveId: string, userId: string) {
-  const { data } = await db.from('saves').select(EMBED_COLUMNS).eq('id', saveId).eq('user_id', userId).single();
+export async function storeEmbedding(db: SupabaseClient, saveId: string, userId?: string) {
+  let query = db.from('saves').select(EMBED_COLUMNS).eq('id', saveId);
+  if (userId) query = query.eq('user_id', userId);
+  const { data } = await query.single();
   if (data) await writeEmbeddings(db, [data as unknown as EmbeddableSave]);
 }
 

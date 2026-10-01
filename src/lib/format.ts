@@ -20,6 +20,15 @@ export function sourceLabel(source: string, url: string | null): string {
   return (url && displayHost(url)) || 'Link';
 }
 
+// The fixed button on the detail page: the platform's own app for platform links, the browser for websites.
+// Photos, screenshots and notes have no link to open.
+export function openLabel(kind: string, source: string, url: string | null): string | null {
+  if (kind !== 'link' || !url) return null;
+  return source in SOURCE_LABELS && source !== 'safari'
+    ? `Open in ${SOURCE_LABELS[source as keyof typeof SOURCE_LABELS]}`
+    : 'Open in browser';
+}
+
 const KIND_LABELS: Record<string, string> = { screenshot: 'Screenshot', image: 'Photo', text: 'Note' };
 
 // What a save is, for meta lines: the platform for links, otherwise the kind of thing shared.

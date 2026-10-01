@@ -21,6 +21,7 @@ In scope:
 7. Reminders on a save (Tonight, Weekend, Next week, Never) via local push notifications.
 8. Save detail screen with note, tags, reminder and "Open in [source]".
 9. Intro screens (3), welcome and sign in, empty state.
+10. Delete a save, with a confirmation (owner-approved in step 8).
 
 Out of scope for v1 (do not build, do not scaffold):
 Automatic background screenshot import, web app, browser extension, sharing or collaboration, comments, social features, dark mode, payments, crypto or tokens of any kind.
@@ -74,9 +75,9 @@ Designs live in the Parso App Screens canvas (Clean page). Exported PNGs of each
 2. Save sheet (share extension UI): item preview, brand icon plus "Saved to [Collection]" with the collection highlighted, collection pills, tags line, Remind me segmented control, optional note, Done.
 3. Home ("My Parsos"): search field, reminder card, Collections row, Recent list.
 3b. Home empty state: "Save your first thing" with share-sheet instructions and "Or paste a link".
-4. Search: focused search field, kind filter pills, result count, best match with large image, other results as list rows.
+4. Search: focused search field, kind filter pills, result count, best match with large image, other results as list rows. Before typing: recent searches (stored on the phone) and "Try" pills built from the person's own tags, apps and collections.
 5. Collection: back and rename buttons (the design's share button waits until sharing is in scope), name, description line (written by the AI once per collection), segmented filter by kind, list rows.
-6. Save detail: full-width image, source line, title, summary, details panel (Collection, Tags, Reminder, Note), fixed "Open in [source]" button.
+6. Save detail: full-width image, source line, title, summary, details panel (Collection, Tags, Reminder, Note), fixed "Open in [source]" button. The design's share button waits until sharing is in scope; the Reminder row arrives with step 9. "Delete save" sits under the panel. Tapping a save anywhere opens this screen; sharing into Parso still shows the save sheet.
 
 Tab bar: My Parsos, Search, Collections, You.
 

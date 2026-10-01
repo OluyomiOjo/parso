@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
 import { useSession } from './auth';
+import { sourceLabel } from './format';
 import type { SaveListItem } from './saves';
 import { supabase } from './supabase';
 
@@ -47,4 +48,40 @@ export function useSearch(query: string, kind: string | null, debounceMs: number
       return data.results;
     },
   });
+}
+
+const MAX_SUGGESTIONS = 8;
+
+// "Try" pills for the empty Search tab, built from the person's own saves: their most common tags, their
+// most-used apps ("from Instagram") and their collections, so every pill finds something.
+export function useSearchSuggestions(collectionNames: string[]) {
+  const { session } = useSession();
+  const userId = session?.user.id;
+  const { data } = useQuery({
+    queryKey: ['search', userId, 'suggestions'],
+    enabled: Boolean(userId),
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('saves').select('tags, source, kind').limit(500);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const rows = data ?? [];
+  const count = (values: string[]) => {
+    const counts = new Map<string, number>();
+    for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([v]) => v);
+  };
+  const tags = count(rows.flatMap((r) => r.tags)).slice(0, 4);
+  const apps = count(rows.filter((r) => r.kind === 'link' && r.source !== 'other').map((r) => r.source))
+    .slice(0, 2)
+    .map((s) => `from ${sourceLabel(s, null)}`);
+
+  const suggestions: string[] = [];
+  for (const s of [...tags, ...apps, ...collectionNames.map((n) => n.toLowerCase())]) {
+    if (!suggestions.some((existing) => existing.toLowerCase() === s.toLowerCase())) suggestions.push(s);
+  }
+  return suggestions.slice(0, MAX_SUGGESTIONS);
 }

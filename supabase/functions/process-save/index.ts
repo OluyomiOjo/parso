@@ -1,6 +1,6 @@
 // Called by the database trigger on every new save (see migration 0005). Replies straight away and
 // processes in the background, so the trigger's HTTP call never waits on the AI.
-import { admin, embedMissing, getConfig, processSave, secretMatches } from '../_shared/pipeline.ts';
+import { admin, embedMissing, getConfig, processSave, secretMatches, storeEmbedding } from '../_shared/pipeline.ts';
 
 // Provided by the Supabase Edge Runtime: keeps the worker alive until the promise settles.
 declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void };
@@ -15,8 +15,9 @@ Deno.serve(async (req) => {
 
   let saveId: unknown;
   let embedMissingOnly: unknown;
+  let embedSaveId: unknown;
   try {
-    ({ save_id: saveId, embed_missing: embedMissingOnly } = await req.json());
+    ({ save_id: saveId, embed_missing: embedMissingOnly, embed_save: embedSaveId } = await req.json());
   } catch {
     return new Response('Bad request', { status: 400 });
   }
@@ -24,6 +25,14 @@ Deno.serve(async (req) => {
   if (embedMissingOnly === true) {
     const count = await embedMissing(db);
     return Response.json({ embedded: count });
+  }
+  // After a person edits tags, note or collection (trigger in migration 0011): refresh that save's search
+  // data only. The AI does not run again.
+  if (typeof embedSaveId === 'string') {
+    EdgeRuntime.waitUntil(
+      storeEmbedding(db, embedSaveId).catch((error) => console.error('re-embed failed', embedSaveId, error)),
+    );
+    return Response.json({ accepted: embedSaveId }, { status: 202 });
   }
   if (typeof saveId !== 'string') return new Response('Bad request', { status: 400 });
 

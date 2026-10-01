@@ -7,10 +7,13 @@ import { ListPanel } from '@/components/ListPanel';
 import { Pill } from '@/components/Pill';
 import { SaveRow } from '@/components/SaveRow';
 import { Screen } from '@/components/Screen';
+import { SearchStart } from '@/components/SearchStart';
 import { SearchField } from '@/components/SearchField';
 import { Text } from '@/components/Text';
+import { useCollectionOverview } from '@/lib/collections';
+import { useRecentSearches } from '@/lib/recentSearches';
 import { useThumbnailUrls } from '@/lib/saves';
-import { SEARCH_FAILED, useSearch } from '@/lib/search';
+import { SEARCH_FAILED, useSearch, useSearchSuggestions } from '@/lib/search';
 import { colors, search, sheet, spacing, tabularNums } from '@/theme';
 
 const KIND_PILLS = [
@@ -44,13 +47,18 @@ export default function SearchScreen() {
     }, []),
   );
 
+  const { recent, add: remember, clear: clearRecent } = useRecentSearches();
+  const { data: collections } = useCollectionOverview();
+  const suggestions = useSearchSuggestions((collections ?? []).map((c) => c.name));
+  const rememberQuery = () => remember(query);
+
   const typed = query.trim() !== '';
   const [best, ...rest] = typed ? (results ?? []) : [];
 
   return (
     <Screen>
       <View style={styles.field}>
-        <SearchField value={query} onChangeText={setQuery} inputRef={inputRef} />
+        <SearchField value={query} onChangeText={setQuery} inputRef={inputRef} onSubmit={rememberQuery} />
       </View>
       <ScrollView
         horizontal
@@ -72,9 +80,7 @@ export default function SearchScreen() {
         showsVerticalScrollIndicator={false}
       >
         {!typed ? (
-          <Text variant="secondary" color={colors.secondary} style={styles.message}>
-            Search in your own words, like “visa bulletin” or “glass house from Instagram”.
-          </Text>
+          <SearchStart recent={recent} suggestions={suggestions} onPick={setQuery} onClearRecent={clearRecent} />
         ) : isError && !results ? (
           <Text variant="secondary" color={colors.secondary} style={styles.message}>
             {SEARCH_FAILED}
@@ -93,6 +99,7 @@ export default function SearchScreen() {
             {best ? (
               <BestMatchCard
                 result={best}
+                onOpen={rememberQuery}
                 thumbnailUrl={best.thumbnail_path ? thumbnails?.[best.thumbnail_path] : undefined}
               />
             ) : null}
@@ -104,6 +111,7 @@ export default function SearchScreen() {
                       key={r.id}
                       save={r}
                       matches={r.matches}
+                      onOpen={rememberQuery}
                       thumbnailUrl={r.thumbnail_path ? thumbnails?.[r.thumbnail_path] : undefined}
                     />
                   ))}
