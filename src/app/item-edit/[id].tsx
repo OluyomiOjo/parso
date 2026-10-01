@@ -1,11 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { CollectionPills } from '@/components/CollectionPills';
-import { TagEditor } from '@/components/TagEditor';
+import { TagEditor, withTag } from '@/components/TagEditor';
 import { Text } from '@/components/Text';
 import { useCollections, useCreateCollection } from '@/lib/collections';
 import { useSave, useUpdateSave } from '@/lib/saves';
@@ -23,13 +23,15 @@ export default function EditSaveScreen() {
   const createCollection = useCreateCollection();
   const updateSave = useUpdateSave(id);
   const [tags, setTags] = useState<string[] | null>(null);
+  const [tagDraft, setTagDraft] = useState('');
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const done = () => {
+    const finalTags = save ? withTag(tags ?? save.tags, tagDraft) : null;
     const changes =
-      field === 'tags' && tags !== null
-        ? { tags }
+      field === 'tags' && finalTags && (tags !== null || tagDraft.trim())
+        ? { tags: finalTags }
         : field === 'note' && note !== null
           ? { note: note.trim() || null }
           : null;
@@ -40,54 +42,61 @@ export default function EditSaveScreen() {
 
   return (
     <SafeAreaView style={styles.sheet} edges={['bottom']}>
-      <View style={styles.content}>
-        <Text variant="sheetTitle" accessibilityRole="header">
-          {TITLES[field] ?? TITLES.note}
-        </Text>
-
-        {save && field === 'collection' ? (
-          <View style={[styles.block, styles.pills]}>
-            <CollectionPills
-              collections={collections}
-              selectedId={save.collection_id}
-              edgeInset={sheet.paddingX}
-              onSelect={(collectionId) => updateSave.mutate({ collection_id: collectionId })}
-              onCreate={(name) =>
-                createCollection.mutate(name, { onSuccess: (c) => updateSave.mutate({ collection_id: c.id }) })
-              }
-            />
-          </View>
-        ) : null}
-
-        {save && field === 'tags' ? (
-          <View style={styles.block}>
-            <TagEditor tags={tags ?? save.tags} onChange={setTags} />
-          </View>
-        ) : null}
-
-        {save && field === 'note' ? (
-          <TextInput
-            value={note ?? save.note ?? ''}
-            onChangeText={setNote}
-            placeholder="Why you saved it"
-            placeholderTextColor={colors.secondary}
-            multiline
-            autoFocus
-            textAlignVertical="top"
-            accessibilityLabel="Note"
-            style={[styles.block, styles.note]}
-          />
-        ) : null}
-
-        {error ? (
-          <Text variant="secondary" style={styles.error} accessibilityLiveRegion="polite">
-            {error}
+      {/* Keeps the Save button above the keyboard while typing a tag or a note. */}
+      <KeyboardAvoidingView
+        style={styles.sheet}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={sheet.keyboardOffset}
+      >
+        <View style={styles.content}>
+          <Text variant="sheetTitle" accessibilityRole="header">
+            {TITLES[field] ?? TITLES.note}
           </Text>
-        ) : null}
-      </View>
-      <View style={styles.footer}>
-        <Button label={field === 'collection' ? 'Done' : 'Save'} onPress={done} busy={updateSave.isPending} />
-      </View>
+
+          {save && field === 'collection' ? (
+            <View style={[styles.block, styles.pills]}>
+              <CollectionPills
+                collections={collections}
+                selectedId={save.collection_id}
+                edgeInset={sheet.paddingX}
+                onSelect={(collectionId) => updateSave.mutate({ collection_id: collectionId })}
+                onCreate={(name) =>
+                  createCollection.mutate(name, { onSuccess: (c) => updateSave.mutate({ collection_id: c.id }) })
+                }
+              />
+            </View>
+          ) : null}
+
+          {save && field === 'tags' ? (
+            <View style={styles.block}>
+              <TagEditor tags={tags ?? save.tags} onChange={setTags} draft={tagDraft} onDraftChange={setTagDraft} />
+            </View>
+          ) : null}
+
+          {save && field === 'note' ? (
+            <TextInput
+              value={note ?? save.note ?? ''}
+              onChangeText={setNote}
+              placeholder="Why you saved it"
+              placeholderTextColor={colors.secondary}
+              multiline
+              autoFocus
+              textAlignVertical="top"
+              accessibilityLabel="Note"
+              style={[styles.block, styles.note]}
+            />
+          ) : null}
+
+          {error ? (
+            <Text variant="secondary" style={styles.error} accessibilityLiveRegion="polite">
+              {error}
+            </Text>
+          ) : null}
+        </View>
+        <View style={styles.footer}>
+          <Button label={field === 'collection' ? 'Done' : 'Save'} onPress={done} busy={updateSave.isPending} />
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

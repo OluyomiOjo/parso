@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { CloseIcon } from '@/icons/CloseIcon';
@@ -10,17 +9,26 @@ import { Text } from './Text';
 export const MAX_TAGS = 10;
 const TAG_MAX_LENGTH = 30;
 
-type Props = { tags: string[]; onChange: (tags: string[]) => void };
+// Adds the typed tag (lowercase, single spaces) unless it's empty, already there, or over the limit.
+export function withTag(tags: string[], draft: string): string[] {
+  const tag = draft.trim().toLowerCase().replace(/\s+/g, ' ');
+  return tag && !tags.includes(tag) && tags.length < MAX_TAGS ? [...tags, tag] : tags;
+}
+
+type Props = {
+  tags: string[];
+  onChange: (tags: string[]) => void;
+  draft: string; // kept by the sheet, so Save also adds a tag that was typed but not yet added
+  onDraftChange: (draft: string) => void;
+};
 
 // Tags as pills with an ×, then a field to add one. Tags are kept lowercase, like the AI writes them.
-export function TagEditor({ tags, onChange }: Props) {
-  const [draft, setDraft] = useState('');
+export function TagEditor({ tags, onChange, draft, onDraftChange }: Props) {
   const full = tags.length >= MAX_TAGS;
 
   const add = () => {
-    const tag = draft.trim().toLowerCase().replace(/\s+/g, ' ');
-    if (tag && !tags.includes(tag) && !full) onChange([...tags, tag]);
-    setDraft('');
+    onChange(withTag(tags, draft));
+    onDraftChange('');
   };
 
   return (
@@ -46,7 +54,7 @@ export function TagEditor({ tags, onChange }: Props) {
       ) : (
         <TextInput
           value={draft}
-          onChangeText={setDraft}
+          onChangeText={onDraftChange}
           onSubmitEditing={add}
           placeholder="Add a tag"
           placeholderTextColor={colors.secondary}

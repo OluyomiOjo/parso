@@ -144,6 +144,8 @@ export const sheet = {
   pillPaddingX: 12,
   bottom: 8, // below Done, above the home indicator
   highlightPadX: 4,
+  // iOS page sheets start below the status bar; KeyboardAvoidingView measures from the screen top.
+  keyboardOffset: 60,
 } as const;
 
 // Welcome screen layout, measured from the design.
