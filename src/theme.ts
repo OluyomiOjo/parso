@@ -36,7 +36,7 @@ export const type = {
   tabLabel: { fontFamily: fonts.medium, fontSize: 11, lineHeight: 14 },
   tabLabelActive: { fontFamily: fonts.bold, fontSize: 11, lineHeight: 14 },
   // Welcome screen, measured from design/1. Welcome and sign in@2x.png.
-  welcomeTitle: { fontFamily: fonts.extrabold, fontSize: 42, lineHeight: 43, letterSpacing: -1.7 },
+  welcomeTitle: { fontFamily: fonts.extrabold, fontSize: 42, lineHeight: 43, letterSpacing: -1.2 },
   welcomeBody: { fontFamily: fonts.regular, fontSize: 17, lineHeight: 24.5 },
   demoQuery: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 20 },
   demoTitle: { fontFamily: fonts.semibold, fontSize: 15, lineHeight: 20, letterSpacing: -0.2 },
@@ -94,9 +94,9 @@ export const welcome = {
   logoTop: 16, // below the safe area
   logoHeight: 28,
   logoAspect: 1274 / 351, // parso_logo_new.png
-  titleTop: 52,
-  bodyTop: 18,
-  cardTop: 32,
+  titleTop: 59, // iOS draws the tight-leaded headline high in its line box; measured on device
+  bodyTop: 13,
+  cardTop: 34,
   cardPadding: 12,
   fieldHeight: 44,
   fieldPaddingX: 14,
