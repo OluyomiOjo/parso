@@ -245,6 +245,7 @@ export const reminderCard = {
   gap: 12,
   buttonHeight: 36,
   buttonPaddingX: 16,
+  moreHitSlop: 8,
 } as const;
 
 // Intro screens, measured from design/0.1 to 0.3 Intro@2x.png. The illustration colours are the designs' own
@@ -284,6 +285,32 @@ export const firstRun = {
   cardToPaste: 20,
 } as const;
 
+// Add to Parso sheet.
+export const addScreen = {
+  textHeight: 140,
+} as const;
+
+// "Save the link you copied" bar on My Parsos. Apple's paste button needs an explicit size.
+export const clipboardBar = {
+  paddingX: 16,
+  paddingY: 10,
+  gap: 10,
+  pasteWidth: 84,
+  pasteHeight: 36,
+  closeIcon: 16,
+  closeHitSlop: 14,
+} as const;
+
+// New-screenshots card on My Parsos.
+export const screenshotsCard = {
+  padding: 16,
+  thumb: 44,
+  thumbGap: 6,
+  textToActions: 12,
+  actionGap: 10,
+  maxThumbs: 3,
+} as const;
+
 export const theme = {
   colors,
   brandColors,
@@ -304,5 +331,8 @@ export const theme = {
   intro,
   illustration,
   firstRun,
+  addScreen,
+  clipboardBar,
+  screenshotsCard,
 } as const;
 export default theme;

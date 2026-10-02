@@ -128,24 +128,26 @@ export function useReminderTaps() {
 
 export type ReminderSave = SaveListItem & { reminder_at: string };
 
-// The reminder card on My Parsos: the earliest reminder still to come. Once its time passes the card goes
-// (owner's choice); the notification has done its job by then.
-export function useNextReminder() {
+// Every reminder still to come, soonest first: the home card shows the first ("and 2 more" for the rest) and
+// the Reminders screen lists them all. Once a reminder's time passes it drops off (owner's choice).
+const UPCOMING_LIMIT = 100;
+
+export function useUpcomingReminders() {
   const { session } = useSession();
   const userId = session?.user.id;
   return useQuery({
-    queryKey: ['saves', userId, 'next-reminder'],
+    queryKey: ['saves', userId, 'upcoming-reminders'],
     enabled: Boolean(userId),
-    refetchInterval: 60_000, // so the card goes away within a minute of its time
-    queryFn: async (): Promise<ReminderSave | null> => {
+    refetchInterval: 60_000, // so a passed reminder goes away within a minute of its time
+    queryFn: async (): Promise<ReminderSave[]> => {
       const { data, error } = await supabase
         .from('saves')
         .select('id, kind, source, url, title, snippet, thumbnail_path, created_at, processed_at, reminder_at')
         .gt('reminder_at', new Date().toISOString())
         .order('reminder_at')
-        .limit(1);
+        .limit(UPCOMING_LIMIT);
       if (error) throw error;
-      return (data[0] as ReminderSave | undefined) ?? null;
+      return data as ReminderSave[];
     },
   });
 }

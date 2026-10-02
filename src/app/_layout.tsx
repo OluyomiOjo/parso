@@ -38,10 +38,11 @@ function RootStack() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
       <Stack.Protected guard={session !== null}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="paste" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="add" options={{ presentation: 'modal' }} />
         <Stack.Screen name="save/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="collection-rename/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="item/[id]" />
+        <Stack.Screen name="reminders" />
         <Stack.Screen name="item-edit/[id]" options={{ presentation: 'modal' }} />
       </Stack.Protected>
       <Stack.Protected guard={session === null && !introSeen}>

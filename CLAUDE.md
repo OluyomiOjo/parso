@@ -22,6 +22,9 @@ In scope:
 8. Save detail screen with note, tags, reminder and "Open in [source]".
 9. Intro screens (3), welcome and sign in, empty state.
 10. Delete a save, with a confirmation (owner-approved in step 8).
+11. Add to Parso screen: a link, typed or pasted text, or a photo from the library (owner-approved in step 10).
+12. New screenshots check: when Parso opens, offer screenshots taken since last time (Screenshots album, full photo access, on/off on the You tab); nothing is saved without a tap. Owner-approved in step 10 in place of background import, which stays out of scope.
+13. A copied link is offered on My Parsos through Apple's paste button (no paste alert), and the reminder card says "and N more" with a Reminders list (owner-approved in step 10).
 
 Out of scope for v1 (do not build, do not scaffold):
 Automatic background screenshot import, web app, browser extension, sharing or collaboration, comments, social features, dark mode, payments, crypto or tokens of any kind.
@@ -35,6 +38,7 @@ Automatic background screenshot import, web app, browser extension, sharing or c
 - AI: OpenAI GPT-6 Luna (`gpt-6-luna`) from Supabase Edge Functions only, never from the app, through the `npm:openai` package. The owner chose it over Claude Haiku 4.5 after a side-by-side test on real saves in step 4 (similar quality, about 9 times cheaper). All AI calls go through `describeSave()` in `supabase/functions/_shared/ai.ts`, so the provider can be swapped there.
 - Embeddings for search: OpenAI `text-embedding-3-small` at 1024 dimensions, called from Edge Functions only (owner-approved in step 7 over Voyage AI: reuses the OpenAI key, $0.02 per million tokens). Keep it behind `embed()` in `supabase/functions/_shared/embeddings.ts` so it can be swapped.
 - Notifications: expo-notifications (local scheduled notifications for reminders). Local only: `plugins/withLocalNotificationsOnly.js` removes the push entitlement (aps-environment) so builds never change Apple provisioning; keep it listed before expo-notifications in app.json. Reminder times (src/lib/reminderTime.ts, tested in tests/): Tonight 8:00 PM (one hour from now after 7:30 PM), Weekend the next Saturday or Sunday 10:00 AM still ahead, Next week the coming Monday 9:00 AM. `saves.reminder_at` is the record; the phone's schedule is synced to it on launch and on every change.
+- Photos and clipboard (owner-approved in step 10): expo-image-picker (Apple's picker, no permission needed), expo-media-library (legacy API, Screenshots album only), expo-clipboard (hasUrlAsync and ClipboardPasteButton, so iOS shows no paste alert).
 - Fonts: Inter loaded with expo-font and bundled in the app.
 - Launch screen and system appearance: expo-splash-screen, expo-system-ui.
 - Auth: @supabase/supabase-js with @react-native-async-storage/async-storage for the session, expo-apple-authentication and @react-native-google-signin/google-signin for native sign-in, expo-crypto for the Apple nonce.

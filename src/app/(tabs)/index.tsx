@@ -1,9 +1,12 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
+import { ClipboardLinkBar } from '@/components/ClipboardLinkBar';
 import { CollectionCard } from '@/components/CollectionCard';
 import { FirstSaveCard } from '@/components/FirstSaveCard';
 import { IconButton } from '@/components/IconButton';
+import { NewScreenshotsCard } from '@/components/NewScreenshotsCard';
 import { ListPanel } from '@/components/ListPanel';
 import { PasteLinkButton } from '@/components/PasteLinkButton';
 import { ReminderCard } from '@/components/ReminderCard';
@@ -12,20 +15,27 @@ import { SearchFieldButton } from '@/components/SearchField';
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { Text } from '@/components/Text';
-import { LinkIcon } from '@/icons/LinkIcon';
+import { PlusIcon } from '@/icons/PlusIcon';
+import { useClipboardLink } from '@/lib/clipboard';
 import { useCollectionOverview } from '@/lib/collections';
-import { useNextReminder } from '@/lib/reminders';
+import { useUpcomingReminders } from '@/lib/reminders';
 import { useSaves, useSavesLiveUpdates, useThumbnailUrls } from '@/lib/saves';
+import { useNewScreenshots } from '@/lib/screenshots';
 import { card, colors, firstRun, size, spacing } from '@/theme';
 
-const openPaste = () => router.push('/paste');
+const openAdd = () => router.push('/add');
 const openCollections = () => router.navigate('/collections');
 const openSearch = () => router.navigate('/search');
 
 export default function HomeScreen() {
   const { data: saves, isPending, isError, isRefetching, refetch } = useSaves();
   const { data: collections, refetch: refetchCollections } = useCollectionOverview();
-  const { data: nextReminder } = useNextReminder();
+  // Checked again on screen, so a reminder left over from before the app went to the background never shows.
+  const upcoming = (useUpcomingReminders().data ?? []).filter((r) => new Date(r.reminder_at) > new Date());
+  const clipboard = useClipboardLink();
+  const shots = useNewScreenshots();
+  // Picks up a change made on the You tab (screenshot check turned on or off).
+  useFocusEffect(useCallback(() => shots.refresh(), [shots.refresh]));
   useSavesLiveUpdates();
   // One signing request for the list and the collection tiles together.
   const { data: thumbnails } = useThumbnailUrls([
@@ -49,12 +59,31 @@ export default function HomeScreen() {
           <ScreenTitle>My Parsos</ScreenTitle>
           {hasSaves ? (
             <View style={styles.headerButton}>
-              <IconButton label="Paste a link" onPress={openPaste}>
-                <LinkIcon color={colors.ink} size={size.iconButtonIcon} strokeWidth={size.iconStroke} />
+              <IconButton label="Add to Parso" onPress={openAdd}>
+                <PlusIcon color={colors.ink} size={size.iconButtonIcon} strokeWidth={size.iconStroke} />
               </IconButton>
             </View>
           ) : null}
         </View>
+
+        {/* Things waiting to be saved: a copied link, then new screenshots. */}
+        {clipboard.hasLink ? (
+          <View style={styles.section}>
+            <ClipboardLinkBar onDone={clipboard.dismiss} />
+          </View>
+        ) : null}
+        {['ask', 'needsFullAccess', 'new'].includes(shots.state.status) ? (
+          <View style={styles.section}>
+            <NewScreenshotsCard
+              state={shots.state}
+              saving={shots.saving}
+              onTurnOn={shots.turnOn}
+              onNotNow={shots.notNow}
+              onSave={shots.saveAll}
+              onChanged={shots.refresh}
+            />
+          </View>
+        ) : null}
 
         {isPending ? (
           <ActivityIndicator style={styles.section} color={colors.secondary} />
@@ -67,10 +96,9 @@ export default function HomeScreen() {
             <View style={styles.section}>
               <SearchFieldButton onPress={openSearch} />
             </View>
-            {/* Checked again on screen, so a card left over from before the app went to the background never shows a past time. */}
-            {nextReminder && new Date(nextReminder.reminder_at) > new Date() ? (
+            {upcoming.length ? (
               <View style={styles.reminder}>
-                <ReminderCard save={nextReminder} />
+                <ReminderCard save={upcoming[0]} more={upcoming.length - 1} />
               </View>
             ) : null}
             {collections?.length ? (
@@ -121,7 +149,7 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <FirstSaveCard />
             <View style={styles.paste}>
-              <PasteLinkButton onPress={openPaste} />
+              <PasteLinkButton onPress={openAdd} />
             </View>
           </View>
         )}

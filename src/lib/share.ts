@@ -25,13 +25,23 @@ function base64ToBytes(base64: string): Uint8Array {
   return bytes;
 }
 
-async function saveImage(file: NonNullable<ShareIntent['files']>[number], userId: string): Promise<ShareResult> {
-  const width = file.width ?? 0;
-  const height = file.height ?? 0;
-  const isScreenshot = file.mimeType === 'image/png' && width > 0 && height / width >= SCREENSHOT_RATIO;
+// An image on the phone, from a share, the photo picker or the Screenshots album.
+export type LocalImage = {
+  uri: string;
+  width?: number | null;
+  height?: number | null;
+  mimeType?: string | null;
+  isScreenshot?: boolean; // known for the Screenshots album; otherwise guessed from shape
+};
+
+export async function saveImage(image: LocalImage, userId: string): Promise<ShareResult> {
+  const width = image.width ?? 0;
+  const height = image.height ?? 0;
+  const isScreenshot =
+    image.isScreenshot ?? (image.mimeType === 'image/png' && width > 0 && height / width >= SCREENSHOT_RATIO);
 
   // Shrink the long side, then re-encode as JPEG.
-  const context = ImageManipulator.manipulate(file.path);
+  const context = ImageManipulator.manipulate(image.uri);
   if (Math.max(width, height) > MAX_IMAGE_SIDE) {
     context.resize(width >= height ? { width: MAX_IMAGE_SIDE } : { height: MAX_IMAGE_SIDE });
   }
@@ -57,6 +67,11 @@ async function saveImage(file: NonNullable<ShareIntent['files']>[number], userId
 function sharedPreviewImage(intent: ShareIntent): string | null {
   const image = intent.meta?.['og:image'] ?? intent.meta?.['twitter:image'];
   return image && /^https:\/\//i.test(image) && image.length <= 2048 ? image : null;
+}
+
+// Typed or pasted text from the Add screen: a link inside it is saved as the link, the rest kept with it.
+export function saveText(text: string): Promise<ShareResult> {
+  return saveLinkOrText({ text, webUrl: null, files: null, type: 'text', meta: null } as ShareIntent);
 }
 
 async function saveLinkOrText(intent: ShareIntent): Promise<ShareResult> {
@@ -89,7 +104,9 @@ async function saveLinkOrText(intent: ShareIntent): Promise<ShareResult> {
 export async function saveShare(intent: ShareIntent, userId: string): Promise<ShareResult> {
   const image = intent.files?.find((f) => f.mimeType.startsWith('image/'));
   try {
-    return image ? await saveImage(image, userId) : await saveLinkOrText(intent);
+    return image
+      ? await saveImage({ uri: image.path, width: image.width, height: image.height, mimeType: image.mimeType }, userId)
+      : await saveLinkOrText(intent);
   } catch {
     return { error: "Couldn't save that. Share it again." };
   }

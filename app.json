@@ -64,6 +64,22 @@
           ]
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Parso checks your Screenshots album when you open it, so you can save new screenshots. Nothing is uploaded unless you tap Save.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Parso checks your Screenshots album when you open it, so you can save new screenshots. Nothing is uploaded unless you tap Save.",
+          "savePhotosPermission": false,
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
       "./plugins/withLocalNotificationsOnly",
       "expo-notifications",
       [

@@ -1,17 +1,30 @@
-import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import * as MediaLibrary from 'expo-media-library/legacy';
+import { useEffect, useState } from 'react';
+import { Alert, Pressable, StyleSheet, Switch, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { Text } from '@/components/Text';
 import { deleteAccount, signOut, useSession } from '@/lib/auth';
-import { colors, spacing } from '@/theme';
+import { screenshotCheckEnabled, setScreenshotCheck } from '@/lib/screenshots';
+import { colors, radius, spacing } from '@/theme';
 
 export default function YouScreen() {
   const { session } = useSession();
   const email = session?.user.email;
   const [deleting, setDeleting] = useState(false);
+  const [checkScreenshots, setCheckScreenshots] = useState(false);
+
+  useEffect(() => {
+    screenshotCheckEnabled().then(setCheckScreenshots);
+  }, []);
+
+  const toggleScreenshots = async (on: boolean) => {
+    setCheckScreenshots(on);
+    await setScreenshotCheck(on);
+    if (on) await MediaLibrary.requestPermissionsAsync(false, ['photo']).catch(() => undefined);
+  };
 
   const confirmDelete = () =>
     Alert.alert('Delete your account?', "This removes all your saves, collections and pictures and can't be undone.", [
@@ -38,6 +51,20 @@ export default function YouScreen() {
             Signed in as {email}
           </Text>
         ) : null}
+        <View style={styles.setting}>
+          <View style={styles.settingText}>
+            <Text variant="rowTitle">Check for new screenshots</Text>
+            <Text variant="secondary" color={colors.secondary}>
+              When you open Parso, offer screenshots taken since last time.
+            </Text>
+          </View>
+          <Switch
+            value={checkScreenshots}
+            onValueChange={toggleScreenshots}
+            trackColor={{ true: colors.ink, false: colors.controlBorder }}
+            accessibilityLabel="Check for new screenshots"
+          />
+        </View>
         <Button label="Sign out" variant="secondary" onPress={signOut} />
         <Pressable
           onPress={confirmDelete}
@@ -58,5 +85,15 @@ export default function YouScreen() {
 const styles = StyleSheet.create({
   content: { marginTop: spacing.sectionGapLarge, gap: spacing.sectionGap },
   email: { paddingHorizontal: spacing.titleInset },
+  setting: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.panel,
+    paddingHorizontal: spacing.rowPaddingX,
+    paddingVertical: spacing.rowPaddingY,
+  },
+  settingText: { flex: 1 },
   delete: { alignSelf: 'flex-start', paddingVertical: spacing.md, paddingHorizontal: spacing.titleInset },
 });

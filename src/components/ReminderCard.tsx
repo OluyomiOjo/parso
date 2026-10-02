@@ -11,7 +11,7 @@ import { colors, radius, reminderCard, size, type } from '@/theme';
 import { Text } from './Text';
 
 // The next reminder on My Parsos (design 3): yellow bell tile, when, what, and Open.
-export function ReminderCard({ save }: { save: ReminderSave }) {
+export function ReminderCard({ save, more = 0 }: { save: ReminderSave; more?: number }) {
   const when = formatReminder(new Date(save.reminder_at));
   const title = save.title ?? (save.url ? displayUrl(save.url) : 'Your save');
   const open = () => router.push(`/item/${save.id}`);
@@ -32,6 +32,16 @@ export function ReminderCard({ save }: { save: ReminderSave }) {
         <Text variant="secondary" color={colors.secondary} numberOfLines={1}>
           {`${title}, saved ${relativeTime(save.created_at)}`}
         </Text>
+        {more > 0 ? (
+          <Pressable
+            onPress={() => router.push('/reminders')}
+            accessibilityRole="button"
+            accessibilityLabel={`See all ${more + 1} reminders`}
+            hitSlop={reminderCard.moreHitSlop}
+          >
+            <Text variant="secondary" style={styles.more}>{`and ${more} more`}</Text>
+          </Pressable>
+        ) : null}
       </View>
       <Pressable onPress={open} accessibilityRole="button" accessibilityLabel={`Open ${title}`} style={styles.button}>
         <Text style={styles.buttonLabel} color={colors.onInk}>
@@ -70,4 +80,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonLabel: type.button,
+  more: { textDecorationLine: 'underline' },
 });

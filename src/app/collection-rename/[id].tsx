@@ -61,7 +61,7 @@ export default function RenameCollectionScreen() {
   );
 }
 
-// Same layout as the paste sheet (src/app/paste.tsx).
+// Same layout as the Add sheet (src/app/add.tsx).
 const styles = StyleSheet.create({
   sheet: {
     flex: 1,
