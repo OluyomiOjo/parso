@@ -67,7 +67,8 @@ export default function HomeScreen() {
             <View style={styles.section}>
               <SearchFieldButton onPress={openSearch} />
             </View>
-            {nextReminder ? (
+            {/* Checked again on screen, so a card left over from before the app went to the background never shows a past time. */}
+            {nextReminder && new Date(nextReminder.reminder_at) > new Date() ? (
               <View style={styles.reminder}>
                 <ReminderCard save={nextReminder} />
               </View>

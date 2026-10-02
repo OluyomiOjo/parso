@@ -13,7 +13,6 @@ import { supabase } from './supabase';
 
 const PREFIX = 'reminder-';
 const BODY = 'You asked Parso to remind you about this.';
-const RECENTLY_DUE_MS = 24 * 60 * 60 * 1000; // the home card keeps a due reminder for a day
 
 // Show reminders as banners even while Parso is open.
 export function configureNotifications() {
@@ -129,19 +128,20 @@ export function useReminderTaps() {
 
 export type ReminderSave = SaveListItem & { reminder_at: string };
 
-// The reminder card on My Parsos: the earliest reminder that is upcoming or came due in the last day.
+// The reminder card on My Parsos: the earliest reminder still to come. Once its time passes the card goes
+// (owner's choice); the notification has done its job by then.
 export function useNextReminder() {
   const { session } = useSession();
   const userId = session?.user.id;
   return useQuery({
     queryKey: ['saves', userId, 'next-reminder'],
     enabled: Boolean(userId),
-    refetchInterval: 60_000, // so "Tonight at 8:00 PM" turns into "Due now" on time
+    refetchInterval: 60_000, // so the card goes away within a minute of its time
     queryFn: async (): Promise<ReminderSave | null> => {
       const { data, error } = await supabase
         .from('saves')
         .select('id, kind, source, url, title, snippet, thumbnail_path, created_at, processed_at, reminder_at')
-        .gte('reminder_at', new Date(Date.now() - RECENTLY_DUE_MS).toISOString())
+        .gt('reminder_at', new Date().toISOString())
         .order('reminder_at')
         .limit(1);
       if (error) throw error;
