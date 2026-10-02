@@ -259,6 +259,17 @@ export async function embedMissing(db: SupabaseClient): Promise<number> {
   return data?.length ?? 0;
 }
 
+// Fetches and stores a picture for one filed link save that has none. The AI does not run.
+async function addThumbnail(db: SupabaseClient, save: Save): Promise<boolean> {
+  if (!save.url) return false;
+  const meta = await fetchLinkMetadata(save.url, save.source);
+  const image = await linkImage(meta.imageUrl, save.preview_image_url);
+  const path = image ? await storeThumbnail(db, save, image) : null;
+  if (!path) return false;
+  await db.from('saves').update({ thumbnail_path: path }).eq('id', save.id).eq('user_id', save.user_id);
+  return true;
+}
+
 // Backfill: adds a picture to filed link saves that have none (for example X posts saved before X pictures
 // were read). Only the picture is fetched and stored; nothing else about the save changes.
 export async function thumbnailMissing(db: SupabaseClient): Promise<number> {
@@ -271,14 +282,18 @@ export async function thumbnailMissing(db: SupabaseClient): Promise<number> {
     .limit(50);
   if (error) throw error;
   let added = 0;
-  for (const save of (data ?? []) as Save[]) {
-    if (!save.url) continue;
-    const meta = await fetchLinkMetadata(save.url, save.source);
-    const image = await linkImage(meta.imageUrl, save.preview_image_url);
-    const path = image ? await storeThumbnail(db, save, image) : null;
-    if (!path) continue;
-    await db.from('saves').update({ thumbnail_path: path }).eq('id', save.id).eq('user_id', save.user_id);
-    added++;
-  }
+  for (const save of (data ?? []) as Save[]) if (await addThumbnail(db, save)) added++;
   return added;
+}
+
+// After the phone found a page's preview picture (trigger in migration 0013).
+export async function thumbnailSave(db: SupabaseClient, saveId: string): Promise<boolean> {
+  const { data } = await db
+    .from('saves')
+    .select('id, user_id, kind, source, url, raw_text, preview_image_url, processed_at')
+    .eq('id', saveId)
+    .eq('kind', 'link')
+    .is('thumbnail_path', null)
+    .maybeSingle();
+  return data ? addThumbnail(db, data as Save) : false;
 }

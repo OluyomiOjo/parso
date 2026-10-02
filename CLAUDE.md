@@ -25,9 +25,10 @@ In scope:
 11. Add to Parso screen: a link, typed or pasted text, or a photo from the library (owner-approved in step 10).
 12. New screenshots check: when Parso opens, offer screenshots taken since last time (Screenshots album, full photo access, on/off on the You tab); nothing is saved without a tap. Owner-approved in step 10 in place of background import, which stays out of scope.
 13. A copied link is offered on My Parsos through Apple's paste button (no paste alert), and the reminder card says "and N more" with a Reminders list (owner-approved in step 10).
+14. Share a save out through the iPhone share sheet (link, note text, or the photo itself), always ending with "Saved with Parso.ai"; Download for photos and screenshots (owner-approved in step 10). Sharing inside Parso (shared collections, other people) stays out of scope.
 
 Out of scope for v1 (do not build, do not scaffold):
-Automatic background screenshot import, web app, browser extension, sharing or collaboration, comments, social features, dark mode, payments, crypto or tokens of any kind.
+Automatic background screenshot import, web app, browser extension, sharing or collaboration inside Parso (sending a save out through the share sheet is in scope, item 14), comments, social features, dark mode, payments, crypto or tokens of any kind.
 
 ## Stack
 
@@ -38,7 +39,7 @@ Automatic background screenshot import, web app, browser extension, sharing or c
 - AI: OpenAI GPT-6 Luna (`gpt-6-luna`) from Supabase Edge Functions only, never from the app, through the `npm:openai` package. The owner chose it over Claude Haiku 4.5 after a side-by-side test on real saves in step 4 (similar quality, about 9 times cheaper). All AI calls go through `describeSave()` in `supabase/functions/_shared/ai.ts`, so the provider can be swapped there.
 - Embeddings for search: OpenAI `text-embedding-3-small` at 1024 dimensions, called from Edge Functions only (owner-approved in step 7 over Voyage AI: reuses the OpenAI key, $0.02 per million tokens). Keep it behind `embed()` in `supabase/functions/_shared/embeddings.ts` so it can be swapped.
 - Notifications: expo-notifications (local scheduled notifications for reminders). Local only: `plugins/withLocalNotificationsOnly.js` removes the push entitlement (aps-environment) so builds never change Apple provisioning; keep it listed before expo-notifications in app.json. Reminder times (src/lib/reminderTime.ts, tested in tests/): Tonight 8:00 PM (one hour from now after 7:30 PM), Weekend the next Saturday or Sunday 10:00 AM still ahead, Next week the coming Monday 9:00 AM. `saves.reminder_at` is the record; the phone's schedule is synced to it on launch and on every change.
-- Photos and clipboard (owner-approved in step 10): expo-image-picker (Apple's picker, no permission needed), expo-media-library (legacy API, Screenshots album only), expo-clipboard (hasUrlAsync and ClipboardPasteButton, so iOS shows no paste alert).
+- Photos and clipboard (owner-approved in step 10): expo-image-picker (Apple's picker, no permission needed), expo-media-library (legacy API, Screenshots album only), expo-clipboard (hasUrlAsync and ClipboardPasteButton, so iOS shows no paste alert). expo-file-system copies a saved photo to the phone for Share and Download (owner-approved in step 10); Download asks only for add-only photo access.
 - Fonts: Inter loaded with expo-font and bundled in the app.
 - Launch screen and system appearance: expo-splash-screen, expo-system-ui.
 - Auth: @supabase/supabase-js with @react-native-async-storage/async-storage for the session, expo-apple-authentication and @react-native-google-signin/google-signin for native sign-in, expo-crypto for the Apple nonce.
@@ -58,7 +59,7 @@ Ask before adding any dependency not listed here.
 
 1. App inserts a save row immediately with whatever it has (URL, shared text, image). The user sees "Saved to ..." within one second; never block on AI.
 2. Edge Function `process-save` runs on insert:
-   a. Fetch metadata: Open Graph tags; TikTok and other public oEmbed endpoints where available. Instagram often returns little without an approved Meta app: fall back to URL plus any shared caption text. Never scrape behind logins.
+   a. Fetch metadata: Open Graph tags; TikTok and other public oEmbed endpoints where available. Instagram often returns little without an approved Meta app: fall back to URL plus any shared caption text. Never scrape behind logins. Some sites refuse our server (Medium): for website links the phone reads the page's og:image into `preview_image_url` (src/lib/previewImage.ts), and a trigger (migration 0013) has the server store it as the thumbnail.
    b. For images and screenshots: send the image to the AI for a description and any visible text.
    c. Ask the AI for strict JSON: title, snippet (max 80 chars), summary (max 2 sentences, enforced in code), tags (max 5, lowercase), collection (existing name or a new short name). Only facts from the fetched text or image; never guess a topic when the details are thin.
    d. Create the embedding, write everything back, set processed_at.
@@ -81,7 +82,7 @@ Designs live in the Parso App Screens canvas (Clean page). Exported PNGs of each
 3b. Home empty state: "Save your first thing" with share-sheet instructions and "Or paste a link".
 4. Search: focused search field, kind filter pills, result count, best match with large image, other results as list rows. Before typing: recent searches (stored on the phone) and "Try" pills built from the person's own tags, apps and collections.
 5. Collection: back and rename buttons (the design's share button waits until sharing is in scope), name, description line (written by the AI once per collection), segmented filter by kind, list rows.
-6. Save detail: full-width image, source line, title, summary, details panel (Collection, Tags, Reminder, Note), fixed "Open in [source]" button. The design's share button waits until sharing is in scope; the Reminder row arrives with step 9. "Delete save" sits under the panel. Tapping a save anywhere opens this screen; sharing into Parso still shows the save sheet.
+6. Save detail: full-width image, source line, title, summary, details panel (Collection, Tags, Reminder, Note), fixed buttons: links get "Open in [source]" and Share; photos and screenshots get Open (full screen), Share and Download; notes get Share. "Delete save" sits under the panel. Tapping a save anywhere opens this screen; sharing into Parso still shows the save sheet.
 
 Tab bar: My Parsos, Search, Collections, You.
 

@@ -221,11 +221,18 @@ export const detail = {
   rowHeight: 51,
   rowGap: 16, // label to value
   panelToDelete: 8,
-  buttonAreaTop: 12, // above the fixed Open in … button
+  buttonAreaTop: 12, // above the fixed buttons (Open, Share, Download)
+  actionGap: 10, // between those buttons
+  shareWidth: 116, // Share beside Open in …
   bottom: 8, // below it, above the home indicator
   tagGap: 8,
   tagRemoveIcon: 14,
   noteHeight: 140,
+} as const;
+
+// Full-screen photo (Open on a photo's detail page).
+export const photoViewer = {
+  maxZoom: 4,
 } as const;
 
 // Segmented control: equal segments, the chosen one on a white chip (design 2 "Remind me", design 5 filter).
