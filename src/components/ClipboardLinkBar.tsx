@@ -14,7 +14,7 @@ type Props = { onDone: () => void };
 // "Save the link you copied" with Apple's own Paste button (no paste alert). Pasting saves the link and opens
 // its save sheet, like sharing it into Parso; a link already saved opens its sheet as "Already in …".
 export function ClipboardLinkBar({ onDone }: Props) {
-  const createLink = useCreateLinkSave();
+  const createLink = useCreateLinkSave('clipboard');
 
   const paste = (data: PasteEventPayload) => {
     const url = data.type === 'text' ? firstUrlIn(data.text) : null;

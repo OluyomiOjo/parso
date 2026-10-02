@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
+import { track } from './track';
+
 // List or grid on My Parsos and Collections, one choice for both, remembered on the phone (owner asked in
 // step 10). Starts on list.
 export type ViewMode = 'list' | 'grid';
@@ -23,6 +25,7 @@ function setMode(next: ViewMode) {
   if (next === mode) return;
   mode = next;
   notify();
+  track('view_switched', { via: next });
   AsyncStorage.setItem(KEY, next).catch(() => undefined);
 }
 

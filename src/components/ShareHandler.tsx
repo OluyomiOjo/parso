@@ -5,6 +5,7 @@ import { Alert } from 'react-native';
 
 import { useSession } from '@/lib/auth';
 import { saveShare } from '@/lib/share';
+import { track } from '@/lib/track';
 
 // Turns whatever was shared into Parso into a save and opens the save sheet. A share that arrives
 // while signed out waits here until sign-in finishes.
@@ -19,8 +20,10 @@ export function ShareHandler() {
     busy.current = true;
     saveShare(shareIntent, userId)
       .then((result) => {
-        if ('saveId' in result) router.push({ pathname: '/save/[id]', params: { id: result.saveId, shared: '1' } });
-        else Alert.alert(result.error);
+        if ('saveId' in result) {
+          track('save_created', { kind: result.kind, source: result.source, via: 'share' });
+          router.push({ pathname: '/save/[id]', params: { id: result.saveId, shared: '1' } });
+        } else Alert.alert(result.error);
       })
       .finally(() => {
         resetShareIntent();

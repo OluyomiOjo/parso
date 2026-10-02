@@ -6,6 +6,7 @@ import { AppState } from 'react-native';
 
 import { useSession } from './auth';
 import { saveImage } from './share';
+import { track } from './track';
 
 // iOS gives apps no event when a screenshot is taken, so Parso looks in the Screenshots album each time it
 // opens and offers what's new. Nothing is uploaded unless the person taps Save. Owner-approved in step 10 in
@@ -102,6 +103,7 @@ export function useNewScreenshots() {
         session.user.id,
       );
       if ('error' in result) failed++;
+      else track('save_created', { kind: 'screenshot', source: 'other', via: 'screenshots' });
     }
     await markChecked(Math.max(...state.screenshots.map((s) => s.createdAt)));
     setSaving(false);

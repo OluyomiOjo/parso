@@ -5,6 +5,7 @@ import { useSession } from './auth';
 import { sourceLabel } from './format';
 import type { SaveListItem } from './saves';
 import { supabase } from './supabase';
+import { track } from './track';
 
 // Where a matched word was found, as returned by the `search` Edge Function.
 export type MatchField = 'title' | 'snippet' | 'summary' | 'tags' | 'note' | 'collection' | 'source';
@@ -45,6 +46,7 @@ export function useSearch(query: string, kind: string | null, debounceMs: number
         body: { query: q, kind },
       });
       if (error || !data) throw new Error(SEARCH_FAILED);
+      track('search_made'); // that a search happened, never the words
       return data.results;
     },
   });

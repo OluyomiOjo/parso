@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
+import { track } from './track';
+
 // The intro shows once per phone, before the first sign-in.
 const KEY = 'parso.introSeen';
 
@@ -18,6 +20,7 @@ export function IntroProvider({ children }: { children: ReactNode }) {
 
   const markSeen = useCallback(() => {
     setSeen(true);
+    track('intro_finished');
     AsyncStorage.setItem(KEY, '1').catch(() => undefined);
   }, []);
 

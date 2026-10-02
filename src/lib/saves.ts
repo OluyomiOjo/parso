@@ -6,6 +6,7 @@ import { useSession } from './auth';
 import { detectSource } from './links';
 import { addPreviewImage } from './previewImage';
 import { supabase } from './supabase';
+import { track } from './track';
 
 export type SaveListItem = Pick<
   Tables<'saves'>,
@@ -149,7 +150,8 @@ export type CreatedLinkSave = SaveListItem & { existing: boolean };
 // Saves a link, unless this person already has it: then the existing save comes back with existing: true and
 // nothing is inserted (pasting the same copied link twice made duplicates). A new row shows at the top of the
 // list straight away and is replaced by the server's copy once the insert lands.
-export function useCreateLinkSave() {
+// via says where the link came from, for the usage numbers (src/lib/track.ts).
+export function useCreateLinkSave(via: 'add' | 'clipboard') {
   const queryClient = useQueryClient();
   const { session } = useSession();
   const key = savesKey(session?.user.id);
@@ -188,6 +190,7 @@ export function useCreateLinkSave() {
         .single();
       if (error) throw error;
       void addPreviewImage(data);
+      track('save_created', { kind: 'link', source: data.source, via });
       return { ...data, existing: false };
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: key }),

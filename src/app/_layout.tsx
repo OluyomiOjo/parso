@@ -10,6 +10,7 @@ import { AuthProvider, useSession } from '@/lib/auth';
 import { IntroProvider, useIntro } from '@/lib/intro';
 import { configureNotifications, useReminderSync, useReminderTaps } from '@/lib/reminders';
 import { supabase } from '@/lib/supabase';
+import { useOpenTracking } from '@/lib/track';
 import { colors } from '@/theme';
 
 // Keep the launch screen up until the saved session has loaded, so signed-in people never see the welcome screen flash.
@@ -27,6 +28,7 @@ function RootStack() {
   const { session, loading: sessionLoading } = useSession();
   const { seen: introSeen } = useIntro();
   const loading = sessionLoading || introSeen === null;
+  useOpenTracking(session !== null);
 
   useEffect(() => {
     if (!loading) SplashScreen.hideAsync();

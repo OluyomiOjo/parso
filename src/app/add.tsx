@@ -11,6 +11,7 @@ import { useSession } from '@/lib/auth';
 import { normalizeUrl } from '@/lib/links';
 import { useCreateLinkSave } from '@/lib/saves';
 import { saveImage, saveText } from '@/lib/share';
+import { track } from '@/lib/track';
 import { addScreen, colors, radius, size, spacing, type } from '@/theme';
 
 type Mode = 'link' | 'text' | 'photo';
@@ -34,7 +35,7 @@ export default function AddScreen() {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const createLink = useCreateLinkSave();
+  const createLink = useCreateLinkSave('add');
 
   const done = () => {
     queryClient.invalidateQueries({ queryKey: ['saves', session?.user.id] });
@@ -61,7 +62,10 @@ export default function AddScreen() {
     const result = await saveText(text.trim());
     setBusy(false);
     if ('error' in result) setError(TEXT_FAILED);
-    else done();
+    else {
+      track('save_created', { kind: result.kind, source: result.source, via: 'add' });
+      done();
+    }
   };
 
   // Apple's photo picker: the person picks one photo, so no photo-library permission is needed.
@@ -77,7 +81,10 @@ export default function AddScreen() {
     );
     setBusy(false);
     if ('error' in result) setError(PHOTO_FAILED);
-    else done();
+    else {
+      track('save_created', { kind: result.kind, source: result.source, via: 'add' });
+      done();
+    }
   };
 
   return (

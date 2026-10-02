@@ -16,6 +16,7 @@ import { displayUrl } from '@/lib/links';
 import { addPreviewImage } from '@/lib/previewImage';
 import { shortReminder } from '@/lib/reminderTime';
 import { DELETE_FAILED, useDeleteSave, useSave, useThumbnailUrls } from '@/lib/saves';
+import { track } from '@/lib/track';
 import { colors, detail, size, spacing } from '@/theme';
 
 const OPEN_FAILED = "Couldn't open this link. Check that the app is installed, or try again.";
@@ -32,6 +33,13 @@ export default function SaveDetailScreen() {
   const deleteSave = useDeleteSave(save);
 
   // Older website saves with no picture (sites that refuse our server, like Medium): look on the phone.
+  // One "save opened" per visit, with its source and kind (never its content).
+  const openedKind = save?.kind;
+  const openedSource = save?.source;
+  useEffect(() => {
+    if (openedKind && openedSource) track('save_opened', { kind: openedKind, source: openedSource });
+  }, [id, openedKind, openedSource]);
+
   const needsPicture = Boolean(save?.processed_at && !save.thumbnail_path && !save.preview_image_url);
   useEffect(() => {
     if (!save || !needsPicture || lookedUp.has(save.id)) return;

@@ -8,6 +8,7 @@ import { ShareIcon } from '@/icons/ShareIcon';
 import { useSession } from '@/lib/auth';
 import type { SaveDetail } from '@/lib/saves';
 import { SHARE_FAILED, downloadPhoto, shareSave } from '@/lib/shareOut';
+import { track } from '@/lib/track';
 import { detail, size } from '@/theme';
 
 import { Button } from './Button';
@@ -41,6 +42,7 @@ export function DetailActions({ save, openLabel, onOpenSource }: Props) {
     setSharing(true);
     try {
       await shareSave(save, userId);
+      track('shared_out', { kind: save.kind, source: save.source });
     } catch (error) {
       Alert.alert(errorText(error));
     } finally {
@@ -52,6 +54,7 @@ export function DetailActions({ save, openLabel, onOpenSource }: Props) {
     setDownloading(true);
     try {
       await downloadPhoto(save, userId);
+      track('downloaded', { kind: save.kind });
       setSaved(true);
     } catch (error) {
       Alert.alert(errorText(error));

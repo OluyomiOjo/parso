@@ -11,7 +11,8 @@ const JPEG_QUALITY = 0.8;
 const SCREENSHOT_RATIO = 1.9; // phone screens are about 2.17:1; photos are 4:3 or 3:2
 const MAX_TEXT = 5000;
 
-export type ShareResult = { saveId: string } | { error: string };
+// kind and source come back for the usage numbers (src/lib/track.ts).
+export type ShareResult = { saveId: string; kind: string; source: string } | { error: string };
 
 // The first web address inside shared text ("Check this out https://..."), without trailing punctuation.
 export function firstUrlIn(text: string): string | null {
@@ -64,12 +65,9 @@ export async function saveImage(image: LocalImage, userId: string): Promise<Shar
       error: "Couldn't upload the image. Check your connection and share it again.",
     };
 
-  const { error } = await supabase.from('saves').insert({
-    id,
-    kind: isScreenshot ? 'screenshot' : 'image',
-    source: 'other',
-  });
-  return error ? { error: "Couldn't save the image. Share it again." } : { saveId: id };
+  const kind = isScreenshot ? 'screenshot' : 'image';
+  const { error } = await supabase.from('saves').insert({ id, kind, source: 'other' });
+  return error ? { error: "Couldn't save the image. Share it again." } : { saveId: id, kind, source: 'other' };
 }
 
 // The page's own preview picture, as iOS read it when sharing from Safari. The server uses it for sites
@@ -125,7 +123,9 @@ async function saveLinkOrText(intent: ShareIntent): Promise<ShareResult> {
       source: detectSource(url),
       url,
     });
-  return { saveId: data.id };
+  return url
+    ? { saveId: data.id, kind: 'link', source: detectSource(url) }
+    : { saveId: data.id, kind: 'text', source: 'other' };
 }
 
 export async function saveShare(intent: ShareIntent, userId: string): Promise<ShareResult> {

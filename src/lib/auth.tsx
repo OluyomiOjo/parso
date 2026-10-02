@@ -5,6 +5,7 @@ import * as Crypto from 'expo-crypto';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import { supabase } from './supabase';
+import { track } from './track';
 
 const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
@@ -59,6 +60,7 @@ export async function signInWithApple(): Promise<SignInResult> {
     });
     if (error) return "Apple sign-in didn't finish. Try again.";
 
+    track('signed_in');
     // Apple shares the name only on the first sign-in, so keep it now.
     const fullName = [credential.fullName?.givenName, credential.fullName?.familyName].filter(Boolean).join(' ');
     if (fullName) await supabase.auth.updateUser({ data: { full_name: fullName } });
@@ -79,7 +81,9 @@ export async function signInWithGoogle(): Promise<SignInResult> {
     if (!idToken) return "Google sign-in didn't finish. Try again.";
 
     const { error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: idToken });
-    return error ? "Google sign-in didn't finish. Try again." : null;
+    if (error) return "Google sign-in didn't finish. Try again.";
+    track('signed_in');
+    return null;
   } catch (e) {
     if (isErrorWithCode(e) && e.code === statusCodes.IN_PROGRESS) return null;
     return "Google sign-in didn't finish. Try again.";

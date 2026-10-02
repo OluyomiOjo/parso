@@ -42,6 +42,36 @@ export type Database = {
         }
         Relationships: []
       }
+      events: {
+        Row: {
+          created_at: string
+          id: number
+          kind: string | null
+          name: string
+          source: string | null
+          user_id: string
+          via: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          kind?: string | null
+          name: string
+          source?: string | null
+          user_id?: string
+          via?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          kind?: string | null
+          name?: string
+          source?: string | null
+          user_id?: string
+          via?: string | null
+        }
+        Relationships: []
+      }
       saves: {
         Row: {
           collection_id: string | null

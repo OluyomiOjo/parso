@@ -7,6 +7,7 @@ import { useSession } from './auth';
 import { reminderTime, type ReminderChoice } from './reminderTime';
 import { type SaveListItem, useUpdateSave } from './saves';
 import { supabase } from './supabase';
+import { track } from './track';
 
 // Reminders are stored in saves.reminder_at and delivered as notifications scheduled on this phone.
 // The database is the record; the phone's schedule is kept in step with it by useReminderSync.
@@ -66,6 +67,7 @@ export function useSetReminder(save: Remindable | undefined) {
     const when = reminderTime(choice);
     const permission = await ensureNotificationPermission();
     await updateSave.mutateAsync({ reminder_at: when.toISOString() });
+    track('reminder_set');
     if (permission === 'granted') await schedule(save, when);
     return permission;
   };
