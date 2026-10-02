@@ -158,6 +158,8 @@ Build one slice at a time. Each slice ends with the app running on a device, a s
 8. Save detail screen, notes, tags editing, Open in source.
 9. Reminders with local notifications.
 10. Intro screens, empty state, polish pass against the designs, TestFlight build.
+11. Parso Pro on iOS (RevenueCat, the 50-save limit, Pro videos), then the admin dashboard's Revenue page.
+12. Android (owner decision in step 10: after Pro is live on iOS): Google Play account, Android Google sign-in, share target on a real Android phone, Android permissions for screenshots, reminders and Download, Pro through Google Play billing. The copied-link mini sheet stays iOS only.
 
 ## How to work
 
