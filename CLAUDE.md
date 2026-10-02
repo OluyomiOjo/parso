@@ -26,9 +26,11 @@ In scope:
 12. New screenshots check: when Parso opens, offer screenshots taken since last time (Screenshots album, full photo access, on/off on the You tab); nothing is saved without a tap. Owner-approved in step 10 in place of background import, which stays out of scope.
 13. A copied link is offered on My Parsos through Apple's paste button (no paste alert), and the reminder card says "and N more" with a Reminders list (owner-approved in step 10).
 14. Share a save out through the iPhone share sheet (link, note text, or the photo itself), always ending with "Saved with Parso.ai"; Download for photos and screenshots (owner-approved in step 10). Sharing inside Parso (shared collections, other people) stays out of scope.
+15. Parso Pro through RevenueCat (owner decision in step 10): free for the first 50 saves in total; at the limit everything stays searchable, openable and shareable and only new saves ask to upgrade. Pro is $4.99 a month or $39.99 a year, no trial. (Built in Part B, after the admin dashboard.)
+16. Admin dashboard at dash.parso.ai (owner decision in step 10): a private website for admins only (emails in the `admins` table), showing counts, behaviour and each save's source. Privacy line: admins never see what anyone saved (no titles, links, notes, pictures, text or search words); enforced by the `admin-stats` function, which returns counts only. Admins can give or remove Pro and delete an account.
 
 Out of scope for v1 (do not build, do not scaffold):
-Automatic background screenshot import, web app, browser extension, sharing or collaboration inside Parso (sending a save out through the share sheet is in scope, item 14), comments, social features, dark mode, payments, crypto or tokens of any kind.
+Automatic background screenshot import, a public web app (the admin dashboard, item 16, is the only website), browser extension, sharing or collaboration inside Parso (sending a save out through the share sheet is in scope, item 14), comments, social features, dark mode, payments other than Parso Pro (item 15), crypto or tokens of any kind.
 
 ## Stack
 
@@ -44,6 +46,8 @@ Automatic background screenshot import, web app, browser extension, sharing or c
 - Launch screen and system appearance: expo-splash-screen, expo-system-ui.
 - Auth: @supabase/supabase-js with @react-native-async-storage/async-storage for the session, expo-apple-authentication and @react-native-google-signin/google-signin for native sign-in, expo-crypto for the Apple nonce.
 - State and data: TanStack Query for server data. No Redux.
+- Usage events (owner-approved in step 10): `track()` in src/lib/track.ts writes to the `events` table: an event name plus only source, kind and via. Never titles, links, notes, text or search words; the table's checks refuse anything else.
+- Admin dashboard (owner-approved in step 10): `dashboard/`, a separate Vite + React + TypeScript site (react, react-dom, @supabase/supabase-js; charts drawn as plain SVG, no chart library), hosted on Cloudflare Pages at dash.parso.ai. Admins sign in with an email link. All numbers come from the `admin-stats` Edge Function and the service-role-only `admin_*` SQL functions (migration 0016).
 - Secrets live in environment variables and Supabase secrets. Never commit keys. Never put the AI or embeddings key in the app bundle.
 
 Ask before adding any dependency not listed here.
@@ -52,6 +56,9 @@ Ask before adding any dependency not listed here.
 
 - `collections`: id, user_id, name, description, is_smart (bool), created_at.
 - `saves`: id, user_id, collection_id, kind (link | image | screenshot | text), source (instagram | tiktok | x | threads | youtube | facebook | pinterest | linkedin | reddit | spotify | safari | whatsapp | other), url, title, snippet, summary, tags (text[]), note, thumbnail_path, raw_text, reminder_at (timestamptz, nullable), thumbnail_width and thumbnail_height (the stored picture's size, for the grid), preview_image_url (the page's og:image as iOS read it when shared from Safari; used when a site refuses our server), created_at, processed_at, embedding (vector).
+- `events`: id, user_id, name, source, kind, via, created_at (usage numbers; insert-own, unreadable from the app).
+- `admins`: email (who can use dash.parso.ai; service role only).
+- `profiles`: user_id, plan_override ('pro' when an admin gives Pro), updated_at; Part B adds pro_until from RevenueCat.
 - Row Level Security on every table: users read and write only their own rows.
 - Full-text index on title, snippet, summary, tags, note, raw_text.
 
