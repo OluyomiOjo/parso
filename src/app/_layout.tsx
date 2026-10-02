@@ -11,7 +11,7 @@ import { IntroProvider, useIntro } from '@/lib/intro';
 import { configureNotifications, useReminderSync, useReminderTaps } from '@/lib/reminders';
 import { supabase } from '@/lib/supabase';
 import { useOpenTracking } from '@/lib/track';
-import { colors } from '@/theme';
+import { colors, radius } from '@/theme';
 
 // Keep the launch screen up until the saved session has loaded, so signed-in people never see the welcome screen flash.
 SplashScreen.preventAutoHideAsync();
@@ -41,6 +41,16 @@ function RootStack() {
       <Stack.Protected guard={session !== null}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="add" options={{ presentation: 'modal' }} />
+        <Stack.Screen
+          name="copied-link"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: 'fitToContents',
+            sheetGrabberVisible: true,
+            sheetCornerRadius: radius.panel,
+            contentStyle: { backgroundColor: colors.surface },
+          }}
+        />
         <Stack.Screen name="save/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="collection-rename/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="item/[id]" />

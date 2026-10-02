@@ -2,7 +2,6 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
-import { ClipboardLinkBar } from '@/components/ClipboardLinkBar';
 import { CollectionCard } from '@/components/CollectionCard';
 import { FirstSaveCard } from '@/components/FirstSaveCard';
 import { IconButton } from '@/components/IconButton';
@@ -17,7 +16,6 @@ import { ScreenTitle } from '@/components/ScreenTitle';
 import { Text } from '@/components/Text';
 import { ViewSwitch } from '@/components/ViewSwitch';
 import { PlusIcon } from '@/icons/PlusIcon';
-import { useClipboardLink } from '@/lib/clipboard';
 import { useCollectionOverview } from '@/lib/collections';
 import { useUpcomingReminders } from '@/lib/reminders';
 import { useViewMode } from '@/lib/viewMode';
@@ -33,7 +31,6 @@ export default function HomeScreen() {
   const { data: collections, refetch: refetchCollections } = useCollectionOverview();
   // Checked again on screen, so a reminder left over from before the app went to the background never shows.
   const upcoming = (useUpcomingReminders().data ?? []).filter((r) => new Date(r.reminder_at) > new Date());
-  const clipboard = useClipboardLink();
   const { mode: viewMode } = useViewMode();
   const shots = useNewScreenshots();
   // Picks up a change made on the You tab (screenshot check turned on or off).
@@ -68,12 +65,7 @@ export default function HomeScreen() {
           ) : null}
         </View>
 
-        {/* Things waiting to be saved: a copied link, then new screenshots. */}
-        {clipboard.hasLink ? (
-          <View style={styles.section}>
-            <ClipboardLinkBar onDone={clipboard.dismiss} />
-          </View>
-        ) : null}
+        {/* New screenshots waiting to be saved. A copied link is offered in its own mini sheet (copied-link). */}
         {['ask', 'needsFullAccess', 'new'].includes(shots.state.status) ? (
           <View style={styles.section}>
             <NewScreenshotsCard

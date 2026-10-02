@@ -274,6 +274,8 @@ export const segmented = {
   radius: 12,
   inset: 4, // track padding around the chips
   chipRadius: 9,
+  icon: 18,
+  iconGap: 6,
 } as const;
 
 // Reminder card on My Parsos, measured from design/3. Home@2x.png.
@@ -328,17 +330,18 @@ export const firstRun = {
 // Add to Parso sheet.
 export const addScreen = {
   textHeight: 140,
+  pasteGap: 8, // the link field to Apple's Paste button beside it
 } as const;
 
-// "Save the link you copied" bar on My Parsos. Apple's paste button needs an explicit size.
-export const clipboardBar = {
-  paddingX: 16,
-  paddingY: 10,
-  gap: 10,
-  pasteWidth: 84,
-  pasteHeight: 36,
-  closeIcon: 16,
-  closeHitSlop: 14,
+// The copied-link mini sheet (/copied-link): a native iOS sheet sized to its content.
+export const copiedLinkSheet = {
+  paddingX: 24,
+  paddingTop: 28,
+  iconTile: 44, // the link icon on a grey tile, like the reminder card's bell
+  icon: 22,
+  iconGap: 14, // icon tile to the title
+  titleToButton: 20,
+  buttonToNotNow: 6,
 } as const;
 
 // New-screenshots card on My Parsos.
@@ -372,7 +375,7 @@ export const theme = {
   illustration,
   firstRun,
   addScreen,
-  clipboardBar,
+  copiedLinkSheet,
   screenshotsCard,
 } as const;
 export default theme;

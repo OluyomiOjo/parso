@@ -1,24 +1,31 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { ClipboardPasteButton, isPasteButtonAvailable, type PasteEventPayload } from 'expo-clipboard';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/Button';
-import { SegmentedControl } from '@/components/SegmentedControl';
+import { SegmentedControl, type Segment } from '@/components/SegmentedControl';
 import { Text } from '@/components/Text';
+import { LinkIcon } from '@/icons/LinkIcon';
+import { NoteIcon } from '@/icons/NoteIcon';
+import { PhotoIcon } from '@/icons/PhotoIcon';
 import { useSession } from '@/lib/auth';
 import { normalizeUrl } from '@/lib/links';
 import { useCreateLinkSave } from '@/lib/saves';
-import { saveImage, saveText } from '@/lib/share';
+import { firstUrlIn, saveImage, saveText } from '@/lib/share';
 import { track } from '@/lib/track';
-import { addScreen, colors, radius, size, spacing, type } from '@/theme';
+import { addScreen, colors, radius, segmented, size, spacing, type } from '@/theme';
 
 type Mode = 'link' | 'text' | 'photo';
-const MODES: { value: Mode; label: string }[] = [
-  { value: 'link', label: 'Link' },
-  { value: 'text', label: 'Text' },
-  { value: 'photo', label: 'Photo' },
+const iconFor = (Icon: typeof LinkIcon) => (color: string) => (
+  <Icon color={color} size={segmented.icon} strokeWidth={size.iconStroke} />
+);
+const MODES: Segment<Mode>[] = [
+  { value: 'link', label: 'Link', icon: iconFor(LinkIcon) },
+  { value: 'text', label: 'Note', icon: iconFor(NoteIcon) },
+  { value: 'photo', label: 'Photo', icon: iconFor(PhotoIcon) },
 ];
 
 const NOT_A_LINK = "That isn't a link. Copy the full web address and paste it again.";
@@ -54,6 +61,14 @@ export default function AddScreen() {
           : router.back(),
       onError: () => setError(LINK_FAILED),
     });
+  };
+
+  const pasteLink = (data: PasteEventPayload) => {
+    const pasted = data.type === 'text' ? (firstUrlIn(data.text) ?? data.text.trim()) : '';
+    if (pasted) {
+      setLink(pasted);
+      setError(null);
+    }
   };
 
   const saveTyped = async () => {
@@ -105,24 +120,38 @@ export default function AddScreen() {
       </View>
 
       {mode === 'link' ? (
-        <TextInput
-          value={link}
-          onChangeText={(value) => {
-            setLink(value);
-            if (error) setError(null);
-          }}
-          onSubmitEditing={saveLink}
-          placeholder="https://"
-          placeholderTextColor={colors.secondary}
-          autoFocus
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="url"
-          returnKeyType="done"
-          textContentType="URL"
-          accessibilityLabel="Link"
-          style={[styles.field, error ? styles.fieldError : null]}
-        />
+        <View style={styles.linkRow}>
+          <TextInput
+            value={link}
+            onChangeText={(value) => {
+              setLink(value);
+              if (error) setError(null);
+            }}
+            onSubmitEditing={saveLink}
+            placeholder="https://"
+            placeholderTextColor={colors.secondary}
+            autoFocus
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            returnKeyType="done"
+            textContentType="URL"
+            accessibilityLabel="Link"
+            style={[styles.field, styles.linkField, error ? styles.fieldError : null]}
+          />
+          {/* Apple's own Paste button: one tap, and iOS shows no "Allow paste" alert. */}
+          {isPasteButtonAvailable ? (
+            <ClipboardPasteButton
+              onPress={pasteLink}
+              acceptedContentTypes={['url', 'plain-text']}
+              displayMode="iconOnly"
+              cornerStyle="large"
+              backgroundColor={colors.ink}
+              foregroundColor={colors.onInk}
+              style={styles.paste}
+            />
+          ) : null}
+        </View>
       ) : mode === 'text' ? (
         <TextInput
           value={text}
@@ -185,6 +214,9 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   textField: { height: addScreen.textHeight, paddingTop: spacing.md },
+  linkRow: { flexDirection: 'row', gap: addScreen.pasteGap, marginTop: spacing.sectionGap },
+  linkField: { flex: 1, marginTop: 0 },
+  paste: { width: size.fieldHeight, height: size.fieldHeight },
   fieldError: { borderColor: colors.ink },
   hint: { marginTop: spacing.sectionGap, paddingHorizontal: spacing.titleInset },
   error: { marginTop: spacing.errorTop },

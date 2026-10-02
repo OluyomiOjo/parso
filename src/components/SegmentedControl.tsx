@@ -1,10 +1,16 @@
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { colors, segmented, tabularNums } from '@/theme';
 
 import { Text } from './Text';
 
-export type Segment<T> = { value: T; label: string; accessibilityLabel?: string };
+export type Segment<T> = {
+  value: T;
+  label: string;
+  accessibilityLabel?: string;
+  icon?: (color: string) => ReactNode; // drawn before the label (Add to Parso)
+};
 
 type Props<T> = {
   segments: Segment<T>[];
@@ -28,9 +34,12 @@ export function SegmentedControl<T>({ segments, selected, onSelect, track = fals
             accessibilityLabel={s.accessibilityLabel ?? s.label}
             style={[styles.segment, active && styles.active]}
           >
-            <Text variant="pill" style={tabularNums} numberOfLines={1}>
-              {s.label}
-            </Text>
+            <View style={styles.content}>
+              {s.icon?.(active ? colors.ink : colors.secondary)}
+              <Text variant="pill" style={tabularNums} numberOfLines={1}>
+                {s.label}
+              </Text>
+            </View>
           </Pressable>
         );
       })}
@@ -49,4 +58,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   active: { backgroundColor: colors.surface },
+  content: { flexDirection: 'row', alignItems: 'center', gap: segmented.iconGap },
 });
