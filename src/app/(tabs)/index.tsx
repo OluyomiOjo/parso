@@ -10,14 +10,17 @@ import { NewScreenshotsCard } from '@/components/NewScreenshotsCard';
 import { ListPanel } from '@/components/ListPanel';
 import { PasteLinkButton } from '@/components/PasteLinkButton';
 import { ReminderCard } from '@/components/ReminderCard';
+import { SaveGrid } from '@/components/SaveGrid';
 import { SaveRow } from '@/components/SaveRow';
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { Text } from '@/components/Text';
+import { ViewSwitch } from '@/components/ViewSwitch';
 import { PlusIcon } from '@/icons/PlusIcon';
 import { useClipboardLink } from '@/lib/clipboard';
 import { useCollectionOverview } from '@/lib/collections';
 import { useUpcomingReminders } from '@/lib/reminders';
+import { useViewMode } from '@/lib/viewMode';
 import { useSaves, useSavesLiveUpdates, useThumbnailUrls } from '@/lib/saves';
 import { useNewScreenshots } from '@/lib/screenshots';
 import { card, colors, firstRun, size, spacing } from '@/theme';
@@ -31,6 +34,7 @@ export default function HomeScreen() {
   // Checked again on screen, so a reminder left over from before the app went to the background never shows.
   const upcoming = (useUpcomingReminders().data ?? []).filter((r) => new Date(r.reminder_at) > new Date());
   const clipboard = useClipboardLink();
+  const { mode: viewMode } = useViewMode();
   const shots = useNewScreenshots();
   // Picks up a change made on the You tab (screenshot check turned on or off).
   useFocusEffect(useCallback(() => shots.refresh(), [shots.refresh]));
@@ -126,18 +130,25 @@ export default function HomeScreen() {
               </View>
             ) : null}
             <View style={styles.section}>
-              <Text variant="sectionHeading" accessibilityRole="header" style={styles.heading}>
-                Recent
-              </Text>
-              <ListPanel>
-                {saves!.map((save) => (
-                  <SaveRow
-                    key={save.id}
-                    save={save}
-                    thumbnailUrl={save.thumbnail_path ? thumbnails?.[save.thumbnail_path] : undefined}
-                  />
-                ))}
-              </ListPanel>
+              <View style={[styles.heading, styles.recentRow]}>
+                <Text variant="sectionHeading" accessibilityRole="header">
+                  Recent
+                </Text>
+                <ViewSwitch />
+              </View>
+              {viewMode === 'grid' ? (
+                <SaveGrid saves={saves!} thumbnails={thumbnails} />
+              ) : (
+                <ListPanel>
+                  {saves!.map((save) => (
+                    <SaveRow
+                      key={save.id}
+                      save={save}
+                      thumbnailUrl={save.thumbnail_path ? thumbnails?.[save.thumbnail_path] : undefined}
+                    />
+                  ))}
+                </ListPanel>
+              )}
             </View>
           </>
         ) : (
@@ -171,6 +182,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.headingToPanel,
   },
   headingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  recentRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   // The card row scrolls to the screen edges but starts in line with the content.
   bleed: { marginHorizontal: -spacing.screen },
   cards: { gap: card.gap, paddingHorizontal: spacing.screen },

@@ -5,14 +5,18 @@ import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 
 import { IconButton } from '@/components/IconButton';
 import { KindFilter, type KindOption } from '@/components/KindFilter';
 import { ListPanel } from '@/components/ListPanel';
+import { SaveGrid } from '@/components/SaveGrid';
 import { SaveRow } from '@/components/SaveRow';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { ChevronLeftIcon } from '@/icons/ChevronLeftIcon';
+import { GridIcon } from '@/icons/GridIcon';
+import { ListIcon } from '@/icons/ListIcon';
 import { PencilIcon } from '@/icons/PencilIcon';
 import { useCollectionSummary } from '@/lib/collections';
 import { KIND_FILTERS, saveCount } from '@/lib/format';
 import { useCollectionSaves, useThumbnailUrls } from '@/lib/saves';
+import { useViewMode } from '@/lib/viewMode';
 import { collectionScreen, colors, size, spacing } from '@/theme';
 
 const goBack = () => (router.canGoBack() ? router.back() : router.replace('/collections'));
@@ -25,6 +29,7 @@ export default function CollectionScreen() {
     (saves ?? []).flatMap((save) => (save.thumbnail_path ? [save.thumbnail_path] : [])),
   );
   const [kind, setKind] = useState<string | null>(null);
+  const { mode: viewMode, setMode: setViewMode } = useViewMode();
 
   const all = saves ?? [];
   const kindOptions: KindOption[] = KIND_FILTERS.map((f) => ({
@@ -53,9 +58,22 @@ export default function CollectionScreen() {
             <ChevronLeftIcon color={colors.ink} size={size.iconButtonIcon} strokeWidth={size.iconStroke} />
           </IconButton>
           {collection ? (
-            <IconButton label="Rename collection" onPress={() => router.push(`/collection-rename/${id}`)}>
-              <PencilIcon color={colors.ink} size={size.iconButtonIcon} strokeWidth={size.iconStroke} />
-            </IconButton>
+            <View style={styles.headerActions}>
+              {/* Shows the view a tap switches to. */}
+              <IconButton
+                label={viewMode === 'grid' ? 'List view' : 'Grid view'}
+                onPress={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+              >
+                {viewMode === 'grid' ? (
+                  <ListIcon color={colors.ink} size={size.iconButtonIcon} strokeWidth={size.iconStroke} />
+                ) : (
+                  <GridIcon color={colors.ink} size={size.iconButtonIcon} strokeWidth={size.iconStroke} />
+                )}
+              </IconButton>
+              <IconButton label="Rename collection" onPress={() => router.push(`/collection-rename/${id}`)}>
+                <PencilIcon color={colors.ink} size={size.iconButtonIcon} strokeWidth={size.iconStroke} />
+              </IconButton>
+            </View>
           ) : null}
         </View>
 
@@ -82,15 +100,19 @@ export default function CollectionScreen() {
           </Text>
         ) : shown.length ? (
           <View style={styles.list}>
-            <ListPanel>
-              {shown.map((save) => (
-                <SaveRow
-                  key={save.id}
-                  save={save}
-                  thumbnailUrl={save.thumbnail_path ? thumbnails?.[save.thumbnail_path] : undefined}
-                />
-              ))}
-            </ListPanel>
+            {viewMode === 'grid' ? (
+              <SaveGrid saves={shown} thumbnails={thumbnails} />
+            ) : (
+              <ListPanel>
+                {shown.map((save) => (
+                  <SaveRow
+                    key={save.id}
+                    save={save}
+                    thumbnailUrl={save.thumbnail_path ? thumbnails?.[save.thumbnail_path] : undefined}
+                  />
+                ))}
+              </ListPanel>
+            )}
           </View>
         ) : (
           <Text variant="secondary" color={colors.secondary} style={styles.message}>
@@ -109,6 +131,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: spacing.titleTop,
   },
+  headerActions: { flexDirection: 'row', gap: collectionScreen.headerButtonGap },
   title: { marginTop: collectionScreen.headerToTitle, paddingHorizontal: spacing.titleInset },
   description: { marginTop: collectionScreen.titleToDescription, paddingHorizontal: spacing.titleInset },
   filter: { marginTop: collectionScreen.descriptionToFilter },

@@ -189,6 +189,7 @@ export const card = {
 
 // Collection screen, measured from design/5. Collection@2x.png.
 export const collectionScreen = {
+  headerButtonGap: 10, // grid/list and rename
   headerToTitle: 16,
   titleToDescription: 6,
   descriptionToFilter: 20,
@@ -236,6 +237,35 @@ export const detail = {
 // Full-screen photo (Open on a photo's detail page).
 export const photoViewer = {
   maxZoom: 4,
+} as const;
+
+// Grid view on My Parsos and Collections (owner asked in step 10, after Pinterest): two columns, each
+// picture at its own shape within these limits.
+export const grid = {
+  columnGap: 10,
+  rowGap: 16,
+  captionTop: 8, // picture to title
+  sourceTop: 4, // title to source line
+  maxRatio: 1.25, // tallest picture: 4:5
+  minRatio: 0.6, // widest picture
+  fallbackRatio: 1, // square until the picture's size is known
+  textTilePadding: 12,
+  textTileGap: 6,
+  textTitleLines: 4,
+  textSnippetLines: 3,
+  textTileEstimate: 120, // for balancing the columns only
+  captionEstimate: 64,
+} as const;
+
+// List/grid switch beside "Recent": the segmented control's look, smaller, with icons.
+export const viewSwitch = {
+  height: 32,
+  inset: 3,
+  radius: 9,
+  chipRadius: 7,
+  segmentWidth: 36,
+  icon: 18,
+  hitSlop: 6, // to the 44pt touch target
 } as const;
 
 // Segmented control: equal segments, the chosen one on a white chip (design 2 "Remind me", design 5 filter).

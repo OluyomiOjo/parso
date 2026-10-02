@@ -51,7 +51,7 @@ Ask before adding any dependency not listed here.
 ## Data model (Supabase)
 
 - `collections`: id, user_id, name, description, is_smart (bool), created_at.
-- `saves`: id, user_id, collection_id, kind (link | image | screenshot | text), source (instagram | tiktok | x | threads | youtube | facebook | pinterest | linkedin | reddit | spotify | safari | whatsapp | other), url, title, snippet, summary, tags (text[]), note, thumbnail_path, raw_text, reminder_at (timestamptz, nullable), preview_image_url (the page's og:image as iOS read it when shared from Safari; used when a site refuses our server), created_at, processed_at, embedding (vector).
+- `saves`: id, user_id, collection_id, kind (link | image | screenshot | text), source (instagram | tiktok | x | threads | youtube | facebook | pinterest | linkedin | reddit | spotify | safari | whatsapp | other), url, title, snippet, summary, tags (text[]), note, thumbnail_path, raw_text, reminder_at (timestamptz, nullable), thumbnail_width and thumbnail_height (the stored picture's size, for the grid), preview_image_url (the page's og:image as iOS read it when shared from Safari; used when a site refuses our server), created_at, processed_at, embedding (vector).
 - Row Level Security on every table: users read and write only their own rows.
 - Full-text index on title, snippet, summary, tags, note, raw_text.
 
@@ -78,10 +78,10 @@ Designs live in the Parso App Screens canvas (Clean page). Exported PNGs of each
 0.1 to 0.3 Intro: illustration in a circle, title, one sentence, progress dots, Next. Skip on first two.
 1. Welcome and sign in: logo, headline "Save it now. Find it by asking.", demo search card, Apple and Google buttons.
 2. Save sheet (share extension UI): item preview, brand icon plus "Saved to [Collection]" with the collection highlighted, collection pills, tags line, Remind me segmented control, optional note, Done.
-3. Home ("My Parsos"): a larger black round + (Add to Parso), reminder card, Collections row, Recent list. No search field: Search lives in the tab bar (owner decision in step 10).
+3. Home ("My Parsos"): a larger black round + (Add to Parso), reminder card, Collections row, Recent list with a list/grid switch beside the heading (grid: two columns, Pinterest style, each picture at its own shape; one remembered choice for My Parsos and Collections; owner decision in step 10). No search field: Search lives in the tab bar (owner decision in step 10).
 3b. Home empty state: "Save your first thing" with share-sheet instructions and "Or paste a link".
 4. Search: focused search field, kind filter pills, result count, best match with large image, other results as list rows. Before typing: recent searches (stored on the phone) and "Try" pills built from the person's own tags, apps and collections.
-5. Collection: back and rename buttons (the design's share button waits until sharing is in scope), name, description line (written by the AI once per collection), segmented filter by kind, list rows.
+5. Collection: back, list/grid and rename buttons (the design's share button waits until sharing is in scope), name, description line (written by the AI once per collection), segmented filter by kind, list rows.
 6. Save detail: full-width image, source line, title, summary, details panel (Collection, Tags, Reminder, Note), fixed buttons: links get "Open in [source]" and Share; photos and screenshots get Open (full screen), Share and Download; notes get Share. "Delete save" sits under the panel. Tapping a save anywhere opens this screen; sharing into Parso still shows the save sheet.
 
 Tab bar: My Parsos, Search, Collections, You.

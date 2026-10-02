@@ -59,7 +59,9 @@ export type Database = {
           source: string
           summary: string | null
           tags: string[]
+          thumbnail_height: number | null
           thumbnail_path: string | null
+          thumbnail_width: number | null
           title: string | null
           url: string | null
           user_id: string
@@ -80,7 +82,9 @@ export type Database = {
           source?: string
           summary?: string | null
           tags?: string[]
+          thumbnail_height?: number | null
           thumbnail_path?: string | null
+          thumbnail_width?: number | null
           title?: string | null
           url?: string | null
           user_id?: string
@@ -101,7 +105,9 @@ export type Database = {
           source?: string
           summary?: string | null
           tags?: string[]
+          thumbnail_height?: number | null
           thumbnail_path?: string | null
+          thumbnail_width?: number | null
           title?: string | null
           url?: string | null
           user_id?: string

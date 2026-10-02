@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
 import { describeSave, type DescribeResult, type Provider } from './ai.ts';
 import { embed, toVector } from './embeddings.ts';
-import { downloadImage, extensionFor, type ImageData } from './image.ts';
+import { downloadImage, extensionFor, imageSize, type ImageData } from './image.ts';
 import { fetchLinkMetadata } from './metadata.ts';
 import { PLATFORM_NAMES } from './sources.ts';
 
@@ -141,12 +141,18 @@ async function findOrCreateCollection(db: SupabaseClient, userId: string, name: 
   throw new Error(`Couldn't create collection: ${error?.message}`);
 }
 
-async function storeThumbnail(db: SupabaseClient, save: Save, image: ImageData): Promise<string | null> {
+type ThumbnailColumns = { thumbnail_path: string; thumbnail_width: number | null; thumbnail_height: number | null };
+
+// Stores the picture and returns the columns to write with it. The size lets the app's grid lay the
+// picture out at its real shape before it loads.
+async function storeThumbnail(db: SupabaseClient, save: Save, image: ImageData): Promise<ThumbnailColumns | null> {
   const path = `${save.user_id}/${save.id}.${extensionFor(image.mediaType)}`;
   const { error } = await db.storage
     .from('thumbnails')
     .upload(path, image.bytes, { contentType: image.mediaType, upsert: true });
-  return error ? null : path;
+  if (error) return null;
+  const size = imageSize(image.bytes);
+  return { thumbnail_path: path, thumbnail_width: size?.width ?? null, thumbnail_height: size?.height ?? null };
 }
 
 export async function processSave(db: SupabaseClient, saveId: string, provider: Provider) {
@@ -178,7 +184,7 @@ export async function processSave(db: SupabaseClient, saveId: string, provider: 
       .eq('user_id', save.user_id)
       .is('description', null);
   }
-  const thumbnailPath = prepared.image ? await storeThumbnail(db, save, prepared.image) : null;
+  const thumbnail = prepared.image ? await storeThumbnail(db, save, prepared.image) : null;
   const { title, snippet, summary, tags } = result.output;
   await db
     .from('saves')
@@ -189,7 +195,7 @@ export async function processSave(db: SupabaseClient, saveId: string, provider: 
       summary,
       tags,
       collection_id: collection.id,
-      ...(thumbnailPath ? { thumbnail_path: thumbnailPath } : {}),
+      ...(thumbnail ?? {}),
       processed_at: new Date().toISOString(),
     })
     .eq('id', save.id)
@@ -264,9 +270,9 @@ async function addThumbnail(db: SupabaseClient, save: Save): Promise<boolean> {
   if (!save.url) return false;
   const meta = await fetchLinkMetadata(save.url, save.source);
   const image = await linkImage(meta.imageUrl, save.preview_image_url);
-  const path = image ? await storeThumbnail(db, save, image) : null;
-  if (!path) return false;
-  await db.from('saves').update({ thumbnail_path: path }).eq('id', save.id).eq('user_id', save.user_id);
+  const thumbnail = image ? await storeThumbnail(db, save, image) : null;
+  if (!thumbnail) return false;
+  await db.from('saves').update(thumbnail).eq('id', save.id).eq('user_id', save.user_id);
   return true;
 }
 
@@ -296,4 +302,28 @@ export async function thumbnailSave(db: SupabaseClient, saveId: string): Promise
     .is('thumbnail_path', null)
     .maybeSingle();
   return data ? addThumbnail(db, data as Save) : false;
+}
+
+// Backfill: records the size of thumbnails stored before sizes were kept. Only reads the stored file.
+export async function thumbnailSizes(db: SupabaseClient): Promise<number> {
+  const { data, error } = await db
+    .from('saves')
+    .select('id, user_id, thumbnail_path')
+    .not('thumbnail_path', 'is', null)
+    .is('thumbnail_width', null)
+    .limit(200);
+  if (error) throw error;
+  let sized = 0;
+  for (const save of data ?? []) {
+    const { data: file } = await db.storage.from('thumbnails').download(save.thumbnail_path);
+    const size = file ? imageSize(new Uint8Array(await file.arrayBuffer())) : null;
+    if (!size) continue;
+    await db
+      .from('saves')
+      .update({ thumbnail_width: size.width, thumbnail_height: size.height })
+      .eq('id', save.id)
+      .eq('user_id', save.user_id);
+    sized++;
+  }
+  return sized;
 }

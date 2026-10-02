@@ -9,6 +9,7 @@ import {
   storeEmbedding,
   thumbnailMissing,
   thumbnailSave,
+  thumbnailSizes,
 } from '../_shared/pipeline.ts';
 
 // Provided by the Supabase Edge Runtime: keeps the worker alive until the promise settles.
@@ -27,6 +28,7 @@ Deno.serve(async (req) => {
   let embedSaveId: unknown;
   let thumbnailsOnly: unknown;
   let thumbnailSaveId: unknown;
+  let sizesOnly: unknown;
   try {
     ({
       save_id: saveId,
@@ -34,6 +36,7 @@ Deno.serve(async (req) => {
       embed_save: embedSaveId,
       thumbnail_missing: thumbnailsOnly,
       thumbnail_save: thumbnailSaveId,
+      thumbnail_sizes: sizesOnly,
     } = await req.json());
   } catch {
     return new Response('Bad request', { status: 400 });
@@ -47,6 +50,11 @@ Deno.serve(async (req) => {
   if (thumbnailsOnly === true) {
     const added = await thumbnailMissing(db);
     return Response.json({ added });
+  }
+  // One-off backfill: the size of thumbnails stored before sizes were kept (for the grid view).
+  if (sizesOnly === true) {
+    const sized = await thumbnailSizes(db);
+    return Response.json({ sized });
   }
   // After a person edits tags, note or collection (trigger in migration 0011): refresh that save's search
   // data only. The AI does not run again.

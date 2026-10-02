@@ -9,10 +9,21 @@ import { supabase } from './supabase';
 
 export type SaveListItem = Pick<
   Tables<'saves'>,
-  'id' | 'kind' | 'source' | 'url' | 'title' | 'snippet' | 'thumbnail_path' | 'created_at' | 'processed_at'
+  | 'id'
+  | 'kind'
+  | 'source'
+  | 'url'
+  | 'title'
+  | 'snippet'
+  | 'thumbnail_path'
+  | 'thumbnail_width'
+  | 'thumbnail_height'
+  | 'created_at'
+  | 'processed_at'
 >;
 
-const LIST_COLUMNS = 'id, kind, source, url, title, snippet, thumbnail_path, created_at, processed_at';
+const LIST_COLUMNS =
+  'id, kind, source, url, title, snippet, thumbnail_path, thumbnail_width, thumbnail_height, created_at, processed_at';
 const LIST_LIMIT = 50;
 
 const savesKey = (userId: string | undefined) => ['saves', userId] as const;
@@ -163,6 +174,8 @@ export function useCreateLinkSave() {
         title: null,
         snippet: null,
         thumbnail_path: null,
+        thumbnail_width: null,
+        thumbnail_height: null,
         created_at: new Date().toISOString(),
         processed_at: null,
       };
