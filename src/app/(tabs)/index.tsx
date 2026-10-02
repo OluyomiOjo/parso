@@ -11,7 +11,6 @@ import { ListPanel } from '@/components/ListPanel';
 import { PasteLinkButton } from '@/components/PasteLinkButton';
 import { ReminderCard } from '@/components/ReminderCard';
 import { SaveRow } from '@/components/SaveRow';
-import { SearchFieldButton } from '@/components/SearchField';
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { Text } from '@/components/Text';
@@ -25,7 +24,6 @@ import { card, colors, firstRun, size, spacing } from '@/theme';
 
 const openAdd = () => router.push('/add');
 const openCollections = () => router.navigate('/collections');
-const openSearch = () => router.navigate('/search');
 
 export default function HomeScreen() {
   const { data: saves, isPending, isError, isRefetching, refetch } = useSaves();
@@ -59,8 +57,8 @@ export default function HomeScreen() {
           <ScreenTitle>My Parsos</ScreenTitle>
           {hasSaves ? (
             <View style={styles.headerButton}>
-              <IconButton label="Add to Parso" onPress={openAdd}>
-                <PlusIcon color={colors.ink} size={size.iconButtonIcon} strokeWidth={size.iconStroke} />
+              <IconButton label="Add to Parso" onPress={openAdd} variant="ink">
+                <PlusIcon color={colors.onInk} size={size.addButtonIcon} strokeWidth={size.addButtonStroke} />
               </IconButton>
             </View>
           ) : null}
@@ -93,11 +91,8 @@ export default function HomeScreen() {
           </Text>
         ) : hasSaves ? (
           <>
-            <View style={styles.section}>
-              <SearchFieldButton onPress={openSearch} />
-            </View>
             {upcoming.length ? (
-              <View style={styles.reminder}>
+              <View style={styles.section}>
                 <ReminderCard save={upcoming[0]} more={upcoming.length - 1} />
               </View>
             ) : null}
@@ -166,11 +161,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   headerButton: {
-    marginTop: spacing.titleTop,
+    marginTop: spacing.titleTop - (size.addButton - size.iconButton) / 2, // centred where the 40pt button sat
     marginRight: spacing.titleInset,
   },
   section: { marginTop: spacing.sectionGapLarge },
-  reminder: { marginTop: spacing.sectionGap },
   paste: { marginTop: firstRun.cardToPaste },
   heading: {
     paddingHorizontal: spacing.titleInset,

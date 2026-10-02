@@ -12,7 +12,7 @@ import { Text } from './Text';
 type Props = { onDone: () => void };
 
 // "Save the link you copied" with Apple's own Paste button (no paste alert). Pasting saves the link and opens
-// its save sheet, like sharing it into Parso.
+// its save sheet, like sharing it into Parso; a link already saved opens its sheet as "Already in …".
 export function ClipboardLinkBar({ onDone }: Props) {
   const createLink = useCreateLinkSave();
 
@@ -20,7 +20,13 @@ export function ClipboardLinkBar({ onDone }: Props) {
     const url = data.type === 'text' ? firstUrlIn(data.text) : null;
     onDone();
     if (!url) return;
-    createLink.mutate(url, { onSuccess: (save) => router.push(`/save/${save.id}`) });
+    createLink.mutate(url, {
+      onSuccess: (save) =>
+        router.push({
+          pathname: '/save/[id]',
+          params: save.existing ? { id: save.id, existing: '1' } : { id: save.id },
+        }),
+    });
   };
 
   return (

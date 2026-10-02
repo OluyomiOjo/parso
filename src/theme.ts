@@ -123,6 +123,9 @@ export const size = {
   buttonIcon: 18,
   iconButton: 40, // round header button, e.g. paste a link
   iconButtonIcon: 20,
+  addButton: 48, // the black + on My Parsos, larger than other round buttons (owner asked in step 10)
+  addButtonIcon: 24,
+  addButtonStroke: 2.4,
   thumbIcon: 22, // placeholder icon inside an empty thumbnail
   iconStroke: 1.8,
   fieldHeight: 52,

@@ -13,9 +13,10 @@ import { useCollections, useCreateCollection } from '@/lib/collections';
 import { useSave, useThumbnailUrls, useUpdateSave } from '@/lib/saves';
 import { colors, radius, sheet, size, type } from '@/theme';
 
-// The save sheet: opened after sharing into Parso (and after pasting a link in later steps).
+// The save sheet: opened after sharing into Parso or pasting a copied link. existing=1 when the link was
+// already saved, so the header says "Already in …" and nothing was saved twice.
 export default function SaveSheet() {
-  const { id, shared } = useLocalSearchParams<{ id: string; shared?: string }>();
+  const { id, shared, existing } = useLocalSearchParams<{ id: string; shared?: string; existing?: string }>();
   const { data: save } = useSave(id);
   const { data: collections = [] } = useCollections();
   const { data: thumbnails } = useThumbnailUrls(save?.thumbnail_path ? [save.thumbnail_path] : []);
@@ -44,7 +45,7 @@ export default function SaveSheet() {
             thumbnailUrl={save.thumbnail_path ? thumbnails?.[save.thumbnail_path] : undefined}
           />
           <View style={styles.savedTo}>
-            <SavedTo collection={filed ? collection!.name : null} />
+            <SavedTo collection={filed ? collection!.name : null} existing={existing === '1'} />
           </View>
           {filed ? (
             <>

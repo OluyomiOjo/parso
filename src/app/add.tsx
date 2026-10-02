@@ -45,7 +45,14 @@ export default function AddScreen() {
     const url = normalizeUrl(link);
     if (!url) return setError(NOT_A_LINK);
     setError(null);
-    createLink.mutate(url, { onSuccess: () => router.back(), onError: () => setError(LINK_FAILED) });
+    createLink.mutate(url, {
+      // Already saved: show its sheet ("Already in …") instead of saving it twice.
+      onSuccess: (save) =>
+        save.existing
+          ? router.replace({ pathname: '/save/[id]', params: { id: save.id, existing: '1' } })
+          : router.back(),
+      onError: () => setError(LINK_FAILED),
+    });
   };
 
   const saveTyped = async () => {

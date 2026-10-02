@@ -78,7 +78,7 @@ Designs live in the Parso App Screens canvas (Clean page). Exported PNGs of each
 0.1 to 0.3 Intro: illustration in a circle, title, one sentence, progress dots, Next. Skip on first two.
 1. Welcome and sign in: logo, headline "Save it now. Find it by asking.", demo search card, Apple and Google buttons.
 2. Save sheet (share extension UI): item preview, brand icon plus "Saved to [Collection]" with the collection highlighted, collection pills, tags line, Remind me segmented control, optional note, Done.
-3. Home ("My Parsos"): search field, reminder card, Collections row, Recent list.
+3. Home ("My Parsos"): a larger black round + (Add to Parso), reminder card, Collections row, Recent list. No search field: Search lives in the tab bar (owner decision in step 10).
 3b. Home empty state: "Save your first thing" with share-sheet instructions and "Or paste a link".
 4. Search: focused search field, kind filter pills, result count, best match with large image, other results as list rows. Before typing: recent searches (stored on the phone) and "Try" pills built from the person's own tags, apps and collections.
 5. Collection: back and rename buttons (the design's share button waits until sharing is in scope), name, description line (written by the AI once per collection), segmented filter by kind, list rows.
@@ -132,7 +132,7 @@ Owner-approved exception: source icons (Instagram, TikTok, X, LinkedIn and so on
 
 ## Copy rules
 
-- The library is called "My Parsos". Actions stay plain: Save, Saved to [Collection], Search, Remind me, Open in [Source].
+- The library is called "My Parsos". Actions stay plain: Save, Saved to [Collection], Search, Remind me, Open in [Source]. A pasted link that is already saved opens its sheet as "Already in [Collection]" and is not saved twice.
 - Sentence case everywhere. Buttons say exactly what happens.
 - Errors say what happened and what to do next. No apologies, no vague messages.
 - Empty states tell the user the next action.
