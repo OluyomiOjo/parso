@@ -137,7 +137,16 @@ export const size = {
 export const sheet = {
   paddingX: 20,
   paddingTop: 20,
-  previewThumb: 48,
+  // Large preview card (owner-approved over the design's 48pt row): picture area, then title and source.
+  previewHeight: 176, // same as search's best match
+  previewBrandIcon: 40, // the source's icon, centred, while the picture is on its way
+  previewCaptionTop: 10,
+  previewTitleToSource: 4,
+  previewPulseMin: 0.45, // the icon's gentle pulse while saving
+  previewPulseMs: 900,
+  previewFadeMs: 250, // the picture fading in
+  // Compact row when no picture will come (notes, links without one): list-row size.
+  previewThumb: 72,
   previewGap: 12,
   previewToSavedTo: 16,
   savedToIcon: 26,
