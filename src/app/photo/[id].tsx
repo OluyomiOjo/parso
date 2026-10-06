@@ -12,7 +12,8 @@ import { colors, photoViewer, size, spacing } from '@/theme';
 
 const SIGNED_SECONDS = 60 * 60;
 
-// A photo or screenshot at full size. Pinch to zoom.
+// A save's picture at full size: the original for photos and screenshots, the stored picture for links.
+// Pinch to zoom.
 export default function PhotoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
@@ -26,8 +27,10 @@ export default function PhotoScreen() {
     enabled: Boolean(save && userId),
     staleTime: (SIGNED_SECONDS - 5 * 60) * 1000,
     queryFn: async (): Promise<string | null> => {
-      const original = await supabase.storage.from('uploads').createSignedUrl(`${userId}/${id}.jpg`, SIGNED_SECONDS);
-      if (original.data?.signedUrl) return original.data.signedUrl;
+      if (save?.kind === 'image' || save?.kind === 'screenshot') {
+        const original = await supabase.storage.from('uploads').createSignedUrl(`${userId}/${id}.jpg`, SIGNED_SECONDS);
+        if (original.data?.signedUrl) return original.data.signedUrl;
+      }
       if (!save?.thumbnail_path) return null;
       const thumb = await supabase.storage.from('thumbnails').createSignedUrl(save.thumbnail_path, SIGNED_SECONDS);
       return thumb.data?.signedUrl ?? null;

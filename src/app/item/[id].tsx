@@ -100,6 +100,8 @@ export default function SaveDetailScreen() {
       },
     ]);
 
+  const openPhoto = () => router.push({ pathname: '/photo/[id]', params: { id: save.id } });
+
   const openSource = () => {
     if (save.url) Linking.openURL(save.url).catch(() => Alert.alert(OPEN_FAILED));
   };
@@ -113,7 +115,15 @@ export default function SaveDetailScreen() {
         {hasImage ? (
           <View style={styles.imageBox}>
             {imageUrl ? (
-              <Image source={{ uri: imageUrl }} style={styles.image} accessibilityIgnoresInvertColors />
+              // Tap the picture to see it whole, full screen (photos at their original size).
+              <Pressable
+                onPress={openPhoto}
+                accessibilityRole="imagebutton"
+                accessibilityLabel="Open picture full screen"
+                style={styles.image}
+              >
+                <Image source={{ uri: imageUrl }} style={styles.image} accessibilityIgnoresInvertColors />
+              </Pressable>
             ) : null}
             <View style={[styles.overlayHeader, { top: insets.top + detail.headerTop }]}>{back}</View>
           </View>
