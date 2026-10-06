@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import { router, useSegments } from 'expo-router';
 import { useShareIntentContext } from 'expo-share-intent';
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { clipboardChangeCount } from '../../modules/clipboard-change';
@@ -10,7 +10,7 @@ import { clipboardChangeCount } from '../../modules/clipboard-change';
 // Offers a copied link in the mini sheet (/copied-link) once per new copy. hasUrlAsync asks iOS only
 // whether a link is there, and the clipboard's change count (our modules/clipboard-change) says whether
 // anything new was copied; neither reads the clipboard, so no "Allow paste" alert. The link itself is read
-// only through Apple's paste button in the sheet. Owner-approved in step 10.
+// only through Apple's paste button in the sheet. Owner-approved in step 10; any screen since build 9.
 const OFFERED_KEY = 'parso.clipboard.offeredCount';
 
 async function shouldOffer(): Promise<boolean> {
@@ -23,26 +23,30 @@ async function shouldOffer(): Promise<boolean> {
   return true;
 }
 
-// Checks when Parso opens and when it comes back to the front, and only while one of the four tabs is
-// showing: never over a save sheet, the Add screen or a share that is arriving.
-export function useCopiedLinkOffer() {
+// Screens it must never cover: sheets the person is in the middle of, and sign-in. Everywhere else (the tabs,
+// a save's detail page, a collection, Reminders) it may appear. Owner request, step 10.
+const BLOCKED = new Set(['save', 'add', 'copied-link', 'item-edit', 'photo', 'collection-rename', 'intro', 'welcome']);
+
+// Checks when Parso opens and when it comes back to the front. If a blocked screen is showing then, the offer
+// waits and is made as soon as the person is back on an ordinary screen.
+export function useCopiedLinkOffer(signedIn: boolean) {
   const segments = useSegments();
   const { hasShareIntent } = useShareIntentContext();
-  const onTabs = segments[0] === '(tabs)' && !hasShareIntent;
-  const onTabsRef = useRef(onTabs);
-  onTabsRef.current = onTabs;
+  const allowed = signedIn && !hasShareIntent && !BLOCKED.has(segments[0] ?? '');
+  const [pending, setPending] = useState(true);
 
   useEffect(() => {
-    const check = () => {
-      if (!onTabsRef.current) return; // not marked as offered, so it's offered next time instead
-      shouldOffer()
-        .then((offer) => {
-          if (offer && onTabsRef.current) router.push('/copied-link');
-        })
-        .catch(() => undefined);
-    };
-    check();
-    const sub = AppState.addEventListener('change', (state) => state === 'active' && check());
+    const sub = AppState.addEventListener('change', (state) => state === 'active' && setPending(true));
     return () => sub.remove();
   }, []);
+
+  useEffect(() => {
+    if (!pending || !allowed) return;
+    setPending(false);
+    shouldOffer()
+      .then((offer) => {
+        if (offer) router.push('/copied-link');
+      })
+      .catch(() => undefined);
+  }, [pending, allowed]);
 }

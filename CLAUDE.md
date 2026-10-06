@@ -24,7 +24,7 @@ In scope:
 10. Delete a save, with a confirmation (owner-approved in step 8).
 11. Add to Parso screen: a link, typed or pasted text, or a photo from the library (owner-approved in step 10).
 12. New screenshots check: when Parso opens, offer screenshots taken since last time (Screenshots album, full photo access, on/off on the You tab); nothing is saved without a tap. Owner-approved in step 10 in place of background import, which stays out of scope.
-13. A copied link is offered in a mini sheet ("Save the link you copied", Apple's paste button, no paste alert) once per new copy, only while a tab is showing; the clipboard's change count (local module `modules/clipboard-change`) tells a new copy from one already offered. The reminder card says "and N more" with a Reminders list (owner-approved in step 10).
+13. A copied link is offered in a mini sheet ("Save the link you copied", Apple's paste button, no paste alert) once per new copy, on any screen except sheets in progress, editing, the photo viewer, sign-in and intro (it waits until one of those closes); the clipboard's change count (local module `modules/clipboard-change`) tells a new copy from one already offered. The reminder card says "and N more" with a Reminders list (owner-approved in step 10).
 14. Share a save out through the iPhone share sheet (link, note text, or the photo itself), always ending with "Saved with Parso.ai"; Download for photos and screenshots (owner-approved in step 10). Sharing inside Parso (shared collections, other people) stays out of scope.
 15. Parso Pro through RevenueCat (owner decision in step 10): free for the first 50 saves in total; at the limit everything stays searchable, openable and shareable and only new saves ask to upgrade. Pro is $4.99 a month or $39.99 a year, no trial. Pro also adds videos (up to 3 minutes, from the Add screen and the share sheet); free accounts can't save videos (owner decision in step 10). (Built in Part B, after the admin dashboard.)
 16. Admin dashboard at dash.parso.ai (owner decision in step 10): a private website for admins only (emails in the `admins` table), showing counts, behaviour and each save's source. Privacy line: admins never see what anyone saved (no titles, links, notes, pictures, text or search words); enforced by the `admin-stats` function, which returns counts only. Admins can give or remove Pro and delete an account.
@@ -55,7 +55,7 @@ Ask before adding any dependency not listed here.
 ## Data model (Supabase)
 
 - `collections`: id, user_id, name, description, is_smart (bool), created_at.
-- `saves`: id, user_id, collection_id, kind (link | image | screenshot | text), source (instagram | tiktok | x | threads | youtube | facebook | pinterest | linkedin | reddit | spotify | safari | whatsapp | other), url, title, snippet, summary, tags (text[]), note, thumbnail_path, raw_text, reminder_at (timestamptz, nullable), thumbnail_width and thumbnail_height (the stored picture's size, for the grid), preview_image_url (the page's og:image as iOS read it when shared from Safari; used when a site refuses our server), created_at, processed_at, embedding (vector).
+- `saves`: id, user_id, collection_id, kind (link | image | screenshot | text), source (instagram | tiktok | x | threads | youtube | facebook | pinterest | linkedin | reddit | spotify | safari | whatsapp | other), url, title, snippet, summary, tags (text[]), note, thumbnail_path, raw_text, reminder_at (timestamptz, nullable), thumbnail_width and thumbnail_height (the stored picture's size, for the grid), author_handle (the poster's public handle for social posts, from public metadata), preview_image_url (the page's og:image as iOS read it when shared from Safari; used when a site refuses our server), created_at, processed_at, embedding (vector).
 - `events`: id, user_id, name, source, kind, via, created_at (usage numbers; insert-own, unreadable from the app).
 - `admins`: email (who can use dash.parso.ai; service role only).
 - `profiles`: user_id, plan_override ('pro' when an admin gives Pro), updated_at; Part B adds pro_until from RevenueCat.
@@ -67,8 +67,9 @@ Ask before adding any dependency not listed here.
 1. App inserts a save row immediately with whatever it has (URL, shared text, image). The user sees "Saved to ..." within one second; never block on AI.
 2. Edge Function `process-save` runs on insert:
    a. Fetch metadata: Open Graph tags; TikTok and other public oEmbed endpoints where available. Instagram often returns little without an approved Meta app: fall back to URL plus any shared caption text. Never scrape behind logins. Some sites refuse our server (Medium): for website links the phone reads the page's og:image into `preview_image_url` (src/lib/previewImage.ts), and a trigger (migration 0013) has the server store it as the thumbnail.
+   X posts are read from X's public post data (text, photos, video posters, X Articles, quoted posts, link cards); the author's profile photo is never used as the post's picture. Handles come from the same public data (Instagram embed, X, TikTok/YouTube/Reddit oEmbed, the Threads address, Pinterest oEmbed).
    b. For images and screenshots: send the image to the AI for a description and any visible text.
-   c. Ask the AI for strict JSON: title, snippet (max 80 chars), summary (max 2 sentences, enforced in code), tags (max 5, lowercase), collection (existing name or a new short name). Only facts from the fetched text or image; never guess a topic when the details are thin.
+   c. Ask the AI for strict JSON: title, snippet (max 80 chars), summary (max 2 sentences, enforced in code), tags (max 5, lowercase), collection (existing name or a new short name). Only facts from the fetched text or image; never guess a topic when the details are thin. When the caption is short, a plainly descriptive account name and hashtags (any language) may be used as cautious hints, said as "appears to be" (owner decision in step 10).
    d. Create the embedding, write everything back, set processed_at.
 3. The app updates the row live (Supabase realtime or refetch).
 
@@ -85,13 +86,15 @@ Designs live in the Parso App Screens canvas (Clean page). Exported PNGs of each
 0.1 to 0.3 Intro: illustration in a circle, title, one sentence, progress dots, Next. Skip on first two.
 1. Welcome and sign in: logo, headline "Save it now. Find it by asking.", demo search card, Apple and Google buttons.
 2. Save sheet (share extension UI): large preview card (owner-approved departure from the design's 48pt row: picture area full width, 176 tall, radius 18, with the source's brand icon pulsing on grey until the picture fades in; title up to 2 lines and source line under it; collapses to a compact row with a 72 square once no picture will come, so there is never an empty box), brand icon plus "Saved to [Collection]" with the collection highlighted, collection pills, tags line, Remind me segmented control, optional note, Done.
-3. Home ("My Parsos"): a larger black round + (Add to Parso), reminder card, Collections row, Recent list with a list/grid switch beside the heading (grid: two columns, Pinterest style, each picture at its own shape; one remembered choice for My Parsos and Collections; owner decision in step 10). No search field: Search lives in the tab bar (owner decision in step 10).
+3. Home ("My Parsos"): reminder card, Collections row, Recent list with a list/grid switch beside the heading (grid: two columns, Pinterest style, each picture at its own shape; one remembered choice for My Parsos and Collections; owner decision in step 10). No search field: Search lives in the tab bar (owner decision in step 10).
 3b. Home empty state: "Save your first thing" with share-sheet instructions and "Or paste a link".
 4. Search: focused search field, kind filter pills, result count, best match with large image, other results as list rows. Before typing: recent searches (stored on the phone) and "Try" pills built from the person's own tags, apps and collections.
 5. Collection: back, list/grid and rename buttons (the design's share button waits until sharing is in scope), name, description line (written by the AI once per collection), segmented filter by kind, list rows.
 6. Save detail: full-width image, source line, title, summary, details panel (Collection, Tags, Reminder, Note), fixed buttons: links get "Open in [source]" and Share; photos and screenshots get Open (full screen), Share and Download; notes get Share. "Delete save" sits under the panel. Tapping a save anywhere opens this screen; sharing into Parso still shows the save sheet.
 
-Tab bar: My Parsos, Search, Collections, You.
+Tab bar: My Parsos, Search, Collections, You. A floating black round + (Add to Parso, 56) sits above the tab bar at the bottom right on every tab and hides while the keyboard is up (owner decision in step 10).
+
+Meta lines (list rows, grid tiles, save sheet, detail page) lead with the poster's handle for social posts when Parso knows it ("@pplreunitedsurprise, 2 days ago"), beside the brand icon; otherwise the platform, site or kind. Search results keep the platform name so "from instagram" stays highlighted (owner decision in step 10).
 
 ## Design system (Clean)
 

@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { LinkIcon } from '@/icons/LinkIcon';
-import { itemLabel, relativeTime } from '@/lib/format';
+import { metaLabel, relativeTime } from '@/lib/format';
 import { displayUrl } from '@/lib/links';
 import type { SaveListItem } from '@/lib/saves';
 import { termsFor, type Match } from '@/lib/search';
@@ -22,7 +22,7 @@ type Props = {
 export function SaveRow({ save, thumbnailUrl, matches = [], onOpen, titleLines = 1 }: Props) {
   // Until processing (step 4) writes a title, the URL is the title.
   const title = save.title ?? (save.url ? displayUrl(save.url) : 'Saving…');
-  const meta = `${itemLabel(save.kind, save.source, save.url)}, ${relativeTime(save.created_at)}`;
+  const meta = `${metaLabel(save)}, ${relativeTime(save.created_at)}`;
 
   return (
     // Opens the save's detail page. Saves still being inserted (optimistic rows) have no server id yet,

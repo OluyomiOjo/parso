@@ -4,7 +4,6 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, V
 
 import { CollectionCard } from '@/components/CollectionCard';
 import { FirstSaveCard } from '@/components/FirstSaveCard';
-import { IconButton } from '@/components/IconButton';
 import { NewScreenshotsCard } from '@/components/NewScreenshotsCard';
 import { ListPanel } from '@/components/ListPanel';
 import { PasteLinkButton } from '@/components/PasteLinkButton';
@@ -15,7 +14,6 @@ import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { Text } from '@/components/Text';
 import { ViewSwitch } from '@/components/ViewSwitch';
-import { PlusIcon } from '@/icons/PlusIcon';
 import { useCollectionOverview } from '@/lib/collections';
 import { useUpcomingReminders } from '@/lib/reminders';
 import { useViewMode } from '@/lib/viewMode';
@@ -56,13 +54,6 @@ export default function HomeScreen() {
       >
         <View style={styles.header}>
           <ScreenTitle>My Parsos</ScreenTitle>
-          {hasSaves ? (
-            <View style={styles.headerButton}>
-              <IconButton label="Add to Parso" onPress={openAdd} variant="ink">
-                <PlusIcon color={colors.onInk} size={size.addButtonIcon} strokeWidth={size.addButtonStroke} />
-              </IconButton>
-            </View>
-          ) : null}
         </View>
 
         {/* New screenshots waiting to be saved. A copied link is offered in its own mini sheet (copied-link). */}
@@ -157,15 +148,11 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: spacing.sectionGapLarge },
+  content: { paddingBottom: spacing.sectionGapLarge + size.addButtonClearance },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-  },
-  headerButton: {
-    marginTop: spacing.titleTop - (size.addButton - size.iconButton) / 2, // centred where the 40pt button sat
-    marginRight: spacing.titleInset,
   },
   section: { marginTop: spacing.sectionGapLarge },
   paste: { marginTop: firstRun.cardToPaste },

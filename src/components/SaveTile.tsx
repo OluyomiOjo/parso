@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 
-import { itemLabel } from '@/lib/format';
+import { metaLabel } from '@/lib/format';
 import { displayUrl } from '@/lib/links';
 import type { SaveListItem } from '@/lib/saves';
 import { colors, grid, radius } from '@/theme';
@@ -20,7 +20,7 @@ type Props = {
 // picture, a white tile holding the title and its first line.
 export function SaveTile({ save, width, imageHeight, thumbnailUrl }: Props) {
   const title = save.title ?? (save.url ? displayUrl(save.url) : 'Saving…');
-  const source = itemLabel(save.kind, save.source, save.url);
+  const source = metaLabel(save);
 
   return (
     <Pressable

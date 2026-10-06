@@ -14,7 +14,7 @@ import { useCollectionOverview } from '@/lib/collections';
 import { useRecentSearches } from '@/lib/recentSearches';
 import { useThumbnailUrls } from '@/lib/saves';
 import { SEARCH_FAILED, useSearch, useSearchSuggestions } from '@/lib/search';
-import { colors, search, sheet, spacing, tabularNums } from '@/theme';
+import { colors, search, sheet, size, spacing, tabularNums } from '@/theme';
 
 const KIND_PILLS = [
   { kind: null, label: 'All' },
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   pills: { flexGrow: 0, marginTop: search.fieldToPills, marginHorizontal: -spacing.screen },
   pillRow: { gap: sheet.pillGap, paddingHorizontal: spacing.screen },
   results: { flex: 1 },
-  resultsContent: { paddingBottom: spacing.sectionGapLarge },
+  resultsContent: { paddingBottom: spacing.sectionGapLarge + size.addButtonClearance },
   message: { marginTop: search.pillsToCount, paddingHorizontal: spacing.titleInset },
   count: {
     marginTop: search.pillsToCount,

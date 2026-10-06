@@ -74,6 +74,7 @@ export type Database = {
       }
       saves: {
         Row: {
+          author_handle: string | null
           collection_id: string | null
           created_at: string
           embedding: string | null
@@ -97,6 +98,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          author_handle?: string | null
           collection_id?: string | null
           created_at?: string
           embedding?: string | null
@@ -120,6 +122,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          author_handle?: string | null
           collection_id?: string | null
           created_at?: string
           embedding?: string | null

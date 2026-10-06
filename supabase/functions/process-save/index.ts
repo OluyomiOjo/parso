@@ -3,6 +3,8 @@
 import {
   admin,
   embedMissing,
+  handlesMissing,
+  redescribe,
   getConfig,
   processSave,
   secretMatches,
@@ -29,6 +31,8 @@ Deno.serve(async (req) => {
   let thumbnailsOnly: unknown;
   let thumbnailSaveId: unknown;
   let sizesOnly: unknown;
+  let handlesOnly: unknown;
+  let redescribeIds: unknown;
   try {
     ({
       save_id: saveId,
@@ -37,6 +41,8 @@ Deno.serve(async (req) => {
       thumbnail_missing: thumbnailsOnly,
       thumbnail_save: thumbnailSaveId,
       thumbnail_sizes: sizesOnly,
+      handles_missing: handlesOnly,
+      redescribe: redescribeIds,
     } = await req.json());
   } catch {
     return new Response('Bad request', { status: 400 });
@@ -55,6 +61,16 @@ Deno.serve(async (req) => {
   if (sizesOnly === true) {
     const sized = await thumbnailSizes(db);
     return Response.json({ sized });
+  }
+  // One-off backfill: posters' handles for social saves filed before handles were kept. The AI does not run.
+  if (handlesOnly === true) {
+    const added = await handlesMissing(db);
+    return Response.json({ added });
+  }
+  // Owner-approved one-off: describe the listed saves again, keeping their collections.
+  if (Array.isArray(redescribeIds) && redescribeIds.every((x) => typeof x === 'string') && redescribeIds.length <= 25) {
+    const results = await redescribe(db, redescribeIds as string[], aiProvider);
+    return Response.json({ results });
   }
   // After a person edits tags, note or collection (trigger in migration 0011): refresh that save's search
   // data only. The AI does not run again.

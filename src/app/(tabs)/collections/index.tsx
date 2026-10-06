@@ -7,7 +7,7 @@ import { ScreenTitle } from '@/components/ScreenTitle';
 import { Text } from '@/components/Text';
 import { useCollectionOverview } from '@/lib/collections';
 import { useThumbnailUrls } from '@/lib/saves';
-import { card, colors, spacing } from '@/theme';
+import { card, colors, size, spacing } from '@/theme';
 
 export default function CollectionsScreen() {
   const { data: collections, isPending, isError, isRefetching, refetch } = useCollectionOverview();
@@ -54,7 +54,7 @@ export default function CollectionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: spacing.sectionGapLarge },
+  content: { paddingBottom: spacing.sectionGapLarge + size.addButtonClearance },
   section: { marginTop: spacing.sectionGapLarge },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: card.gap },
   message: { marginTop: spacing.sectionGapLarge, paddingHorizontal: spacing.titleInset },

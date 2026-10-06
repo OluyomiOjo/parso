@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, StyleSheet, View } from 'react-native';
 
 import { SourceIcon } from '@/icons/SourceIcon';
-import { itemLabel } from '@/lib/format';
+import { metaLabel } from '@/lib/format';
 import { displayUrl } from '@/lib/links';
 import type { SaveDetail } from '@/lib/saves';
 import { colors, radius, sheet } from '@/theme';
@@ -18,14 +18,7 @@ type Props = { save: SaveDetail; thumbnailUrl?: string };
 // a compact row instead, so there's never a large empty box. Owner-approved over the design's 48pt row.
 export function SheetPreview({ save, thumbnailUrl }: Props) {
   const title = save.title ?? (save.url ? displayUrl(save.url) : 'Saving…');
-  const source = (
-    <SourceLine
-      kind={save.kind}
-      source={save.source}
-      text={itemLabel(save.kind, save.source, save.url)}
-      variant="secondary"
-    />
-  );
+  const source = <SourceLine kind={save.kind} source={save.source} text={metaLabel(save)} variant="secondary" />;
   const pictureExpected = Boolean(save.thumbnail_path) || (!save.processed_at && save.kind !== 'text');
 
   if (!pictureExpected) {

@@ -46,7 +46,11 @@ const SOURCE_HOSTS: [string, string[]][] = [
 ];
 
 export function detectSource(url: string): string {
-  const host = /^https?:\/\/([^/?#:]+)/i.exec(url)?.[1]?.toLowerCase().replace(/^www\./, '') ?? '';
+  const host =
+    /^https?:\/\/([^/?#:]+)/i
+      .exec(url)?.[1]
+      ?.toLowerCase()
+      .replace(/^www\./, '') ?? '';
   for (const [source, hosts] of SOURCE_HOSTS) {
     if (hosts.some((h) => host === h || host.endsWith(`.${h}`))) return source;
   }
@@ -61,9 +65,10 @@ export function secretMatches(given: string | null, expected: string): boolean {
   return diff === 0;
 }
 
-export type PreparedSave = { text: string; image: ImageData | null; collections: string[] };
+export type PreparedSave = { text: string; image: ImageData | null; collections: string[]; handle: string | null };
 
 const IMAGE_KINDS = new Set(['image', 'screenshot']);
+const HANDLE_MAX = 80; // the database's limit (migration 0017)
 
 // Photos and screenshots shared into Parso: the app uploads them to uploads/<user_id>/<save_id>.jpg
 // before inserting the save, so the file is there when this runs.
@@ -88,6 +93,7 @@ export async function prepare(db: SupabaseClient, save: Save): Promise<PreparedS
     isImage ? null : `Platform: ${PLATFORM_NAMES[save.source] ?? 'Website'}`,
     meta.siteName ? `Site: ${meta.siteName}` : null,
     meta.author ? `Author: ${meta.author}` : null,
+    meta.handle && meta.handle !== meta.author ? `Account: ${meta.handle}` : null,
     meta.title ? `Page title: ${meta.title}` : null,
     meta.description ? `Description: ${meta.description.slice(0, 1500)}` : null,
     save.raw_text ? `Text shared with it: ${save.raw_text.slice(0, 1500)}` : null,
@@ -95,7 +101,12 @@ export async function prepare(db: SupabaseClient, save: Save): Promise<PreparedS
   ].filter(Boolean);
 
   const { data } = await db.from('collections').select('name').eq('user_id', save.user_id).order('created_at');
-  return { text: lines.join('\n'), image, collections: (data ?? []).map((c) => c.name) };
+  return {
+    text: lines.join('\n'),
+    image,
+    collections: (data ?? []).map((c) => c.name),
+    handle: meta.handle?.slice(0, HANDLE_MAX) ?? null,
+  };
 }
 
 export async function logRun(
@@ -133,7 +144,11 @@ async function findOrCreateCollection(db: SupabaseClient, userId: string, name: 
   };
   const existing = await find();
   if (existing) return existing;
-  const { data, error } = await db.from('collections').insert({ user_id: userId, name }).select('id, description').single();
+  const { data, error } = await db
+    .from('collections')
+    .insert({ user_id: userId, name })
+    .select('id, description')
+    .single();
   if (data) return data;
   // Another save created the same collection a moment ago (unique on lower(name)): use that one.
   const raced = await find();
@@ -195,6 +210,7 @@ export async function processSave(db: SupabaseClient, saveId: string, provider: 
       summary,
       tags,
       collection_id: collection.id,
+      author_handle: prepared.handle,
       ...(thumbnail ?? {}),
       processed_at: new Date().toISOString(),
     })
@@ -222,7 +238,7 @@ const EMBED_COLUMNS = 'id, user_id, kind, source, title, snippet, summary, tags,
 
 // Everything a person might search for, as one text: what it is, where it came from and where it's filed.
 function embeddingText(save: EmbeddableSave): string {
-  const from = save.kind === 'link' ? PLATFORM_NAMES[save.source] ?? 'Website' : save.kind;
+  const from = save.kind === 'link' ? (PLATFORM_NAMES[save.source] ?? 'Website') : save.kind;
   return [
     save.title,
     save.snippet,
@@ -241,7 +257,11 @@ async function writeEmbeddings(db: SupabaseClient, saves: EmbeddableSave[]) {
   if (!saves.length) return;
   const vectors = await embed(saves.map(embeddingText));
   for (const [i, save] of saves.entries()) {
-    await db.from('saves').update({ embedding: toVector(vectors[i]) }).eq('id', save.id).eq('user_id', save.user_id);
+    await db
+      .from('saves')
+      .update({ embedding: toVector(vectors[i]) })
+      .eq('id', save.id)
+      .eq('user_id', save.user_id);
   }
 }
 
@@ -326,4 +346,73 @@ export async function thumbnailSizes(db: SupabaseClient): Promise<number> {
     sized++;
   }
   return sized;
+}
+
+const SOCIAL_SOURCES = ['instagram', 'tiktok', 'x', 'threads', 'youtube', 'pinterest', 'reddit'];
+
+// Backfill: the poster's handle for filed social saves that have none. Reads public metadata only; the AI
+// does not run and nothing else about the save changes.
+export async function handlesMissing(db: SupabaseClient): Promise<number> {
+  const { data, error } = await db
+    .from('saves')
+    .select('id, user_id, source, url')
+    .eq('kind', 'link')
+    .in('source', SOCIAL_SOURCES)
+    .not('processed_at', 'is', null)
+    .is('author_handle', null)
+    .limit(40);
+  if (error) throw error;
+  let added = 0;
+  for (const save of data ?? []) {
+    if (!save.url) continue;
+    const handle = (await fetchLinkMetadata(save.url, save.source)).handle?.slice(0, HANDLE_MAX);
+    if (!handle) continue;
+    await db.from('saves').update({ author_handle: handle }).eq('id', save.id).eq('user_id', save.user_id);
+    added++;
+  }
+  return added;
+}
+
+// Owner-approved one-off: describe chosen saves again with today's metadata and instructions (for saves the
+// AI misread when it had little to go on). Title, snippet, summary, tags, handle and picture are rewritten;
+// the collection is kept, so nothing moves.
+export async function redescribe(db: SupabaseClient, saveIds: string[], provider: Provider) {
+  const results: { id: string; before: string | null; after: string | null; error?: string }[] = [];
+  for (const id of saveIds) {
+    const { data } = await db
+      .from('saves')
+      .select('id, user_id, kind, source, url, raw_text, preview_image_url, processed_at, title')
+      .eq('id', id)
+      .single<Save & { title: string | null }>();
+    if (!data) continue;
+    const prepared = await prepare(db, data);
+    let result: DescribeResult | null = null;
+    try {
+      result = await describeSave(provider, prepared);
+    } catch (error) {
+      await logRun(db, data, 'live', provider, null, error, prepared);
+      results.push({ id, before: data.title, after: null, error: String(error) });
+      continue;
+    }
+    await logRun(db, data, 'live', provider, result, null, prepared);
+    const thumbnail = prepared.image ? await storeThumbnail(db, data, prepared.image) : null;
+    const { title, snippet, summary, tags } = result.output;
+    await db
+      .from('saves')
+      .update({
+        title,
+        snippet,
+        summary,
+        tags,
+        author_handle: prepared.handle,
+        // An X post with no picture of its own drops the old profile-photo thumbnail.
+        ...(thumbnail ??
+          (data.source === 'x' ? { thumbnail_path: null, thumbnail_width: null, thumbnail_height: null } : {})),
+      })
+      .eq('id', id)
+      .eq('user_id', data.user_id);
+    await storeEmbedding(db, id, data.user_id).catch((e) => console.error('re-embed failed', id, e));
+    results.push({ id, before: data.title, after: title });
+  }
+  return results;
 }

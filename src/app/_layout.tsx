@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 
 import { ShareHandler } from '@/components/ShareHandler';
 import { AuthProvider, useSession } from '@/lib/auth';
+import { useCopiedLinkOffer } from '@/lib/clipboard';
 import { IntroProvider, useIntro } from '@/lib/intro';
 import { configureNotifications, useReminderSync, useReminderTaps } from '@/lib/reminders';
 import { supabase } from '@/lib/supabase';
@@ -29,6 +30,7 @@ function RootStack() {
   const { seen: introSeen } = useIntro();
   const loading = sessionLoading || introSeen === null;
   useOpenTracking(session !== null);
+  useCopiedLinkOffer(session !== null && !loading);
 
   useEffect(() => {
     if (!loading) SplashScreen.hideAsync();

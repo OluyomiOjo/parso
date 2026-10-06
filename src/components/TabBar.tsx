@@ -18,9 +18,14 @@ const TABS: Record<string, { label: string; Icon: ComponentType<IconProps> }> = 
   you: { label: 'You', Icon: YouIcon },
 };
 
-export function TabBar({ state, navigation, insets }: BottomTabBarProps) {
+type Props = BottomTabBarProps & { onHeight?: (height: number) => void }; // the floating + sits just above
+
+export function TabBar({ state, navigation, insets, onHeight }: Props) {
   return (
-    <View style={[styles.bar, { paddingBottom: insets.bottom + size.tabBarPaddingBottom }]}>
+    <View
+      style={[styles.bar, { paddingBottom: insets.bottom + size.tabBarPaddingBottom }]}
+      onLayout={(e) => onHeight?.(e.nativeEvent.layout.height)}
+    >
       {state.routes.map((route, index) => {
         const tab = TABS[route.name];
         if (!tab) return null;

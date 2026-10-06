@@ -36,6 +36,12 @@ export function itemLabel(kind: string, source: string, url: string | null): str
   return KIND_LABELS[kind] ?? sourceLabel(source, url);
 }
 
+// The meta line's leading label: the poster's @handle for social posts when Parso knows it (the brand icon
+// beside it already says which platform), otherwise the platform, site or kind. Owner request, step 10.
+export function metaLabel(save: { kind: string; source: string; url: string | null; author_handle?: string | null }) {
+  return save.kind === 'link' && save.author_handle ? save.author_handle : itemLabel(save.kind, save.source, save.url);
+}
+
 export const saveCount = (n: number) => `${n} ${n === 1 ? 'save' : 'saves'}`;
 
 // The collection filter's segments, in this order, shown only for kinds the collection has.

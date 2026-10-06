@@ -125,7 +125,7 @@ export default function CollectionScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: spacing.sectionGapLarge },
+  content: { paddingBottom: spacing.sectionGapLarge + size.addButtonClearance },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

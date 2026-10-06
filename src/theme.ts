@@ -123,9 +123,12 @@ export const size = {
   buttonIcon: 18,
   iconButton: 40, // round header button, e.g. paste a link
   iconButtonIcon: 20,
-  addButton: 48, // the black + on My Parsos, larger than other round buttons (owner asked in step 10)
-  addButtonIcon: 24,
+  // The floating black + (Add to Parso), above the tab bar on every tab (owner asked in step 10).
+  addButton: 56,
+  addButtonIcon: 26,
   addButtonStroke: 2.4,
+  addButtonGap: 16, // above the tab bar, and from the right edge
+  addButtonClearance: 88, // extra space at the end of tab screens so the + never covers the last row
   thumbIcon: 22, // placeholder icon inside an empty thumbnail
   iconStroke: 1.8,
   fieldHeight: 52,

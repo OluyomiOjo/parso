@@ -65,7 +65,13 @@ For each save you get the link, whatever public details could be fetched, someti
 
 For screenshots and photos, read any visible text in the image and use it; it is often the most useful detail.
 
-Only use facts that appear in the text or the image. When the details are thin, describe only what is actually there (for example "Video from @WilliamsRuto on X") and never guess the topic from the account, the link or general knowledge.`;
+Only use facts that appear in the text or the image. Never invent names, places, numbers or events.
+
+When the caption is short or missing, use these clues, and say "appears to be" when you rely on them:
+- An account name that plainly describes its content (for example @surprisereunions suggests surprise homecomings, @easyweeknightrecipes suggests recipes). Ignore account names that are just a person's or brand's name.
+- Hashtags, in any language: read their meaning (for example a Japanese hashtag), but don't copy them into the title.
+- What the image shows, read together with those clues (uniformed soldiers greeting family under an account about reunions is most likely a homecoming).
+If nothing gives a topic, describe only what is actually there (for example "Video from @WilliamsRuto on X").`;
 
 function userText(input: DescribeInput): string {
   const collections = input.collections.length ? input.collections.join(', ') : 'none yet';

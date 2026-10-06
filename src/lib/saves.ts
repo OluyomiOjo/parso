@@ -19,12 +19,13 @@ export type SaveListItem = Pick<
   | 'thumbnail_path'
   | 'thumbnail_width'
   | 'thumbnail_height'
+  | 'author_handle'
   | 'created_at'
   | 'processed_at'
 >;
 
 const LIST_COLUMNS =
-  'id, kind, source, url, title, snippet, thumbnail_path, thumbnail_width, thumbnail_height, created_at, processed_at';
+  'id, kind, source, url, title, snippet, thumbnail_path, thumbnail_width, thumbnail_height, author_handle, created_at, processed_at';
 const LIST_LIMIT = 50;
 
 const savesKey = (userId: string | undefined) => ['saves', userId] as const;
@@ -51,10 +52,11 @@ export type SaveDetail = Pick<
   | 'processed_at'
   | 'reminder_at'
   | 'preview_image_url'
+  | 'author_handle'
 >;
 
 const DETAIL_COLUMNS =
-  'id, kind, source, url, title, snippet, summary, raw_text, tags, note, collection_id, thumbnail_path, created_at, processed_at, reminder_at, preview_image_url';
+  'id, kind, source, url, title, snippet, summary, raw_text, tags, note, collection_id, thumbnail_path, created_at, processed_at, reminder_at, preview_image_url, author_handle';
 
 export function useSaves() {
   const { session } = useSession();
@@ -178,6 +180,7 @@ export function useCreateLinkSave(via: 'add' | 'clipboard') {
         thumbnail_path: null,
         thumbnail_width: null,
         thumbnail_height: null,
+        author_handle: null,
         created_at: new Date().toISOString(),
         processed_at: null,
       };

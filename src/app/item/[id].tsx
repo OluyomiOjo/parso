@@ -11,7 +11,7 @@ import { SourceLine } from '@/components/SourceLine';
 import { Text } from '@/components/Text';
 import { ChevronLeftIcon } from '@/icons/ChevronLeftIcon';
 import { useCollections } from '@/lib/collections';
-import { itemLabel, openLabel, relativeTime } from '@/lib/format';
+import { metaLabel, openLabel, relativeTime } from '@/lib/format';
 import { displayUrl } from '@/lib/links';
 import { addPreviewImage } from '@/lib/previewImage';
 import { shortReminder } from '@/lib/reminderTime';
@@ -118,7 +118,7 @@ export default function SaveDetailScreen() {
           <SourceLine
             kind={save.kind}
             source={save.source}
-            text={`${itemLabel(save.kind, save.source, save.url)}, saved ${relativeTime(save.created_at)}`}
+            text={`${metaLabel(save)}, saved ${relativeTime(save.created_at)}`}
           />
           <Text variant="detailTitle" accessibilityRole="header" style={styles.title}>
             {title}

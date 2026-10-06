@@ -7,6 +7,7 @@ export type LinkMetadata = {
   author?: string;
   siteName?: string;
   imageUrl?: string;
+  handle?: string; // the poster's public handle, e.g. "@pplreunitedsurprise" or "u/name"; shown instead of the platform
 };
 
 const USER_AGENT = 'Mozilla/5.0 (compatible; ParsoBot/1.0; +https://parso.ai)';
@@ -28,27 +29,100 @@ function canonicalXUrl(url: string): string {
   return match ? `https://x.com/${match[1]}/status/${match[2]}` : url;
 }
 
-// X's oEmbed has no picture. X's own embed widget reads this public endpoint, which has the post's photo
-// or video preview, and the author's profile picture for text-only posts.
+// X's public post data, the same feed X's own embed widget reads. It has the post text, photos and video
+// posters, X Articles (title, opening text, cover picture), quoted posts and link cards. The author's profile
+// photo is never used as the post's picture: describing it as the post misled the AI (owner report, step 10).
 function xSyndicationToken(id: string): string {
   return ((Number(id) / 1e15) * Math.PI).toString(36).replace(/(0+|\.)/g, '');
 }
 
-async function xImage(url: string): Promise<string | undefined> {
+type XMedia = { media_url_https?: string };
+type XPost = {
+  text?: string;
+  user?: { name?: string; screen_name?: string };
+  mediaDetails?: XMedia[];
+  photos?: { url?: string }[];
+  video?: { poster?: string };
+  article?: { title?: string; preview_text?: string; cover_media?: { media_info?: { original_img_url?: string } } };
+  quoted_tweet?: XPost;
+  card?: { binding_values?: Record<string, { string_value?: string; image_value?: { url?: string } }> };
+};
+
+const withoutTcoLinks = (text: string | undefined) => clean(text?.replace(/https:\/\/t\.co\/\S+/g, ''));
+
+function xPicture(post: XPost | undefined): string | undefined {
+  if (!post) return undefined;
+  const card = post.card?.binding_values;
+  return (
+    post.mediaDetails?.[0]?.media_url_https ??
+    post.photos?.[0]?.url ??
+    post.video?.poster ??
+    post.article?.cover_media?.media_info?.original_img_url ??
+    card?.thumbnail_image_large?.image_value?.url ??
+    card?.photo_image_full_size_large?.image_value?.url
+  );
+}
+
+async function fromXPost(url: string): Promise<LinkMetadata> {
   const id = /(?:x|twitter)\.com\/[^/?#]+\/status\/(\d+)/i.exec(url)?.[1];
-  if (!id) return undefined;
+  if (!id) return {};
   const res = await fetchWithTimeout(
     `https://cdn.syndication.twimg.com/tweet-result?id=${id}&token=${xSyndicationToken(id)}`,
     'application/json',
   );
-  if (!res) return undefined;
+  if (!res) return {};
   try {
-    const data = await res.json();
-    const media = (data.mediaDetails ?? []) as { media_url_https?: string }[];
-    const profile = data.user?.profile_image_url_https as string | undefined;
-    return media[0]?.media_url_https ?? profile?.replace('_normal.', '_400x400.');
+    const post = (await res.json()) as XPost;
+    const card = post.card?.binding_values;
+    const quoted = post.quoted_tweet;
+    const lines = [
+      withoutTcoLinks(post.text),
+      post.article?.title ? `X Article: ${clean(post.article.title)}` : undefined,
+      post.article?.preview_text ? `Article opening: ${clean(post.article.preview_text)}` : undefined,
+      card?.title?.string_value ? `Linked page: ${clean(card.title.string_value)}` : undefined,
+      card?.description?.string_value ? `Linked page says: ${clean(card.description.string_value)}` : undefined,
+      quoted
+        ? `Quoting @${quoted.user?.screen_name ?? 'someone'}: ${withoutTcoLinks(quoted.text) ?? quoted.article?.title ?? ''}`
+        : undefined,
+    ].filter(Boolean);
+    return {
+      title: post.article?.title ? clean(post.article.title) : undefined,
+      description: lines.length ? lines.join('\n') : undefined,
+      author: clean(post.user?.name),
+      siteName: 'X',
+      imageUrl: xPicture(post) ?? xPicture(quoted),
+      handle: post.user?.screen_name ? `@${post.user.screen_name}` : undefined,
+    };
   } catch {
-    return undefined;
+    return {};
+  }
+}
+
+// Handles from the platforms' own public data: oEmbed author fields, or the post's address.
+function handleFrom(
+  source: string,
+  url: string,
+  oembed: { author_name?: string; author_url?: string; author_unique_id?: string },
+): string | undefined {
+  switch (source) {
+    case 'tiktok':
+      return oembed.author_unique_id ? `@${oembed.author_unique_id}` : undefined;
+    case 'youtube': {
+      const at = /youtube\.com\/(@[^/?#]+)/i.exec(oembed.author_url ?? '')?.[1];
+      return at ? decodeURIComponent(at) : clean(oembed.author_name);
+    }
+    case 'x': {
+      const name = /(?:x|twitter)\.com\/([^/?#]+)/i.exec(oembed.author_url ?? '')?.[1];
+      return name ? `@${name}` : undefined;
+    }
+    case 'reddit':
+      return oembed.author_name ? `u/${oembed.author_name}` : undefined;
+    case 'threads': {
+      const at = /threads\.(?:net|com)\/(@[^/?#]+)/i.exec(url)?.[1];
+      return at ?? undefined;
+    }
+    default:
+      return undefined;
   }
 }
 
@@ -99,7 +173,11 @@ export function decodeEntities(text: string): string {
 }
 
 const clean = (text: string | undefined) => {
-  const t = text ? decodeEntities(text.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim() : '';
+  const t = text
+    ? decodeEntities(text.replace(/<[^>]+>/g, ' '))
+        .replace(/\s+/g, ' ')
+        .trim()
+    : '';
   return t || undefined;
 };
 
@@ -140,6 +218,7 @@ async function fromOEmbed(source: string, url: string): Promise<LinkMetadata> {
       author: clean(data.author_name),
       siteName: clean(data.provider_name),
       imageUrl: data.thumbnail_url,
+      handle: handleFrom(source, url, data),
     };
   } catch {
     return {};
@@ -159,12 +238,15 @@ async function fromInstagramEmbed(url: string): Promise<LinkMetadata> {
   const html = await readCapped(res, MAX_HTML_BYTES);
   const author = clean(/class="CaptionUsername"[^>]*>([^<]+)</i.exec(html)?.[1]);
   const captionHtml = /class="Caption">([\s\S]*?)<div class="CaptionComments"/i.exec(html)?.[1] ?? '';
-  const caption = clean(captionHtml.replace(/<a class="CaptionUsername"[\s\S]*?<\/a>/i, '').replace(/<br\s*\/?>/gi, '\n'));
+  const caption = clean(
+    captionHtml.replace(/<a class="CaptionUsername"[\s\S]*?<\/a>/i, '').replace(/<br\s*\/?>/gi, '\n'),
+  );
   const image = /class="EmbeddedMediaImage"[^>]*src="([^"]+)"/i.exec(html)?.[1];
   return {
     title: kind === 'reel' ? 'Instagram reel' : 'Instagram post',
     description: caption,
     author: author ? `@${author}` : undefined,
+    handle: author ? `@${author}` : undefined,
     siteName: 'Instagram',
     imageUrl: image ? decodeEntities(image) : undefined,
   };
@@ -185,16 +267,36 @@ function absolutize(imageUrl: string | undefined, pageUrl: string): string | und
   }
 }
 
+// Pinterest has no oEmbed in the list above (the page itself has the picture); its oEmbed is read only for the
+// pinner's name.
+async function pinterestHandle(url: string): Promise<string | undefined> {
+  const res = await fetchWithTimeout(
+    `https://www.pinterest.com/oembed.json?url=${encodeURIComponent(url)}`,
+    'application/json',
+  );
+  if (!res) return undefined;
+  try {
+    return clean((await res.json()).author_name);
+  } catch {
+    return undefined;
+  }
+}
+
 export async function fetchLinkMetadata(url: string, source: string): Promise<LinkMetadata> {
   if (LOGIN_WALLED.has(source)) return {};
   if (source === 'instagram') {
     const embed = await fromInstagramEmbed(url);
     if (embed.description || embed.imageUrl) return embed;
   }
-  const [oembed, page] = await Promise.all([
+  if (source === 'x') {
+    const post = await fromXPost(url);
+    if (post.description || post.imageUrl || post.handle) return { ...post, imageUrl: absolutize(post.imageUrl, url) };
+  }
+  const [oembed, page, pinner] = await Promise.all([
     fromOEmbed(source, url),
     // oEmbed already covers these fully; skip the heavier page fetch.
     source in OEMBED && source !== 'reddit' ? Promise.resolve({} as LinkMetadata) : fromPage(url),
+    source === 'pinterest' ? pinterestHandle(url) : Promise.resolve(undefined),
   ]);
   const merged: LinkMetadata = {
     title: oembed.title ?? page.title,
@@ -202,8 +304,8 @@ export async function fetchLinkMetadata(url: string, source: string): Promise<Li
     author: oembed.author ?? page.author,
     siteName: oembed.siteName ?? page.siteName,
     imageUrl: oembed.imageUrl ?? page.imageUrl,
+    handle: oembed.handle ?? pinner ?? handleFrom(source, url, {}),
   };
-  if (source === 'x' && !merged.imageUrl) merged.imageUrl = await xImage(url);
   merged.imageUrl = absolutize(merged.imageUrl, url);
   return merged;
 }
