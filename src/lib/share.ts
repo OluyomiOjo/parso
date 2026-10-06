@@ -9,7 +9,7 @@ import { supabase } from './supabase';
 const MAX_IMAGE_SIDE = 1600; // keeps uploads small and within the AI's image limit
 const JPEG_QUALITY = 0.8;
 const SCREENSHOT_RATIO = 1.9; // phone screens are about 2.17:1; photos are 4:3 or 3:2
-const MAX_TEXT = 5000;
+const MAX_TEXT = 20_000; // the database's limit (migration 0018)
 
 // kind and source come back for the usage numbers (src/lib/track.ts).
 export type ShareResult = { saveId: string; kind: string; source: string } | { error: string };
@@ -75,17 +75,6 @@ export async function saveImage(image: LocalImage, userId: string): Promise<Shar
 function sharedPreviewImage(intent: ShareIntent): string | null {
   const image = intent.meta?.['og:image'] ?? intent.meta?.['twitter:image'];
   return image && /^https:\/\//i.test(image) && image.length <= 2048 ? image : null;
-}
-
-// Typed or pasted text from the Add screen: a link inside it is saved as the link, the rest kept with it.
-export function saveText(text: string): Promise<ShareResult> {
-  return saveLinkOrText({
-    text,
-    webUrl: null,
-    files: null,
-    type: 'text',
-    meta: null,
-  } as ShareIntent);
 }
 
 async function saveLinkOrText(intent: ShareIntent): Promise<ShareResult> {

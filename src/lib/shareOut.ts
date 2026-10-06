@@ -2,6 +2,7 @@ import { File, Paths } from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library/legacy';
 import { Share } from 'react-native';
 
+import { shareText } from './noteFormat';
 import type { SaveDetail } from './saves';
 import { supabase } from './supabase';
 
@@ -20,7 +21,9 @@ export function shareMessage(save: Shareable): string {
     save.kind === 'link'
       ? [save.title, save.url].filter(Boolean).join('\n')
       : save.kind === 'text'
-        ? (save.raw_text ?? save.title ?? '')
+        ? save.raw_text
+          ? shareText(save.raw_text)
+          : (save.title ?? '')
         : '';
   return body ? `${body}\n\n${SHARE_FOOTER}` : SHARE_FOOTER;
 }

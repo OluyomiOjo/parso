@@ -4,6 +4,7 @@ import {
   admin,
   embedMissing,
   handlesMissing,
+  noteSave,
   redescribe,
   getConfig,
   processSave,
@@ -33,6 +34,8 @@ Deno.serve(async (req) => {
   let sizesOnly: unknown;
   let handlesOnly: unknown;
   let redescribeIds: unknown;
+  let noteSaveId: unknown;
+  let noteEditedAt: unknown;
   try {
     ({
       save_id: saveId,
@@ -43,6 +46,8 @@ Deno.serve(async (req) => {
       thumbnail_sizes: sizesOnly,
       handles_missing: handlesOnly,
       redescribe: redescribeIds,
+      note_save: noteSaveId,
+      edited_at: noteEditedAt,
     } = await req.json());
   } catch {
     return new Response('Bad request', { status: 400 });
@@ -79,6 +84,16 @@ Deno.serve(async (req) => {
       storeEmbedding(db, embedSaveId).catch((error) => console.error('re-embed failed', embedSaveId, error)),
     );
     return Response.json({ accepted: embedSaveId }, { status: 202 });
+  }
+  // A note was written or edited (triggers in migrations 0018 and 0019): file it, or refresh its search data,
+  // once typing stops.
+  if (typeof noteSaveId === 'string' && typeof noteEditedAt === 'string') {
+    EdgeRuntime.waitUntil(
+      noteSave(db, noteSaveId, noteEditedAt, aiProvider).catch((error) =>
+        console.error('note-save failed', noteSaveId, error),
+      ),
+    );
+    return Response.json({ accepted: noteSaveId }, { status: 202 });
   }
   // After the phone found a page's preview picture (trigger in migration 0013): store it as the thumbnail.
   if (typeof thumbnailSaveId === 'string') {

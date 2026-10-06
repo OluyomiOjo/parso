@@ -341,7 +341,6 @@ export const firstRun = {
 
 // Add to Parso sheet.
 export const addScreen = {
-  textHeight: 140,
   pasteGap: 8, // the link field to Apple's Paste button beside it
 } as const;
 
@@ -375,6 +374,29 @@ export const screenshotsCard = {
   maxThumbs: 3,
 } as const;
 
+// The note editor (/note/[id]), like Apple Notes: a white page, the first line as the title, tick boxes and
+// bullets beside the text, and a toolbar above the keyboard.
+export const note = {
+  paddingX: 20,
+  headerTop: 8, // below the safe area
+  headerGap: 8, // between the header's round buttons
+  metaTop: 12, // header to "Edited …"
+  titleTop: 8, // "Edited …" to the first line
+  lineGap: 2, // between lines
+  check: 22, // tick box
+  checkBorder: 1.5,
+  checkTick: 14,
+  checkTickStroke: 3,
+  checkGap: 10, // tick box or bullet to the text
+  bullet: 6,
+  markerSlot: 22, // width the tick box or bullet sits in, so text lines up
+  toolbarHeight: 44,
+  toolbarIcon: 22,
+  toolbarGap: 28,
+  reminderGap: 6, // bell to the reminder time
+  bottomSpace: 120, // empty page under the last line; tapping it puts the cursor at the end
+} as const;
+
 export const theme = {
   colors,
   brandColors,
@@ -398,5 +420,7 @@ export const theme = {
   addScreen,
   copiedLinkSheet,
   screenshotsCard,
+  note,
 } as const;
 export default theme;
+

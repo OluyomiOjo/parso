@@ -1,8 +1,8 @@
-import { router } from 'expo-router';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { metaLabel } from '@/lib/format';
 import { displayUrl } from '@/lib/links';
+import { openSave } from '@/lib/notes';
 import type { SaveListItem } from '@/lib/saves';
 import { colors, grid, radius } from '@/theme';
 
@@ -24,7 +24,7 @@ export function SaveTile({ save, width, imageHeight, thumbnailUrl }: Props) {
 
   return (
     <Pressable
-      onPress={() => router.push(`/item/${save.id}`)}
+      onPress={() => openSave(save)}
       disabled={save.id.startsWith('pending-')}
       accessibilityRole="button"
       accessibilityLabel={`${title}. ${source}`}

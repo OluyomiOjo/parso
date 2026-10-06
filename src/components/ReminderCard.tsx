@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { BellIcon } from '@/icons/BellIcon';
 import { relativeTime } from '@/lib/format';
 import { displayUrl } from '@/lib/links';
+import { openSave } from '@/lib/notes';
 import type { ReminderSave } from '@/lib/reminders';
 import { formatReminder } from '@/lib/reminderTime';
 import { colors, radius, reminderCard, size, type } from '@/theme';
@@ -14,7 +15,7 @@ import { Text } from './Text';
 export function ReminderCard({ save, more = 0 }: { save: ReminderSave; more?: number }) {
   const when = formatReminder(new Date(save.reminder_at));
   const title = save.title ?? (save.url ? displayUrl(save.url) : 'Your save');
-  const open = () => router.push(`/item/${save.id}`);
+  const open = () => openSave(save);
   return (
     <Pressable
       onPress={open}

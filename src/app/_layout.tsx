@@ -56,6 +56,7 @@ function RootStack() {
         <Stack.Screen name="save/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="collection-rename/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="item/[id]" />
+        <Stack.Screen name="note/[id]" />
         <Stack.Screen name="photo/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="reminders" />
         <Stack.Screen

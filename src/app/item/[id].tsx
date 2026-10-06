@@ -37,8 +37,15 @@ export default function SaveDetailScreen() {
   const openedKind = save?.kind;
   const openedSource = save?.source;
   useEffect(() => {
-    if (openedKind && openedSource) track('save_opened', { kind: openedKind, source: openedSource });
+    if (openedKind && openedSource && openedKind !== 'text')
+      track('save_opened', { kind: openedKind, source: openedSource });
   }, [id, openedKind, openedSource]);
+
+  // Notes open in the note editor; this catches links that only know the id (a reminder notification).
+  const isNote = save?.kind === 'text';
+  useEffect(() => {
+    if (isNote) router.replace({ pathname: '/note/[id]', params: { id } });
+  }, [isNote, id]);
 
   const needsPicture = Boolean(save?.processed_at && !save.thumbnail_path && !save.preview_image_url);
   useEffect(() => {
@@ -53,7 +60,7 @@ export default function SaveDetailScreen() {
     </IconButton>
   );
 
-  if (!save) {
+  if (!save || isNote) {
     return (
       <View style={[styles.screen, { paddingTop: insets.top + detail.headerTop }]}>
         <View style={styles.inlineHeader}>{back}</View>

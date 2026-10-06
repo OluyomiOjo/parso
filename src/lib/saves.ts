@@ -22,17 +22,19 @@ export type SaveListItem = Pick<
   | 'author_handle'
   | 'created_at'
   | 'processed_at'
+  | 'pinned'
+  | 'edited_at'
 >;
 
-const LIST_COLUMNS =
-  'id, kind, source, url, title, snippet, thumbnail_path, thumbnail_width, thumbnail_height, author_handle, created_at, processed_at';
+export const LIST_COLUMNS =
+  'id, kind, source, url, title, snippet, thumbnail_path, thumbnail_width, thumbnail_height, author_handle, created_at, processed_at, pinned, edited_at';
 const LIST_LIMIT = 50;
 
-const savesKey = (userId: string | undefined) => ['saves', userId] as const;
+export const savesKey = (userId: string | undefined) => ['saves', userId] as const;
 const collectionSavesKey = (userId: string | undefined, collectionId: string) =>
   [...savesKey(userId), 'collection', collectionId] as const;
 const COLLECTION_LIMIT = 200;
-const saveKey = (id: string) => ['save', id] as const;
+export const saveKey = (id: string) => ['save', id] as const;
 
 export type SaveDetail = Pick<
   Tables<'saves'>,
@@ -53,10 +55,12 @@ export type SaveDetail = Pick<
   | 'reminder_at'
   | 'preview_image_url'
   | 'author_handle'
+  | 'pinned'
+  | 'edited_at'
 >;
 
 const DETAIL_COLUMNS =
-  'id, kind, source, url, title, snippet, summary, raw_text, tags, note, collection_id, thumbnail_path, created_at, processed_at, reminder_at, preview_image_url, author_handle';
+  'id, kind, source, url, title, snippet, summary, raw_text, tags, note, collection_id, thumbnail_path, created_at, processed_at, reminder_at, preview_image_url, author_handle, pinned, edited_at';
 
 export function useSaves() {
   const { session } = useSession();
@@ -183,6 +187,8 @@ export function useCreateLinkSave(via: 'add' | 'clipboard') {
         author_handle: null,
         created_at: new Date().toISOString(),
         processed_at: null,
+        pinned: false,
+        edited_at: null,
       };
       queryClient.setQueryData<SaveListItem[]>(key, (previous) => [optimistic, ...(previous ?? [])]);
 
@@ -200,9 +206,10 @@ export function useCreateLinkSave(via: 'add' | 'clipboard') {
   });
 }
 
-export function useSave(id: string) {
+export function useSave(id: string, enabled = true) {
   return useQuery({
     queryKey: saveKey(id),
+    enabled,
     queryFn: async (): Promise<SaveDetail> => {
       const { data, error } = await supabase.from('saves').select(DETAIL_COLUMNS).eq('id', id).single();
       if (error) throw error;

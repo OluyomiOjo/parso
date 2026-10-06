@@ -1,8 +1,8 @@
-import { router } from 'expo-router';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { itemLabel, relativeTime } from '@/lib/format';
 import { displayUrl } from '@/lib/links';
+import { openSave } from '@/lib/notes';
 import { termsFor, type SearchResult } from '@/lib/search';
 import { colors, radius, search, size } from '@/theme';
 
@@ -22,7 +22,7 @@ export function BestMatchCard({ result, thumbnailUrl, onOpen }: Props) {
     <Pressable
       onPress={() => {
         onOpen?.();
-        router.push(`/item/${result.id}`);
+        openSave(result);
       }}
       accessibilityRole="button"
       accessibilityLabel={`Best match: ${title}. ${meta}`}

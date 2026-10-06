@@ -1,12 +1,14 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { CollectionCard } from '@/components/CollectionCard';
 import { FirstSaveCard } from '@/components/FirstSaveCard';
 import { NewScreenshotsCard } from '@/components/NewScreenshotsCard';
 import { ListPanel } from '@/components/ListPanel';
+import { NoteRow } from '@/components/NoteRow';
 import { PasteLinkButton } from '@/components/PasteLinkButton';
+import { Pill } from '@/components/Pill';
 import { ReminderCard } from '@/components/ReminderCard';
 import { SaveGrid } from '@/components/SaveGrid';
 import { SaveRow } from '@/components/SaveRow';
@@ -15,13 +17,17 @@ import { ScreenTitle } from '@/components/ScreenTitle';
 import { Text } from '@/components/Text';
 import { ViewSwitch } from '@/components/ViewSwitch';
 import { useCollectionOverview } from '@/lib/collections';
+import { useNotes } from '@/lib/notes';
 import { useUpcomingReminders } from '@/lib/reminders';
 import { useViewMode } from '@/lib/viewMode';
 import { useSaves, useSavesLiveUpdates, useThumbnailUrls } from '@/lib/saves';
 import { useNewScreenshots } from '@/lib/screenshots';
-import { card, colors, firstRun, size, spacing } from '@/theme';
+import { card, colors, firstRun, sheet, size, spacing } from '@/theme';
 
 const openAdd = () => router.push('/add');
+const newNote = () => router.push({ pathname: '/note/[id]', params: { id: 'new' } });
+
+type Filter = 'all' | 'notes';
 const openCollections = () => router.navigate('/collections');
 
 export default function HomeScreen() {
@@ -30,6 +36,8 @@ export default function HomeScreen() {
   // Checked again on screen, so a reminder left over from before the app went to the background never shows.
   const upcoming = (useUpcomingReminders().data ?? []).filter((r) => new Date(r.reminder_at) > new Date());
   const { mode: viewMode } = useViewMode();
+  const [filter, setFilter] = useState<Filter>('all');
+  const notes = useNotes(filter === 'notes');
   const shots = useNewScreenshots();
   // Picks up a change made on the You tab (screenshot check turned on or off).
   useFocusEffect(useCallback(() => shots.refresh(), [shots.refresh]));
@@ -42,6 +50,7 @@ export default function HomeScreen() {
   const refresh = () => {
     refetch();
     refetchCollections();
+    if (filter === 'notes') notes.refetch();
   };
   const hasSaves = (saves?.length ?? 0) > 0;
 
@@ -113,13 +122,35 @@ export default function HomeScreen() {
               </View>
             ) : null}
             <View style={styles.section}>
+              <View style={styles.filters}>
+                <Pill label="All" selected={filter === 'all'} onPress={() => setFilter('all')} />
+                <Pill label="Notes" selected={filter === 'notes'} onPress={() => setFilter('notes')} />
+              </View>
               <View style={[styles.heading, styles.recentRow]}>
                 <Text variant="sectionHeading" accessibilityRole="header">
-                  Recent
+                  {filter === 'notes' ? 'Notes' : 'Recent'}
                 </Text>
-                <ViewSwitch />
+                {filter === 'all' ? <ViewSwitch /> : null}
               </View>
-              {viewMode === 'grid' ? (
+              {filter === 'notes' ? (
+                notes.isPending ? (
+                  <ActivityIndicator color={colors.secondary} />
+                ) : notes.data?.length ? (
+                  <ListPanel>
+                    {notes.data.map((save) => (
+                      <NoteRow key={save.id} save={save} />
+                    ))}
+                  </ListPanel>
+                ) : (
+                  <Pressable onPress={newNote} accessibilityRole="button" style={styles.emptyNotes}>
+                    <Text variant="secondary" color={colors.secondary}>
+                      {notes.isError
+                        ? "Couldn't load your notes. Pull down to try again."
+                        : 'No notes yet. Tap here, or + then Note, to write one.'}
+                    </Text>
+                  </Pressable>
+                )
+              ) : viewMode === 'grid' ? (
                 <SaveGrid saves={saves!} thumbnails={thumbnails} />
               ) : (
                 <ListPanel>
@@ -155,6 +186,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   section: { marginTop: spacing.sectionGapLarge },
+  filters: { flexDirection: 'row', gap: sheet.pillGap, marginBottom: spacing.sectionGap },
+  emptyNotes: { paddingHorizontal: spacing.titleInset, paddingVertical: spacing.sm },
   paste: { marginTop: firstRun.cardToPaste },
   heading: {
     paddingHorizontal: spacing.titleInset,

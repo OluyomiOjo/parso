@@ -14,7 +14,7 @@ import { PhotoIcon } from '@/icons/PhotoIcon';
 import { useSession } from '@/lib/auth';
 import { normalizeUrl } from '@/lib/links';
 import { useCreateLinkSave } from '@/lib/saves';
-import { firstUrlIn, saveImage, saveText } from '@/lib/share';
+import { firstUrlIn, saveImage } from '@/lib/share';
 import { track } from '@/lib/track';
 import { addScreen, colors, radius, segmented, size, spacing, type } from '@/theme';
 
@@ -30,16 +30,15 @@ const MODES: Segment<Mode>[] = [
 
 const NOT_A_LINK = "That isn't a link. Copy the full web address and paste it again.";
 const LINK_FAILED = "Couldn't save the link. Check your connection and tap Save again.";
-const TEXT_FAILED = "Couldn't save the text. Check your connection and tap Save again.";
 const PHOTO_FAILED = "Couldn't save the photo. Check your connection and choose it again.";
 
-// "Add to Parso": a link, some text, or a photo from the library. Everything is filed like a share.
+// "Add to Parso": a link, a note, or a photo from the library. Links and photos are filed like a share; Note
+// opens the note editor.
 export default function AddScreen() {
   const queryClient = useQueryClient();
   const { session } = useSession();
   const [mode, setMode] = useState<Mode>('link');
   const [link, setLink] = useState('');
-  const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const createLink = useCreateLinkSave('add');
@@ -68,18 +67,6 @@ export default function AddScreen() {
     if (pasted) {
       setLink(pasted);
       setError(null);
-    }
-  };
-
-  const saveTyped = async () => {
-    setBusy(true);
-    setError(null);
-    const result = await saveText(text.trim());
-    setBusy(false);
-    if ('error' in result) setError(TEXT_FAILED);
-    else {
-      track('save_created', { kind: result.kind, source: result.source, via: 'add' });
-      done();
     }
   };
 
@@ -113,6 +100,8 @@ export default function AddScreen() {
           selected={mode}
           track
           onSelect={(m) => {
+            // A note is written full screen, like Apple Notes.
+            if (m === 'text') return router.replace({ pathname: '/note/[id]', params: { id: 'new' } });
             setMode(m);
             setError(null);
           }}
@@ -152,21 +141,6 @@ export default function AddScreen() {
             />
           ) : null}
         </View>
-      ) : mode === 'text' ? (
-        <TextInput
-          value={text}
-          onChangeText={(value) => {
-            setText(value);
-            if (error) setError(null);
-          }}
-          placeholder="A note, a quote, an address, anything"
-          placeholderTextColor={colors.secondary}
-          autoFocus
-          multiline
-          textAlignVertical="top"
-          accessibilityLabel="Text"
-          style={[styles.field, styles.textField]}
-        />
       ) : (
         <Text variant="secondary" color={colors.secondary} style={styles.hint}>
           Pick a photo or screenshot. Parso reads it, including any text in it, and files it for you.
@@ -183,8 +157,6 @@ export default function AddScreen() {
       <View style={styles.button}>
         {mode === 'link' ? (
           <Button label="Save" onPress={saveLink} busy={createLink.isPending} disabled={link.trim() === ''} />
-        ) : mode === 'text' ? (
-          <Button label="Save" onPress={saveTyped} busy={busy} disabled={text.trim() === ''} />
         ) : (
           <Button label="Choose a photo or screenshot" onPress={choosePhoto} busy={busy} />
         )}
@@ -213,7 +185,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.fieldPaddingX,
     color: colors.ink,
   },
-  textField: { height: addScreen.textHeight, paddingTop: spacing.md },
   linkRow: { flexDirection: 'row', gap: addScreen.pasteGap, marginTop: spacing.sectionGap },
   linkField: { flex: 1, marginTop: 0 },
   paste: { width: size.fieldHeight, height: size.fieldHeight },

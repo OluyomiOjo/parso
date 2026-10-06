@@ -15,6 +15,7 @@ export type Save = {
   raw_text: string | null;
   preview_image_url: string | null;
   processed_at: string | null;
+  edited_at?: string | null;
 };
 
 // Service-role client: bypasses RLS, so every query below filters by the save's own user_id.
@@ -68,6 +69,9 @@ export function secretMatches(given: string | null, expected: string): boolean {
 export type PreparedSave = { text: string; image: ImageData | null; collections: string[]; handle: string | null };
 
 const IMAGE_KINDS = new Set(['image', 'screenshot']);
+const NOTE_TEXT_MAX = 4000;
+// Written in the note editor: its first line is the title and the person's own words are never replaced.
+const isNote = (save: Save) => save.kind === 'text' && Boolean(save.edited_at);
 const HANDLE_MAX = 80; // the database's limit (migration 0017)
 
 // Photos and screenshots shared into Parso: the app uploads them to uploads/<user_id>/<save_id>.jpg
@@ -90,13 +94,17 @@ export async function prepare(db: SupabaseClient, save: Save): Promise<PreparedS
   const lines = [
     isImage ? `Shared item: a ${save.kind === 'screenshot' ? 'screenshot' : 'photo'} from the phone` : null,
     save.url ? `Link: ${save.url}` : null,
-    isImage ? null : `Platform: ${PLATFORM_NAMES[save.source] ?? 'Website'}`,
+    isImage || isNote(save) ? null : `Platform: ${PLATFORM_NAMES[save.source] ?? 'Website'}`,
     meta.siteName ? `Site: ${meta.siteName}` : null,
     meta.author ? `Author: ${meta.author}` : null,
     meta.handle && meta.handle !== meta.author ? `Account: ${meta.handle}` : null,
     meta.title ? `Page title: ${meta.title}` : null,
     meta.description ? `Description: ${meta.description.slice(0, 1500)}` : null,
-    save.raw_text ? `Text shared with it: ${save.raw_text.slice(0, 1500)}` : null,
+    isNote(save)
+      ? `The person's own note: ${save.raw_text?.slice(0, NOTE_TEXT_MAX) ?? ''}`
+      : save.raw_text
+        ? `Text shared with it: ${save.raw_text.slice(0, 1500)}`
+        : null,
     image ? 'A preview image is attached.' : 'No preview image.',
   ].filter(Boolean);
 
@@ -173,7 +181,7 @@ async function storeThumbnail(db: SupabaseClient, save: Save, image: ImageData):
 export async function processSave(db: SupabaseClient, saveId: string, provider: Provider) {
   const { data: save } = await db
     .from('saves')
-    .select('id, user_id, kind, source, url, raw_text, preview_image_url, processed_at')
+    .select('id, user_id, kind, source, url, raw_text, preview_image_url, processed_at, edited_at')
     .eq('id', saveId)
     .single<Save>();
   if (!save || save.processed_at) return;
@@ -205,8 +213,7 @@ export async function processSave(db: SupabaseClient, saveId: string, provider: 
     .from('saves')
     .update({
       source: save.source,
-      title,
-      snippet,
+      ...(isNote(save) ? {} : { title, snippet }), // a note's title and snippet come from its own lines
       summary,
       tags,
       collection_id: collection.id,
@@ -218,6 +225,25 @@ export async function processSave(db: SupabaseClient, saveId: string, provider: 
     .eq('user_id', save.user_id);
 
   await storeEmbedding(db, save.id, save.user_id).catch((error) => console.error('embedding failed', save.id, error));
+}
+
+const NOTE_QUIET_MS = 4000; // filed once the person has stopped typing for this long
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Every edit to a note (triggers in migrations 0018 and 0019) calls this with that edit's time. It waits, then
+// acts only if no newer edit came in meanwhile, so a burst of typing ends in one AI run (the first time) or one
+// search refresh (after).
+export async function noteSave(db: SupabaseClient, saveId: string, editedAt: string, provider: Provider) {
+  await sleep(NOTE_QUIET_MS);
+  const { data } = await db
+    .from('saves')
+    .select('id, kind, edited_at, processed_at')
+    .eq('id', saveId)
+    .maybeSingle<{ id: string; kind: string; edited_at: string | null; processed_at: string | null }>();
+  if (!data || data.kind !== 'text' || !data.edited_at) return;
+  if (new Date(data.edited_at).getTime() !== new Date(editedAt).getTime()) return; // a newer edit has its own call
+  if (data.processed_at) await storeEmbedding(db, saveId);
+  else await processSave(db, saveId, provider);
 }
 
 type EmbeddableSave = {

@@ -1,9 +1,9 @@
-import { router } from 'expo-router';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { LinkIcon } from '@/icons/LinkIcon';
 import { metaLabel, relativeTime } from '@/lib/format';
 import { displayUrl } from '@/lib/links';
+import { openSave } from '@/lib/notes';
 import type { SaveListItem } from '@/lib/saves';
 import { termsFor, type Match } from '@/lib/search';
 import { colors, radius, size, spacing } from '@/theme';
@@ -30,7 +30,7 @@ export function SaveRow({ save, thumbnailUrl, matches = [], onOpen, titleLines =
     <Pressable
       onPress={() => {
         onOpen?.();
-        router.push(`/item/${save.id}`);
+        openSave(save);
       }}
       disabled={save.id.startsWith('pending-')}
       accessibilityRole="button"
