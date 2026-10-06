@@ -1,7 +1,7 @@
 // Run with: TZ=America/New_York npx -y deno@2.9.6 test --no-lock tests/ (times are local; TZ is pinned for repeatable results).
 import { assertEquals } from 'jsr:@std/assert@1';
 
-import { formatReminder, reminderTime } from '../src/lib/reminderTime.ts';
+import { choiceFor, formatReminder, quickTimes, reminderTime, shortReminder } from '../src/lib/reminderTime.ts';
 
 // Oct 2026: Thu 1, Fri 2, Sat 3, Sun 4, Mon 5.
 const d = (day: number, h: number, m = 0) => new Date(2026, 9, day, h, m);
@@ -34,4 +34,27 @@ Deno.test('reminder labels', () => {
   assertEquals(formatReminder(d(2, 9), now), 'Tomorrow at 9:00 AM');
   assertEquals(formatReminder(d(3, 10), now), 'Sat at 10:00 AM');
   assertEquals(formatReminder(d(1, 14), now), 'Due now');
+});
+
+Deno.test('picker shortcuts: in an hour, this or tomorrow evening, tomorrow morning', () => {
+  assertEquals(
+    quickTimes(d(5, 14, 20)).map((q) => `${q.label} ${iso(q.when)}`),
+    ['In 1 hour 10/5 15:20', 'This evening 10/5 18:00', 'Tomorrow morning 10/6 9:00'],
+  );
+  assertEquals(
+    quickTimes(d(5, 19)).map((q) => `${q.label} ${iso(q.when)}`),
+    ['In 1 hour 10/5 20:00', 'Tomorrow evening 10/6 18:00', 'Tomorrow morning 10/6 9:00'],
+  );
+  assertEquals(iso(quickTimes(d(31, 23, 30))[1].when), '11/1 18:00'); // end of month rolls over
+});
+
+Deno.test('detail label shows the date once a reminder is more than six days away', () => {
+  assertEquals(shortReminder(d(10, 10), d(5, 9)), 'Sat, 10:00 AM');
+  assertEquals(shortReminder(d(20, 15, 30), d(5, 9)), 'Tue, Oct 20, 3:30 PM');
+});
+
+Deno.test('a picked time shows as Pick, not as a fixed choice', () => {
+  assertEquals(choiceFor(d(5, 20), d(5, 9)), 'tonight');
+  assertEquals(choiceFor(d(9, 15, 30), d(5, 9)), 'custom');
+  assertEquals(choiceFor(null, d(5, 9)), null);
 });

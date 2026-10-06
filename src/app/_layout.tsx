@@ -58,6 +58,16 @@ function RootStack() {
         <Stack.Screen name="item/[id]" />
         <Stack.Screen name="photo/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="reminders" />
+        <Stack.Screen
+          name="reminder-time/[id]"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: [0.9],
+            sheetGrabberVisible: true,
+            sheetCornerRadius: radius.panel,
+            contentStyle: { backgroundColor: colors.surface },
+          }}
+        />
         <Stack.Screen name="item-edit/[id]" options={{ presentation: 'modal' }} />
       </Stack.Protected>
       <Stack.Protected guard={session === null && !introSeen}>

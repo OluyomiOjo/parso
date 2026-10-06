@@ -18,7 +18,7 @@ In scope:
 4. AI processing of every save: title, one-line snippet, short summary, tags, collection choice.
 5. Smart collections, created and filled by AI; users can move saves and rename collections.
 6. Natural-language search with highlighted match terms.
-7. Reminders on a save (Tonight, Weekend, Next week, Never) via local push notifications.
+7. Reminders on a save (Tonight, Weekend, Next week, or Pick: any date and time in a sheet with shortcuts and Apple's calendar and time wheel; Turn off clears it) via local push notifications.
 8. Save detail screen with note, tags, reminder and "Open in [source]".
 9. Intro screens (3), welcome and sign in, empty state.
 10. Delete a save, with a confirmation (owner-approved in step 8).
@@ -40,8 +40,9 @@ Automatic background screenshot import, a public web app (the admin dashboard, i
 - Supabase: Auth, Postgres, Storage (thumbnails, images), pgvector, Edge Functions.
 - AI: OpenAI GPT-6 Luna (`gpt-6-luna`) from Supabase Edge Functions only, never from the app, through the `npm:openai` package. The owner chose it over Claude Haiku 4.5 after a side-by-side test on real saves in step 4 (similar quality, about 9 times cheaper). All AI calls go through `describeSave()` in `supabase/functions/_shared/ai.ts`, so the provider can be swapped there.
 - Embeddings for search: OpenAI `text-embedding-3-small` at 1024 dimensions, called from Edge Functions only (owner-approved in step 7 over Voyage AI: reuses the OpenAI key, $0.02 per million tokens). Keep it behind `embed()` in `supabase/functions/_shared/embeddings.ts` so it can be swapped.
-- Notifications: expo-notifications (local scheduled notifications for reminders). Local only: `plugins/withLocalNotificationsOnly.js` removes the push entitlement (aps-environment) so builds never change Apple provisioning; keep it listed before expo-notifications in app.json. Reminder times (src/lib/reminderTime.ts, tested in tests/): Tonight 8:00 PM (one hour from now after 7:30 PM), Weekend the next Saturday or Sunday 10:00 AM still ahead, Next week the coming Monday 9:00 AM. `saves.reminder_at` is the record; the phone's schedule is synced to it on launch and on every change.
+- Notifications: expo-notifications (local scheduled notifications for reminders). Local only: `plugins/withLocalNotificationsOnly.js` removes the push entitlement (aps-environment) so builds never change Apple provisioning; keep it listed before expo-notifications in app.json. Reminder times (src/lib/reminderTime.ts, tested in tests/): Tonight 8:00 PM (one hour from now after 7:30 PM), Weekend the next Saturday or Sunday 10:00 AM still ahead, Next week the coming Monday 9:00 AM; picker shortcuts In 1 hour, This evening 6:00 PM (tomorrow evening once past), Tomorrow morning 9:00 AM. `saves.reminder_at` is the record; the phone's schedule is synced to it on launch and on every change.
 - Photos and clipboard (owner-approved in step 10): expo-image-picker (Apple's picker, no permission needed), expo-media-library (legacy API, Screenshots album only), expo-clipboard (hasUrlAsync and ClipboardPasteButton, so iOS shows no paste alert), plus our own local Expo module `modules/clipboard-change` (UIPasteboard changeCount, iOS only; no outside package). expo-file-system copies a saved photo to the phone for Share and Download (owner-approved in step 10); Download asks only for add-only photo access.
+- Date and time picker (owner-approved in step 10): @react-native-community/datetimepicker, Apple's native inline calendar and time wheel, for picked reminder times.
 - Fonts: Inter loaded with expo-font and bundled in the app.
 - Launch screen and system appearance: expo-splash-screen, expo-system-ui.
 - Auth: @supabase/supabase-js with @react-native-async-storage/async-storage for the session, expo-apple-authentication and @react-native-google-signin/google-signin for native sign-in, expo-crypto for the Apple nonce.

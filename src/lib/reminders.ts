@@ -53,18 +53,19 @@ async function schedule(save: Remindable, when: Date) {
 
 const cancel = (saveId: string) => Notifications.cancelScheduledNotificationAsync(`${PREFIX}${saveId}`);
 
-// Sets or clears a save's reminder. Returns whether notifications are allowed, so the caller can say
-// what to do if they aren't; the reminder is kept either way.
+// Sets or clears a save's reminder: one of the fixed choices, or an exact date and time picked in the
+// reminder sheet. Returns whether notifications are allowed, so the caller can say what to do if they
+// aren't; the reminder is kept either way.
 export function useSetReminder(save: Remindable | undefined) {
   const updateSave = useUpdateSave(save?.id ?? '');
-  return async (choice: ReminderChoice | null): Promise<Permission> => {
+  return async (choice: ReminderChoice | Date | null): Promise<Permission> => {
     if (!save) return 'granted';
     if (!choice) {
       await updateSave.mutateAsync({ reminder_at: null });
       await cancel(save.id);
       return 'granted';
     }
-    const when = reminderTime(choice);
+    const when = choice instanceof Date ? choice : reminderTime(choice);
     const permission = await ensureNotificationPermission();
     await updateSave.mutateAsync({ reminder_at: when.toISOString() });
     track('reminder_set');

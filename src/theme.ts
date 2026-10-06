@@ -345,6 +345,15 @@ export const addScreen = {
   pasteGap: 8, // the link field to Apple's Paste button beside it
 } as const;
 
+// Reminder time sheet (Remind me, then Pick): shortcuts, Apple's calendar and time wheel, Set reminder.
+export const reminderPicker = {
+  paddingX: 20,
+  paddingTop: 24,
+  gap: 16,
+  pillGap: 8,
+  buttonTop: 4,
+} as const;
+
 // The copied-link mini sheet (/copied-link): a native iOS sheet sized to its content.
 export const copiedLinkSheet = {
   paddingX: 24,

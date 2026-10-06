@@ -66,17 +66,38 @@ export function formatReminder(when: Date, now: Date = new Date()): string {
   return `${MONTHS[when.getMonth()]} ${when.getDate()} at ${time}`;
 }
 
-// The detail panel's short form, as in design 6: "Sat, 10:00 AM".
-export function shortReminder(when: Date): string {
-  return `${WEEKDAYS[when.getDay()]}, ${clockTime(when)}`;
+// The detail panel's short form, as in design 6: "Sat, 10:00 AM", with the date once it's more than six days
+// away ("Thu, Oct 9, 3:30 PM"), since picked times can be weeks ahead.
+export function shortReminder(when: Date, now: Date = new Date()): string {
+  const far = when.getTime() - now.getTime() >= 6 * 24 * HOUR;
+  const date = far ? `${MONTHS[when.getMonth()]} ${when.getDate()}, ` : '';
+  return `${WEEKDAYS[when.getDay()]}, ${date}${clockTime(when)}`;
 }
 
-// Which choice produced this time, so the control can show it selected (null if set some other way).
-export function choiceFor(when: Date | null, now: Date = new Date()): ReminderChoice | null {
+const EVENING_HOUR = 18; // "This evening", 6:00 PM
+const MORNING_HOUR = 9; // "Tomorrow morning", 9:00 AM
+
+// The picker sheet's shortcuts. "This evening" moves to tomorrow evening once 6 PM has passed.
+export function quickTimes(now: Date = new Date()): { label: string; when: Date }[] {
+  const inAnHour = new Date(now.getTime() + HOUR);
+  inAnHour.setSeconds(0, 0);
+  const evening = at(now, EVENING_HOUR);
+  return [
+    { label: 'In 1 hour', when: inAnHour },
+    evening > now
+      ? { label: 'This evening', when: evening }
+      : { label: 'Tomorrow evening', when: at(addDays(now, 1), EVENING_HOUR) },
+    { label: 'Tomorrow morning', when: at(addDays(now, 1), MORNING_HOUR) },
+  ];
+}
+
+// Which choice produced this time, so the control can show it selected: one of the fixed times, 'custom' for
+// any other (a picked date and time), or null for no reminder.
+export function choiceFor(when: Date | null, now: Date = new Date()): ReminderChoice | 'custom' | null {
   if (!when) return null;
   return (
     (['tonight', 'weekend', 'nextWeek'] as const).find(
       (c) => Math.abs(reminderTime(c, now).getTime() - when.getTime()) < 60 * 1000,
-    ) ?? null
+    ) ?? 'custom'
   );
 }

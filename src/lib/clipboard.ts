@@ -25,7 +25,17 @@ async function shouldOffer(): Promise<boolean> {
 
 // Screens it must never cover: sheets the person is in the middle of, and sign-in. Everywhere else (the tabs,
 // a save's detail page, a collection, Reminders) it may appear. Owner request, step 10.
-const BLOCKED = new Set(['save', 'add', 'copied-link', 'item-edit', 'photo', 'collection-rename', 'intro', 'welcome']);
+const BLOCKED = new Set([
+  'save',
+  'add',
+  'copied-link',
+  'item-edit',
+  'photo',
+  'collection-rename',
+  'reminder-time',
+  'intro',
+  'welcome',
+]);
 
 // Checks when Parso opens and when it comes back to the front. If a blocked screen is showing then, the offer
 // waits and is made as soon as the person is back on an ordinary screen.
