@@ -22,6 +22,7 @@ export type Database = {
           id: string
           is_smart: boolean
           name: string
+          position: number | null
           user_id: string
         }
         Insert: {
@@ -30,6 +31,7 @@ export type Database = {
           id?: string
           is_smart?: boolean
           name: string
+          position?: number | null
           user_id?: string
         }
         Update: {
@@ -38,6 +40,7 @@ export type Database = {
           id?: string
           is_smart?: boolean
           name?: string
+          position?: number | null
           user_id?: string
         }
         Relationships: []
@@ -172,11 +175,13 @@ export type Database = {
     Views: {
       collection_overview: {
         Row: {
+          cover_path: string | null
           created_at: string | null
           description: string | null
           id: string | null
           last_saved_at: string | null
           name: string | null
+          position: number | null
           recent: Json | null
           save_count: number | null
         }
@@ -184,6 +189,7 @@ export type Database = {
       }
     }
     Functions: {
+      reorder_collections: { Args: { ids: string[] }; Returns: undefined }
       tags_to_text: { Args: { tags: string[] }; Returns: string }
     }
     Enums: {

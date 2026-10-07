@@ -397,6 +397,29 @@ export const note = {
   bottomSpace: 120, // empty page under the last line; tapping it puts the cursor at the end
 } as const;
 
+// Collections as circles on My Parsos (owner request, step 10): one picture in a thin grey ring, the name under it.
+export const circle = {
+  size: 68,
+  ring: 2, // grey ring, then a white gap, then the picture
+  ringGap: 3,
+  icon: 24, // shown when the collection has no picture
+  nameTop: 6,
+  gap: 14, // between circles
+  nameWidth: 76, // names wider than this end in "…"
+} as const;
+
+// Rearranging collections: press and hold, then drag (src/components/ReorderList.tsx).
+export const reorder = {
+  holdMs: 300,
+  slideMs: 180,
+  liftScale: 1.06,
+  liftOpacity: 0.92,
+  spring: { damping: 20, stiffness: 220 },
+  rowHeight: 64, // the Collections tab's Reorder list
+  rowThumb: 44,
+  handle: 20,
+} as const;
+
 export const theme = {
   colors,
   brandColors,
@@ -421,6 +444,7 @@ export const theme = {
   copiedLinkSheet,
   screenshotsCard,
   note,
+  circle,
+  reorder,
 } as const;
 export default theme;
-

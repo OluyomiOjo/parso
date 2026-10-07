@@ -1,8 +1,8 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
-import { CollectionCard } from '@/components/CollectionCard';
+import { CollectionCircle } from '@/components/CollectionCircle';
 import { FirstSaveCard } from '@/components/FirstSaveCard';
 import { NewScreenshotsCard } from '@/components/NewScreenshotsCard';
 import { ListPanel } from '@/components/ListPanel';
@@ -10,24 +10,26 @@ import { NoteRow } from '@/components/NoteRow';
 import { PasteLinkButton } from '@/components/PasteLinkButton';
 import { Pill } from '@/components/Pill';
 import { ReminderCard } from '@/components/ReminderCard';
+import { ReorderList } from '@/components/ReorderList';
 import { SaveGrid } from '@/components/SaveGrid';
 import { SaveRow } from '@/components/SaveRow';
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { Text } from '@/components/Text';
 import { ViewSwitch } from '@/components/ViewSwitch';
-import { useCollectionOverview } from '@/lib/collections';
+import { REORDER_FAILED, useCollectionOverview, useReorderCollections } from '@/lib/collections';
 import { useNotes } from '@/lib/notes';
 import { useUpcomingReminders } from '@/lib/reminders';
 import { useViewMode } from '@/lib/viewMode';
 import { useSaves, useSavesLiveUpdates, useThumbnailUrls } from '@/lib/saves';
 import { useNewScreenshots } from '@/lib/screenshots';
-import { card, colors, firstRun, sheet, size, spacing } from '@/theme';
+import { circle, colors, firstRun, sheet, size, spacing, type } from '@/theme';
 
 const openAdd = () => router.push('/add');
 const newNote = () => router.push({ pathname: '/note/[id]', params: { id: 'new' } });
 
 type Filter = 'all' | 'notes';
+const CIRCLE_ROW_HEIGHT = circle.size + circle.nameTop + type.meta.lineHeight;
 const openCollections = () => router.navigate('/collections');
 
 export default function HomeScreen() {
@@ -37,6 +39,8 @@ export default function HomeScreen() {
   const upcoming = (useUpcomingReminders().data ?? []).filter((r) => new Date(r.reminder_at) > new Date());
   const { mode: viewMode } = useViewMode();
   const [filter, setFilter] = useState<Filter>('all');
+  const reorderCollections = useReorderCollections();
+  const [dragging, setDragging] = useState(false); // the page and the circle row hold still while a circle moves
   const notes = useNotes(filter === 'notes');
   const shots = useNewScreenshots();
   // Picks up a change made on the You tab (screenshot check turned on or off).
@@ -45,7 +49,7 @@ export default function HomeScreen() {
   // One signing request for the list and the collection tiles together.
   const { data: thumbnails } = useThumbnailUrls([
     ...(saves ?? []).flatMap((save) => (save.thumbnail_path ? [save.thumbnail_path] : [])),
-    ...(collections ?? []).flatMap((c) => c.recent.flatMap((t) => (t.thumbnail_path ? [t.thumbnail_path] : []))),
+    ...(collections ?? []).flatMap((c) => (c.cover ? [c.cover] : [])),
   ]);
   const refresh = () => {
     refetch();
@@ -57,6 +61,7 @@ export default function HomeScreen() {
   return (
     <Screen>
       <ScrollView
+        scrollEnabled={!dragging}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refresh} />}
@@ -106,18 +111,28 @@ export default function HomeScreen() {
                 </View>
                 <ScrollView
                   horizontal
+                  scrollEnabled={!dragging}
                   showsHorizontalScrollIndicator={false}
                   style={styles.bleed}
-                  contentContainerStyle={styles.cards}
+                  contentContainerStyle={styles.circles}
                 >
-                  {collections.map((c) => (
-                    <CollectionCard
-                      key={c.id}
-                      collection={c}
-                      thumbnails={thumbnails}
-                      onPress={() => router.push(`/collections/${c.id}`)}
-                    />
-                  ))}
+                  <ReorderList
+                    horizontal
+                    items={collections}
+                    keyOf={(c) => c.id}
+                    extent={circle.nameWidth + circle.gap}
+                    crossSize={CIRCLE_ROW_HEIGHT}
+                    renderItem={(c) => (
+                      <CollectionCircle
+                        collection={c}
+                        coverUrl={c.cover ? thumbnails?.[c.cover] : undefined}
+                        onOpen={() => router.push(`/collections/${c.id}`)}
+                      />
+                    )}
+                    onPress={(c) => router.push(`/collections/${c.id}`)}
+                    onReorder={(ids) => reorderCollections.mutate(ids, { onError: () => Alert.alert(REORDER_FAILED) })}
+                    onDragChange={setDragging}
+                  />
                 </ScrollView>
               </View>
             ) : null}
@@ -195,7 +210,7 @@ const styles = StyleSheet.create({
   },
   headingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   recentRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  // The card row scrolls to the screen edges but starts in line with the content.
+  // The circle row scrolls to the screen edges but starts in line with the content.
   bleed: { marginHorizontal: -spacing.screen },
-  cards: { gap: card.gap, paddingHorizontal: spacing.screen },
+  circles: { paddingHorizontal: spacing.screen },
 });

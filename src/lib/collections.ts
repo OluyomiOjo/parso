@@ -18,6 +18,7 @@ export type CollectionSummary = {
   description: string | null;
   saveCount: number;
   recent: RecentTile[];
+  cover: string | null; // thumbnail path of the newest save with a picture, for the circles on My Parsos
 };
 
 export function useCollections() {
@@ -54,7 +55,9 @@ export function useCreateCollection() {
   });
 }
 
-// Every collection with its save count and newest saves, most recently used first (view 0009).
+// Every collection with its save count, newest saves and cover picture (views 0009 and 0020), in the person's own
+// order once they've rearranged (position), then most recently used first. New collections have no position,
+// so they come after the ones already placed.
 export function useCollectionOverview() {
   const { session } = useSession();
   const userId = session?.user.id;
@@ -64,7 +67,8 @@ export function useCollectionOverview() {
     queryFn: async (): Promise<CollectionSummary[]> => {
       const { data, error } = await supabase
         .from('collection_overview')
-        .select('id, name, description, save_count, recent')
+        .select('id, name, description, save_count, recent, cover_path')
+        .order('position', { ascending: true, nullsFirst: false })
         .order('last_saved_at', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -74,6 +78,7 @@ export function useCollectionOverview() {
         description: row.description,
         saveCount: row.save_count ?? 0,
         recent: (row.recent as unknown as RecentTile[] | null) ?? [],
+        cover: row.cover_path,
       }));
     },
   });
@@ -98,5 +103,35 @@ export function useRenameCollection(id: string) {
       if (error) throw new Error("Couldn't rename the collection. Check your connection and tap Save again.");
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: collectionsKey(session?.user.id) }),
+  });
+}
+
+export const REORDER_FAILED = "Couldn't save the new order. Check your connection and try again.";
+
+// Saves a new order for every collection in one step (function in migration 0020). The screen shows the new
+// order straight away and goes back to the old one if saving fails.
+export function useReorderCollections() {
+  const queryClient = useQueryClient();
+  const { session } = useSession();
+  const key = overviewKey(session?.user.id);
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase.rpc('reorder_collections', { ids });
+      if (error) throw new Error(REORDER_FAILED);
+    },
+    onMutate: async (ids) => {
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<CollectionSummary[]>(key);
+      if (previous) {
+        const byId = new Map(previous.map((c) => [c.id, c]));
+        queryClient.setQueryData<CollectionSummary[]>(key, [
+          ...ids.flatMap((id) => byId.get(id) ?? []),
+          ...previous.filter((c) => !ids.includes(c.id)),
+        ]);
+      }
+      return { previous };
+    },
+    onError: (_error, _ids, context) => queryClient.setQueryData(key, context?.previous),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
   });
 }

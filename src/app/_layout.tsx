@@ -4,6 +4,8 @@ import { ShareIntentProvider } from 'expo-share-intent';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ShareHandler } from '@/components/ShareHandler';
 import { AuthProvider, useSession } from '@/lib/auth';
@@ -90,17 +92,22 @@ function Reminders() {
 
 export default function RootLayout() {
   return (
-    <ShareIntentProvider>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <IntroProvider>
-            <StatusBar style="dark" />
-            <RootStack />
-            <ShareHandler />
-            <Reminders />
-          </IntroProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </ShareIntentProvider>
+    // Gesture root: press-and-hold dragging (rearranging collections) needs it around the whole app.
+    <GestureHandlerRootView style={styles.root}>
+      <ShareIntentProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <IntroProvider>
+              <StatusBar style="dark" />
+              <RootStack />
+              <ShareHandler />
+              <Reminders />
+            </IntroProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </ShareIntentProvider>
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({ root: { flex: 1 } });
