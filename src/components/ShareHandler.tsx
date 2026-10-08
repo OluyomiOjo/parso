@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 
 import { useSession } from '@/lib/auth';
+import { openUpgrade } from '@/lib/pro';
 import { saveShare } from '@/lib/share';
 import { track } from '@/lib/track';
 
@@ -18,17 +19,19 @@ export function ShareHandler() {
   useEffect(() => {
     if (!hasShareIntent || !userId || busy.current) return;
     busy.current = true;
-    saveShare(shareIntent, userId)
-      .then((result) => {
+    const intent = shareIntent; // kept for after an upgrade
+    const save = () =>
+      saveShare(intent, userId).then((result) => {
         if ('saveId' in result) {
           track('save_created', { kind: result.kind, source: result.source, via: 'share' });
           router.push({ pathname: '/save/[id]', params: { id: result.saveId, shared: '1' } });
-        } else Alert.alert(result.error);
-      })
-      .finally(() => {
-        resetShareIntent();
-        busy.current = false;
+        } else if (result.limit) openUpgrade(() => void save());
+        else Alert.alert(result.error);
       });
+    save().finally(() => {
+      resetShareIntent();
+      busy.current = false;
+    });
   }, [hasShareIntent, shareIntent, userId, resetShareIntent]);
 
   return null;

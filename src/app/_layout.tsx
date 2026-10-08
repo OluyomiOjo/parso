@@ -11,6 +11,7 @@ import { ShareHandler } from '@/components/ShareHandler';
 import { AuthProvider, useSession } from '@/lib/auth';
 import { useCopiedLinkOffer } from '@/lib/clipboard';
 import { IntroProvider, useIntro } from '@/lib/intro';
+import { usePurchasesAccount } from '@/lib/pro';
 import { configureNotifications, useReminderSync, useReminderTaps } from '@/lib/reminders';
 import { supabase } from '@/lib/supabase';
 import { useOpenTracking } from '@/lib/track';
@@ -33,6 +34,7 @@ function RootStack() {
   const loading = sessionLoading || introSeen === null;
   useOpenTracking(session !== null);
   useCopiedLinkOffer(session !== null && !loading);
+  usePurchasesAccount();
 
   useEffect(() => {
     if (!loading) SplashScreen.hideAsync();
@@ -72,6 +74,16 @@ function RootStack() {
           }}
         />
         <Stack.Screen name="item-edit/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen
+          name="upgrade"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: [0.9],
+            sheetGrabberVisible: true,
+            sheetCornerRadius: radius.panel,
+            contentStyle: { backgroundColor: colors.surface },
+          }}
+        />
       </Stack.Protected>
       <Stack.Protected guard={session === null && !introSeen}>
         <Stack.Screen name="intro" />

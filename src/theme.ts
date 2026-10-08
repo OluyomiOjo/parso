@@ -155,6 +155,7 @@ export const sheet = {
   savedToIcon: 26,
   savedToGap: 12, // icon to "Saved to"
   savedToToPills: 12,
+  leftTop: 6, // "5 free saves left" under Saved to
   pillsToTags: 12,
   tagsToNote: 20,
   labelToField: 8,
@@ -420,6 +421,22 @@ export const reorder = {
   handle: 20,
 } as const;
 
+// Parso Pro sheet (/upgrade): benefits, the two plans, Subscribe, Restore purchases and Apple's required wording.
+export const upgrade = {
+  paddingX: 20,
+  paddingTop: 24,
+  gap: 16,
+  benefitGap: 10,
+  checkIcon: 20,
+  checkGap: 10,
+  optionGap: 10,
+  optionHeight: 64,
+  optionPaddingX: 16,
+  selectedBorder: 2,
+  linkGap: 20,
+  bottom: 8,
+} as const;
+
 export const theme = {
   colors,
   brandColors,
@@ -446,5 +463,6 @@ export const theme = {
   note,
   circle,
   reorder,
+  upgrade,
 } as const;
 export default theme;

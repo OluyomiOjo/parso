@@ -5,6 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/Text';
 import { LinkIcon } from '@/icons/LinkIcon';
+import { isLimitError } from '@/lib/plan';
+import { openUpgrade } from '@/lib/pro';
 import { useCreateLinkSave } from '@/lib/saves';
 import { firstUrlIn } from '@/lib/share';
 import { colors, copiedLinkSheet as s, radius, size, spacing } from '@/theme';
@@ -19,6 +21,11 @@ export default function CopiedLinkSheet() {
     const url = data.type === 'text' ? firstUrlIn(data.text) : null;
     if (!url) return router.back();
     createLink.mutate(url, {
+      onError: (e) => {
+        if (!isLimitError(e)) return;
+        router.back();
+        openUpgrade();
+      },
       onSuccess: (save) =>
         router.replace({
           pathname: '/save/[id]',

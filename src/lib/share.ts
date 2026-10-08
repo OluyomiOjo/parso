@@ -3,7 +3,9 @@ import * as Crypto from 'expo-crypto';
 import type { ShareIntent } from 'expo-share-intent';
 
 import { detectSource, normalizeUrl } from './links';
+import { isLimitError, LIMIT_MESSAGE } from './plan';
 import { addPreviewImage } from './previewImage';
+import { canSave } from './pro';
 import { supabase } from './supabase';
 
 const MAX_IMAGE_SIDE = 1600; // keeps uploads small and within the AI's image limit
@@ -12,7 +14,10 @@ const SCREENSHOT_RATIO = 1.9; // phone screens are about 2.17:1; photos are 4:3 
 const MAX_TEXT = 20_000; // the database's limit (migration 0018)
 
 // kind and source come back for the usage numbers (src/lib/track.ts).
-export type ShareResult = { saveId: string; kind: string; source: string } | { error: string };
+export type ShareResult = { saveId: string; kind: string; source: string } | { error: string; limit?: true };
+
+// A free account has used its 50 saves (CLAUDE.md scope 15): the caller opens Parso Pro instead of an error.
+export const LIMIT_REACHED: ShareResult = { error: LIMIT_MESSAGE, limit: true };
 
 // The first web address inside shared text ("Check this out https://..."), without trailing punctuation.
 export function firstUrlIn(text: string): string | null {
@@ -37,6 +42,7 @@ export type LocalImage = {
 };
 
 export async function saveImage(image: LocalImage, userId: string): Promise<ShareResult> {
+  if (!(await canSave())) return LIMIT_REACHED; // checked before uploading, so no file is left behind
   const width = image.width ?? 0;
   const height = image.height ?? 0;
   const isScreenshot =
@@ -67,6 +73,7 @@ export async function saveImage(image: LocalImage, userId: string): Promise<Shar
 
   const kind = isScreenshot ? 'screenshot' : 'image';
   const { error } = await supabase.from('saves').insert({ id, kind, source: 'other' });
+  if (isLimitError(error)) return LIMIT_REACHED;
   return error ? { error: "Couldn't save the image. Share it again." } : { saveId: id, kind, source: 'other' };
 }
 
@@ -84,6 +91,7 @@ async function saveLinkOrText(intent: ShareIntent): Promise<ShareResult> {
   const extra = [intent.meta?.title, text && text !== intent.webUrl ? text : null].filter(Boolean).join('\n');
 
   if (!url && !text) return { error: 'Nothing to save in what was shared.' };
+  if (!(await canSave())) return LIMIT_REACHED;
   const previewImage = sharedPreviewImage(intent);
   const { data, error } = await supabase
     .from('saves')
@@ -100,6 +108,7 @@ async function saveLinkOrText(intent: ShareIntent): Promise<ShareResult> {
     )
     .select('id')
     .single();
+  if (isLimitError(error)) return LIMIT_REACHED;
   if (error || !data)
     return {
       error: "Couldn't save that. Check your connection and share it again.",

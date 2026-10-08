@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import * as MediaLibrary from 'expo-media-library/legacy';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Switch, View } from 'react-native';
@@ -7,14 +8,20 @@ import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { Text } from '@/components/Text';
 import { deleteAccount, signOut, useSession } from '@/lib/auth';
+import { MONTHS } from '@/lib/format';
+import { planLine } from '@/lib/plan';
+import { openUpgrade, usePlan } from '@/lib/pro';
 import { screenshotCheckEnabled, setScreenshotCheck } from '@/lib/screenshots';
-import { colors, radius, spacing } from '@/theme';
+import { colors, radius, spacing, tabularNums } from '@/theme';
+
+const MANAGE_URL = 'https://apps.apple.com/account/subscriptions'; // Apple's own subscriptions page
 
 export default function YouScreen() {
   const { session } = useSession();
   const email = session?.user.email;
   const [deleting, setDeleting] = useState(false);
   const [checkScreenshots, setCheckScreenshots] = useState(false);
+  const { data: plan } = usePlan();
 
   useEffect(() => {
     screenshotCheckEnabled().then(setCheckScreenshots);
@@ -50,6 +57,25 @@ export default function YouScreen() {
           <Text variant="secondary" color={colors.secondary} style={styles.email}>
             Signed in as {email}
           </Text>
+        ) : null}
+        {plan ? (
+          <View style={styles.setting}>
+            <View style={styles.settingText}>
+              <Text variant="rowTitle">Parso Pro</Text>
+              <Text variant="secondary" color={colors.secondary} style={tabularNums}>
+                {planLine(plan, MONTHS)}
+              </Text>
+            </View>
+            {!plan.pro ? (
+              <Pressable onPress={() => openUpgrade()} accessibilityRole="button" hitSlop={spacing.sm}>
+                <Text variant="button">Upgrade</Text>
+              </Pressable>
+            ) : !plan.adminPro ? (
+              <Pressable onPress={() => Linking.openURL(MANAGE_URL)} accessibilityRole="button" hitSlop={spacing.sm}>
+                <Text variant="button">Manage</Text>
+              </Pressable>
+            ) : null}
+          </View>
         ) : null}
         <View style={styles.setting}>
           <View style={styles.settingText}>

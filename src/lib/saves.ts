@@ -4,7 +4,9 @@ import { useEffect } from 'react';
 import type { Tables } from './database.types';
 import { useSession } from './auth';
 import { detectSource } from './links';
+import { LIMIT_MESSAGE } from './plan';
 import { addPreviewImage } from './previewImage';
+import { canSave } from './pro';
 import { supabase } from './supabase';
 import { track } from './track';
 
@@ -172,6 +174,7 @@ export function useCreateLinkSave(via: 'add' | 'clipboard') {
         .limit(1);
       if (findError) throw findError;
       if (found[0]) return { ...found[0], existing: true };
+      if (!(await canSave())) throw new Error(LIMIT_MESSAGE); // the caller opens Parso Pro
 
       await queryClient.cancelQueries({ queryKey: key });
       const optimistic: SaveListItem = {

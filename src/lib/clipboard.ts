@@ -34,6 +34,7 @@ const BLOCKED = new Set([
   'collection-rename',
   'reminder-time',
   'note', // typing a note
+  'upgrade',
   'intro',
   'welcome',
 ]);

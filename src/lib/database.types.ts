@@ -189,6 +189,7 @@ export type Database = {
       }
     }
     Functions: {
+      my_plan: { Args: never; Returns: Json }
       reorder_collections: { Args: { ids: string[] }; Returns: undefined }
       tags_to_text: { Args: { tags: string[] }; Returns: string }
     }

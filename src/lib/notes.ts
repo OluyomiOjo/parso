@@ -15,6 +15,8 @@ import {
   serializeNote,
   type NoteLine,
 } from './noteFormat';
+import { isLimitError } from './plan';
+import { openUpgrade } from './pro';
 import { LIST_COLUMNS, saveKey, savesKey, useSave, type SaveDetail, type SaveListItem } from './saves';
 import { supabase } from './supabase';
 import { track } from './track';
@@ -77,6 +79,7 @@ const fieldsFor = (lines: NoteLine[]): Fields => {
   return { raw_text: raw, title: noteTitle(raw), snippet: noteSnippet(raw) };
 };
 
+export const NOTE_LIMIT = "You've used your 50 free saves. Upgrade to Parso Pro to keep this note.";
 export const NOTE_SAVE_FAILED = "Couldn't save this note. Check your connection; Parso tries again as you type.";
 
 // The editor's state and saving. A new note (id "new") is created on the first character typed, so empty notes
@@ -97,6 +100,7 @@ export function useNoteEditor(routeId: string) {
   const queue = useRef<Promise<void>>(Promise.resolve()); // one write at a time, in order
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closed = useRef(false); // deleted, or left empty: nothing more is written
+  const limitShown = useRef(false);
 
   // Loaded once; after that the screen's own lines are the truth (live updates would undo typing).
   useEffect(() => {
@@ -123,6 +127,11 @@ export function useNoteEditor(routeId: string) {
           .insert({ kind: 'text', source: 'other', ...fields, edited_at })
           .select('id')
           .single();
+        if (isLimitError(insertError)) {
+          if (!limitShown.current) openUpgrade(); // once; the note stays on screen and saves after upgrading
+          limitShown.current = true;
+          return setError(NOTE_LIMIT);
+        }
         if (insertError || !data) return setError(NOTE_SAVE_FAILED);
         idRef.current = data.id;
         setNoteId(data.id);

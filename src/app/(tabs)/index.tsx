@@ -19,6 +19,7 @@ import { Text } from '@/components/Text';
 import { ViewSwitch } from '@/components/ViewSwitch';
 import { REORDER_FAILED, useCollectionOverview, useReorderCollections } from '@/lib/collections';
 import { useNotes } from '@/lib/notes';
+import { canSave, openUpgrade } from '@/lib/pro';
 import { useUpcomingReminders } from '@/lib/reminders';
 import { useViewMode } from '@/lib/viewMode';
 import { useSaves, useSavesLiveUpdates, useThumbnailUrls } from '@/lib/saves';
@@ -26,7 +27,8 @@ import { useNewScreenshots } from '@/lib/screenshots';
 import { circle, colors, firstRun, sheet, size, spacing, type } from '@/theme';
 
 const openAdd = () => router.push('/add');
-const newNote = () => router.push({ pathname: '/note/[id]', params: { id: 'new' } });
+const openNewNote = () => router.push({ pathname: '/note/[id]', params: { id: 'new' } });
+const newNote = () => void canSave().then((ok) => (ok ? openNewNote() : openUpgrade(openNewNote)));
 
 type Filter = 'all' | 'notes';
 const CIRCLE_ROW_HEIGHT = circle.size + circle.nameTop + type.meta.lineHeight;

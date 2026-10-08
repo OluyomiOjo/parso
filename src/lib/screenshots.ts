@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { useSession } from './auth';
+import { openUpgrade } from './pro';
 import { saveImage } from './share';
 import { track } from './track';
 
@@ -97,15 +98,26 @@ export function useNewScreenshots() {
     if (state.status !== 'new' || !session) return 0;
     setSaving(true);
     let failed = 0;
+    let limitReached = false;
+    let lastSaved = 0;
     for (const s of [...state.screenshots].reverse()) {
       const result = await saveImage(
         { uri: s.uri, width: s.width, height: s.height, isScreenshot: true },
         session.user.id,
       );
+      if ('limit' in result) {
+        limitReached = true; // the rest stay offered, for after an upgrade
+        break;
+      }
       if ('error' in result) failed++;
-      else track('save_created', { kind: 'screenshot', source: 'other', via: 'screenshots' });
+      else {
+        lastSaved = Math.max(lastSaved, s.createdAt);
+        track('save_created', { kind: 'screenshot', source: 'other', via: 'screenshots' });
+      }
     }
-    await markChecked(Math.max(...state.screenshots.map((s) => s.createdAt)));
+    if (!limitReached) await markChecked(Math.max(...state.screenshots.map((s) => s.createdAt)));
+    else if (lastSaved) await markChecked(lastSaved);
+    if (limitReached) openUpgrade();
     setSaving(false);
     queryClient.invalidateQueries({ queryKey: ['saves', session.user.id] });
     refresh();

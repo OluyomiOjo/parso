@@ -13,6 +13,8 @@ import { NoteIcon } from '@/icons/NoteIcon';
 import { PhotoIcon } from '@/icons/PhotoIcon';
 import { useSession } from '@/lib/auth';
 import { normalizeUrl } from '@/lib/links';
+import { isLimitError } from '@/lib/plan';
+import { canSave, openUpgrade } from '@/lib/pro';
 import { useCreateLinkSave } from '@/lib/saves';
 import { firstUrlIn, saveImage } from '@/lib/share';
 import { track } from '@/lib/track';
@@ -58,7 +60,7 @@ export default function AddScreen() {
         save.existing
           ? router.replace({ pathname: '/save/[id]', params: { id: save.id, existing: '1' } })
           : router.back(),
-      onError: () => setError(LINK_FAILED),
+      onError: (e) => (isLimitError(e) ? openUpgrade(saveLink) : setError(LINK_FAILED)),
     });
   };
 
@@ -76,12 +78,29 @@ export default function AddScreen() {
     const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 });
     const asset = picked.canceled ? null : picked.assets[0];
     if (!asset || !session) return;
-    setBusy(true);
-    const result = await saveImage(
-      { uri: asset.uri, width: asset.width, height: asset.height, mimeType: asset.mimeType },
-      session.user.id,
-    );
-    setBusy(false);
+    const userId = session.user.id;
+    const save = async () => {
+      setBusy(true);
+      const result = await saveImage(
+        { uri: asset.uri, width: asset.width, height: asset.height, mimeType: asset.mimeType },
+        userId,
+      );
+      setBusy(false);
+      return result;
+    };
+    const result = await save();
+    if ('limit' in result) {
+      // After upgrading, the same photo is saved.
+      return openUpgrade(
+        () =>
+          void save().then((r) => {
+            if ('saveId' in r) {
+              track('save_created', { kind: r.kind, source: r.source, via: 'add' });
+              done();
+            } else setError(PHOTO_FAILED);
+          }),
+      );
+    }
     if ('error' in result) setError(PHOTO_FAILED);
     else {
       track('save_created', { kind: result.kind, source: result.source, via: 'add' });
@@ -101,7 +120,13 @@ export default function AddScreen() {
           track
           onSelect={(m) => {
             // A note is written full screen, like Apple Notes.
-            if (m === 'text') return router.replace({ pathname: '/note/[id]', params: { id: 'new' } });
+            if (m === 'text') {
+              const openNote = () => router.push({ pathname: '/note/[id]', params: { id: 'new' } });
+              void canSave().then((ok) =>
+                ok ? router.replace({ pathname: '/note/[id]', params: { id: 'new' } }) : openUpgrade(openNote),
+              );
+              return;
+            }
             setMode(m);
             setError(null);
           }}

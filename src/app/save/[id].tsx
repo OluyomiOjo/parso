@@ -10,6 +10,8 @@ import { SavedTo } from '@/components/SavedTo';
 import { SheetPreview } from '@/components/SheetPreview';
 import { Text } from '@/components/Text';
 import { useCollections, useCreateCollection } from '@/lib/collections';
+import { freeSavesLeft } from '@/lib/plan';
+import { usePlan } from '@/lib/pro';
 import { useSave, useThumbnailUrls, useUpdateSave } from '@/lib/saves';
 import { colors, radius, sheet, size, type } from '@/theme';
 
@@ -23,6 +25,7 @@ export default function SaveSheet() {
   const updateSave = useUpdateSave(id);
   const createCollection = useCreateCollection();
   const [note, setNote] = useState<string | null>(null);
+  const left = freeSavesLeft(usePlan().data); // "5 free saves left", near the free limit
 
   const collection = collections.find((c) => c.id === save?.collection_id) ?? null;
   const filed = Boolean(save?.processed_at && collection);
@@ -47,6 +50,11 @@ export default function SaveSheet() {
           <View style={styles.savedTo}>
             <SavedTo collection={filed ? collection!.name : null} existing={existing === '1'} />
           </View>
+          {left && existing !== '1' ? (
+            <Text variant="secondary" color={colors.secondary} style={styles.left}>
+              {left}
+            </Text>
+          ) : null}
           {filed ? (
             <>
               <View style={styles.pills}>
@@ -99,6 +107,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.surface },
   content: { paddingHorizontal: sheet.paddingX, paddingTop: sheet.paddingTop },
   savedTo: { marginTop: sheet.previewToSavedTo },
+  left: { marginTop: sheet.leftTop },
   pills: { marginTop: sheet.savedToToPills, marginHorizontal: -sheet.paddingX },
   tags: { marginTop: sheet.pillsToTags },
   remind: { marginTop: sheet.tagsToNote },
