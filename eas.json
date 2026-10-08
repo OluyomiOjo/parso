@@ -11,16 +11,6 @@
     "production": {
       "autoIncrement": true,
       "environment": "production"
-    },
-    "preview-debug": {
-      "distribution": "internal",
-      "environment": "development",
-      "ios": {
-        "buildConfiguration": "Debug"
-      },
-      "env": {
-        "FORCE_BUNDLING": "1"
-      }
     }
   },
   "submit": {
