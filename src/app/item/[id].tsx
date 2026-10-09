@@ -151,7 +151,7 @@ export default function SaveDetailScreen() {
             </Text>
           ) : null}
 
-          {/* What the person meant to do with it (the AI's question), and Done (Your week in Parso). */}
+          {/* Done (Your week in Parso). */}
           <View style={styles.next}>
             {save.done_at ? (
               <View style={styles.doneRow}>
@@ -165,12 +165,9 @@ export default function SaveDetailScreen() {
                 </Pressable>
               </View>
             ) : (
-              <>
-                {save.next_step ? <Text>{save.next_step}</Text> : null}
-                <View style={styles.doneButton}>
-                  <Pill label="Mark as done" onPress={() => setDone(true)} />
-                </View>
-              </>
+              <View style={styles.doneButton}>
+                <Pill label="Mark as done" onPress={() => setDone(true)} />
+              </View>
             )}
           </View>
 

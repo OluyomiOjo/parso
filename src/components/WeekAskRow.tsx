@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { LinkIcon } from '@/icons/LinkIcon';
-import { MONTHS } from '@/lib/format';
+import { metaLabel, MONTHS, relativeTime } from '@/lib/format';
 import { displayUrl } from '@/lib/links';
 import { openSave } from '@/lib/notes';
 import { useMarkDone } from '@/lib/saves';
@@ -11,6 +11,7 @@ import type { AskSave } from '@/lib/weekData';
 import { colors, radius, size, spacing, week } from '@/theme';
 
 import { Pill } from './Pill';
+import { SourceLine } from './SourceLine';
 import { Text } from './Text';
 
 type Props = {
@@ -20,10 +21,11 @@ type Props = {
   onDoneChange: (doneAt: string | null) => void;
 };
 
-// One save on the weekly screen: picture, title, the AI's question for it, then Done, Remind me and Open.
+// One save on the weekly screen: picture, title, where it's from, then Done, Remind me and Open.
 export function WeekAskRow({ save, thumbnailUrl, doneAt, onDoneChange }: Props) {
   const markDone = useMarkDone(save.id);
   const title = save.title ?? (save.url ? displayUrl(save.url) : 'Your save');
+  const meta = `${metaLabel(save)}, ${relativeTime(save.created_at)}`;
   const setDone = (done: boolean) =>
     markDone.mutate(done, { onSuccess: onDoneChange, onError: (error) => Alert.alert(error.message) });
   const remind = () => router.push({ pathname: '/item-edit/[id]', params: { id: save.id, field: 'reminder' } });
@@ -33,7 +35,7 @@ export function WeekAskRow({ save, thumbnailUrl, doneAt, onDoneChange }: Props) 
       <Pressable
         onPress={() => openSave(save)}
         accessibilityRole="button"
-        accessibilityLabel={`${title}. ${save.next_step ?? ''}`}
+        accessibilityLabel={`${title}. ${meta}`}
         style={styles.top}
       >
         {thumbnailUrl ? (
@@ -47,11 +49,7 @@ export function WeekAskRow({ save, thumbnailUrl, doneAt, onDoneChange }: Props) 
           <Text variant="rowTitle" numberOfLines={2}>
             {title}
           </Text>
-          {save.next_step ? (
-            <Text variant="secondary" color={colors.secondary} style={styles.question}>
-              {save.next_step}
-            </Text>
-          ) : null}
+          <SourceLine kind={save.kind} source={save.source} text={meta} />
         </View>
       </Pressable>
       {doneAt ? (
@@ -88,7 +86,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: { flex: 1 },
-  question: { marginTop: week.questionTop },
   actions: { flexDirection: 'row', gap: week.actionGap, marginTop: week.actionsTop },
   doneRow: { flexDirection: 'row', alignItems: 'center', gap: week.doneGap, marginTop: week.actionsTop },
   link: { textDecorationLine: 'underline' },

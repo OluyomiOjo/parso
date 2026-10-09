@@ -439,7 +439,6 @@ export const upgrade = {
 
 // Your week in Parso: the weekly screen, its card on My Parsos, and Done on the save page.
 export const week = {
-  questionTop: 4, // a save's title to its question
   actionsTop: 12, // the question to Done, Remind me and Open
   actionGap: 8,
   doneGap: 12, // "Done on Oct 12" to Undo

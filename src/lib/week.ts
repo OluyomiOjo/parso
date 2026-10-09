@@ -45,13 +45,13 @@ export function showWeekCard(now: Date, lastOpened: Date | null): boolean {
 
 export const askSince = (now: Date) => new Date(now.getTime() - ASK_DAYS * DAY);
 
-type Askable = { created_at: string; done_at: string | null; next_step: string | null };
+type Askable = { created_at: string; done_at: string | null };
 
-// Recent saves that aren't done and have a question, newest first, up to five.
+// Recent saves that aren't done, newest first, up to five.
 export function savesToAsk<T extends Askable>(saves: T[], now: Date): T[] {
   const since = askSince(now);
   return saves
-    .filter((s) => !s.done_at && s.next_step && new Date(s.created_at) >= since)
+    .filter((s) => !s.done_at && new Date(s.created_at) >= since)
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .slice(0, ASK_MAX);
 }

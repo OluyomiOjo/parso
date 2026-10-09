@@ -13,7 +13,7 @@ import { askSince, ASK_MAX, mostCommon, mostSavedLine, pastIndex, showWeekCard, 
 // The data behind "Your week in Parso". Its own query keys (not under the saves key), so marking a save done
 // on the weekly screen leaves the row in place with Undo instead of making it vanish.
 
-export type AskSave = SaveListItem & { next_step: string | null; reminder_at: string | null };
+export type AskSave = SaveListItem & { reminder_at: string | null };
 
 export type WeekData = {
   saved: number;
@@ -24,17 +24,15 @@ export type WeekData = {
 };
 
 const OPENED_KEY = 'parso.week.openedAt'; // when the weekly screen was last opened, on this phone
-const ASK_COLUMNS = `${LIST_COLUMNS}, next_step, reminder_at`;
+const ASK_COLUMNS = `${LIST_COLUMNS}, reminder_at`;
 const RANGE_LIMIT = 1000;
 
-// Recent saves that aren't done and have a question. The notification counts these too.
+// Recent saves that aren't done. The notification counts these too.
 export const openAsks = (since: Date) =>
   supabase
     .from('saves')
     .select(ASK_COLUMNS, { count: 'exact' })
     .is('done_at', null)
-    .not('next_step', 'is', null)
-    .neq('next_step', '')
     .gte('created_at', since.toISOString())
     .order('created_at', { ascending: false });
 

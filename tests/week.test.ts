@@ -48,18 +48,14 @@ Deno.test('the card shows until the finished week is opened', () => {
   assertEquals(showWeekCard(at(15, 9), null), false);
 });
 
-Deno.test('asks about recent open saves with a question, newest first, up to five', () => {
+Deno.test('asks about recent saves that are not done, newest first, up to five', () => {
   const now = at(11, 19);
-  const save = (day: number, extra: Partial<{ done_at: string; next_step: string | null }> = {}) => ({
+  const save = (day: number, extra: Partial<{ done_at: string | null }> = {}) => ({
     created_at: new Date(2026, 9, day, 12).toISOString(),
-    done_at: null,
-    next_step: 'Cook this?' as string | null,
+    done_at: null as string | null,
     ...extra,
   });
-  const picked = savesToAsk(
-    [save(1), save(10), save(9, { done_at: 'x' }), save(8, { next_step: '' }), save(7), save(6), save(5), save(4)],
-    now,
-  );
+  const picked = savesToAsk([save(1), save(10), save(9, { done_at: 'x' }), save(7), save(6), save(5), save(4)], now);
   assertEquals(
     picked.map((s) => new Date(s.created_at).getDate()),
     [10, 7, 6, 5, 4],

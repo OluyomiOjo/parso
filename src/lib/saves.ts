@@ -60,12 +60,11 @@ export type SaveDetail = Pick<
   | 'author_handle'
   | 'pinned'
   | 'edited_at'
-  | 'next_step'
   | 'done_at'
 >;
 
 const DETAIL_COLUMNS =
-  'id, kind, source, url, title, snippet, summary, raw_text, tags, note, collection_id, thumbnail_path, created_at, processed_at, reminder_at, preview_image_url, author_handle, pinned, edited_at, next_step, done_at';
+  'id, kind, source, url, title, snippet, summary, raw_text, tags, note, collection_id, thumbnail_path, created_at, processed_at, reminder_at, preview_image_url, author_handle, pinned, edited_at, done_at';
 
 export function useSaves() {
   const { session } = useSession();
