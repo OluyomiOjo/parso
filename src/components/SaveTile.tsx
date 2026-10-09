@@ -38,7 +38,9 @@ export function SaveTile({ save, width, imageHeight, thumbnailUrl }: Props) {
       {imageHeight !== null ? (
         <>
           <ZoomSource enabled={zooms}>
-            <View style={[styles.picture, { height: imageHeight }]}>
+            {/* One flattened style: the zoom wrapper (a Slot) drops style lists, which lost the picture's height and
+                corners and drew each photo at full size (owner report, build 13). */}
+            <View style={StyleSheet.flatten([styles.picture, { height: imageHeight }])}>
               {thumbnailUrl ? (
                 <Image source={{ uri: thumbnailUrl }} style={styles.fill} accessibilityIgnoresInvertColors />
               ) : null}
