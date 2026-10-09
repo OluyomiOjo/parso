@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
-import { describeSave, type DescribeResult, type Provider } from './ai.ts';
+import { describeSave, writeNextSteps, type DescribeResult, type Provider } from './ai.ts';
 import { embed, toVector } from './embeddings.ts';
 import { downloadImage, extensionFor, imageSize, type ImageData } from './image.ts';
 import { fetchLinkMetadata } from './metadata.ts';
@@ -208,11 +208,12 @@ export async function processSave(db: SupabaseClient, saveId: string, provider: 
       .is('description', null);
   }
   const thumbnail = prepared.image ? await storeThumbnail(db, save, prepared.image) : null;
-  const { title, snippet, summary, tags } = result.output;
+  const { title, snippet, summary, tags, next_step } = result.output;
   await db
     .from('saves')
     .update({
       source: save.source,
+      next_step, // "" when there's nothing to ask: asked once, never again
       ...(isNote(save) ? {} : { title, snippet }), // a note's title and snippet come from its own lines
       summary,
       tags,
@@ -422,11 +423,12 @@ export async function redescribe(db: SupabaseClient, saveIds: string[], provider
     }
     await logRun(db, data, 'live', provider, result, null, prepared);
     const thumbnail = prepared.image ? await storeThumbnail(db, data, prepared.image) : null;
-    const { title, snippet, summary, tags } = result.output;
+    const { title, snippet, summary, tags, next_step } = result.output;
     await db
       .from('saves')
       .update({
         title,
+        next_step,
         snippet,
         summary,
         tags,
@@ -441,4 +443,43 @@ export async function redescribe(db: SupabaseClient, saveIds: string[], provider
     results.push({ id, before: data.title, after: title });
   }
   return results;
+}
+
+// One-off for saves filed before questions existed (Your week in Parso): writes each one's question from what
+// Parso already wrote about it. Nothing is fetched and nothing else changes. With dryRun it only returns them,
+// so the owner can see a sample first.
+export async function nextStepsMissing(db: SupabaseClient, dryRun: boolean) {
+  const { data, error } = await db
+    .from('saves')
+    .select('id, user_id, kind, source, title, snippet, summary, tags')
+    .not('processed_at', 'is', null)
+    .is('next_step', null)
+    .order('created_at', { ascending: false })
+    .limit(dryRun ? 15 : 40);
+  if (error) throw error;
+  const saves = data ?? [];
+  if (!saves.length) return { written: 0, costUsd: 0, sample: [] };
+  const result = await writeNextSteps(
+    saves.map((save) => ({
+      id: save.id,
+      text: [
+        `Kind: ${save.kind}${save.kind === 'link' ? `, from ${PLATFORM_NAMES[save.source] ?? 'a website'}` : ''}`,
+        save.title ? `Title: ${save.title}` : null,
+        save.snippet ? `Detail: ${save.snippet}` : null,
+        save.summary ? `Summary: ${save.summary}` : null,
+        save.tags?.length ? `Tags: ${save.tags.join(', ')}` : null,
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    })),
+  );
+  const sample = saves.map((save) => ({ title: save.title, next_step: result.steps.get(save.id) ?? null }));
+  if (!dryRun) {
+    for (const save of saves) {
+      const step = result.steps.get(save.id);
+      if (step === undefined) continue; // left for the next run
+      await db.from('saves').update({ next_step: step }).eq('id', save.id).eq('user_id', save.user_id);
+    }
+  }
+  return { written: dryRun ? 0 : sample.filter((s) => s.next_step !== null).length, costUsd: result.costUsd, sample };
 }

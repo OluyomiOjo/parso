@@ -116,16 +116,19 @@ export function useReminderSync() {
   }, [loading, userId, upcoming]);
 }
 
-// Tapping a reminder opens its save, whether Parso was open or closed.
+// Tapping a reminder opens its save, and the Sunday notification opens Your week in Parso, whether Parso was open
+// or closed.
 export function useReminderTaps() {
   const response = Notifications.useLastNotificationResponse();
   const { session, loading } = useSession();
   useEffect(() => {
-    const saveId = response?.notification.request.content.data?.saveId;
-    if (loading || !session || typeof saveId !== 'string') return;
+    const data = response?.notification.request.content.data;
+    const saveId = data?.saveId;
+    const week = data?.week === true;
+    if (loading || !session || (typeof saveId !== 'string' && !week)) return;
     if (response?.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
     Notifications.clearLastNotificationResponse();
-    router.push(`/item/${saveId}`);
+    router.push(week ? '/week' : `/item/${saveId}`);
   }, [response, session, loading]);
 }
 

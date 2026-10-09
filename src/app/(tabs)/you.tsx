@@ -1,7 +1,8 @@
 import * as Linking from 'expo-linking';
+import { router } from 'expo-router';
 import * as MediaLibrary from 'expo-media-library/legacy';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Switch, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
@@ -11,21 +12,39 @@ import { deleteAccount, signOut, useSession } from '@/lib/auth';
 import { MONTHS } from '@/lib/format';
 import { planLine } from '@/lib/plan';
 import { openUpgrade, usePlan } from '@/lib/pro';
+import { ensureNotificationPermission } from '@/lib/reminders';
 import { screenshotCheckEnabled, setScreenshotCheck } from '@/lib/screenshots';
-import { colors, radius, spacing, tabularNums } from '@/theme';
+import { sendWeeklyUpdateNow, setWeeklyUpdate, weeklyUpdateEnabled } from '@/lib/weekNotification';
+import { colors, radius, size, spacing, tabularNums } from '@/theme';
 
 const MANAGE_URL = 'https://apps.apple.com/account/subscriptions'; // Apple's own subscriptions page
+// Private (preview) builds only, set in eas.json: the weekly update's test button.
+const TEST_TOOLS = process.env.EXPO_PUBLIC_TEST_TOOLS === '1';
+const NOTIFICATIONS_OFF = 'Notifications are off for Parso. Turn them on in Settings, Parso, Notifications.';
 
 export default function YouScreen() {
   const { session } = useSession();
   const email = session?.user.email;
   const [deleting, setDeleting] = useState(false);
   const [checkScreenshots, setCheckScreenshots] = useState(false);
+  const [weekly, setWeekly] = useState(true);
   const { data: plan } = usePlan();
 
   useEffect(() => {
     screenshotCheckEnabled().then(setCheckScreenshots);
+    weeklyUpdateEnabled().then(setWeekly);
   }, []);
+
+  const toggleWeekly = async (on: boolean) => {
+    setWeekly(on);
+    if (on && (await ensureNotificationPermission()) === 'denied') Alert.alert(NOTIFICATIONS_OFF);
+    await setWeeklyUpdate(on);
+  };
+
+  const testWeekly = () =>
+    sendWeeklyUpdateNow()
+      .then(() => Alert.alert('Sent. Lock your phone; it arrives in about 5 seconds.'))
+      .catch((e: Error) => Alert.alert(e.message));
 
   const toggleScreenshots = async (on: boolean) => {
     setCheckScreenshots(on);
@@ -51,8 +70,8 @@ export default function YouScreen() {
 
   return (
     <Screen>
-      <ScreenTitle>You</ScreenTitle>
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScreenTitle>You</ScreenTitle>
         {email ? (
           <Text variant="secondary" color={colors.secondary} style={styles.email}>
             Signed in as {email}
@@ -77,6 +96,33 @@ export default function YouScreen() {
             ) : null}
           </View>
         ) : null}
+        <Pressable
+          onPress={() => router.push('/week')}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.setting, pressed && styles.pressed]}
+        >
+          <View style={styles.settingText}>
+            <Text variant="rowTitle">Your week in Parso</Text>
+            <Text variant="secondary" color={colors.secondary}>
+              What you saved this week, and what's waiting on you.
+            </Text>
+          </View>
+        </Pressable>
+        <View style={styles.setting}>
+          <View style={styles.settingText}>
+            <Text variant="rowTitle">Weekly update</Text>
+            <Text variant="secondary" color={colors.secondary}>
+              A notification every Sunday at 6 PM.
+            </Text>
+          </View>
+          <Switch
+            value={weekly}
+            onValueChange={toggleWeekly}
+            trackColor={{ true: colors.ink, false: colors.controlBorder }}
+            accessibilityLabel="Weekly update"
+          />
+        </View>
+        {TEST_TOOLS ? <Button label="Send the weekly update now" variant="secondary" onPress={testWeekly} /> : null}
         <View style={styles.setting}>
           <View style={styles.settingText}>
             <Text variant="rowTitle">Check for new screenshots</Text>
@@ -103,13 +149,13 @@ export default function YouScreen() {
             {deleting ? 'Deleting your account…' : 'Delete account'}
           </Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { marginTop: spacing.sectionGapLarge, gap: spacing.sectionGap },
+  content: { gap: spacing.sectionGap, paddingBottom: spacing.sectionGapLarge + size.addButtonClearance },
   email: { paddingHorizontal: spacing.titleInset },
   setting: {
     flexDirection: 'row',
@@ -121,5 +167,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.rowPaddingY,
   },
   settingText: { flex: 1 },
+  pressed: { opacity: 0.8 },
   delete: { alignSelf: 'flex-start', paddingVertical: spacing.md, paddingHorizontal: spacing.titleInset },
 });

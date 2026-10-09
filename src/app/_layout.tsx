@@ -15,6 +15,7 @@ import { usePurchasesAccount } from '@/lib/pro';
 import { configureNotifications, useReminderSync, useReminderTaps } from '@/lib/reminders';
 import { supabase } from '@/lib/supabase';
 import { useOpenTracking } from '@/lib/track';
+import { useWeeklyNotification } from '@/lib/weekNotification';
 import { colors, radius } from '@/theme';
 
 // Keep the launch screen up until the saved session has loaded, so signed-in people never see the welcome screen flash.
@@ -63,6 +64,7 @@ function RootStack() {
         <Stack.Screen name="note/[id]" />
         <Stack.Screen name="photo/[id]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="reminders" />
+        <Stack.Screen name="week" />
         <Stack.Screen
           name="reminder-time/[id]"
           options={{
@@ -95,9 +97,11 @@ function RootStack() {
   );
 }
 
-// Keeps the phone's reminder notifications in step with the saves, and opens a save from its notification.
+// Keeps the phone's reminder notifications in step with the saves, schedules the Sunday weekly update, and opens
+// what a notification is about when it's tapped.
 function Reminders() {
   useReminderSync();
+  useWeeklyNotification();
   useReminderTaps();
   return null;
 }

@@ -37,7 +37,7 @@ import {
 } from '@/lib/noteFormat';
 import { useNoteEditor, useTogglePin } from '@/lib/notes';
 import { shortReminder } from '@/lib/reminderTime';
-import { DELETE_FAILED, useDeleteSave } from '@/lib/saves';
+import { DELETE_FAILED, useDeleteSave, useMarkDone } from '@/lib/saves';
 import { SHARE_FAILED, shareSave } from '@/lib/shareOut';
 import { track } from '@/lib/track';
 import { colors, note, size, spacing } from '@/theme';
@@ -56,6 +56,7 @@ export default function NoteScreen() {
   const { lines, setLines, noteId, save } = editor;
   const togglePin = useTogglePin(noteId);
   const deleteSave = useDeleteSave(noteId ? { id: noteId, kind: 'text', thumbnail_path: null } : undefined);
+  const markDone = useMarkDone(noteId ?? '');
 
   const inputs = useRef(new Map<string, TextInput>());
   const focused = useRef(0); // index of the line with the cursor
@@ -168,14 +169,24 @@ export default function NoteScreen() {
     ]);
 
   const more = () => {
-    const options = ['Collection', 'Tags', 'Remind me', 'Share', 'Delete note', 'Cancel'];
+    const done = Boolean(save?.done_at);
+    const options = [
+      'Collection',
+      'Tags',
+      'Remind me',
+      done ? 'Mark as not done' : 'Mark as done',
+      'Share',
+      'Delete note',
+      'Cancel',
+    ];
     Keyboard.dismiss();
-    ActionSheetIOS.showActionSheetWithOptions({ options, destructiveButtonIndex: 4, cancelButtonIndex: 5 }, (index) => {
+    ActionSheetIOS.showActionSheetWithOptions({ options, destructiveButtonIndex: 5, cancelButtonIndex: 6 }, (index) => {
       if (index === 0) edit('collection');
       else if (index === 1) edit('tags');
       else if (index === 2) remind();
-      else if (index === 3) void share();
-      else if (index === 4) confirmDelete();
+      else if (index === 3) markDone.mutate(!done, { onError: (error) => Alert.alert(error.message) });
+      else if (index === 4) void share();
+      else if (index === 5) confirmDelete();
     });
   };
 

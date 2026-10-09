@@ -437,6 +437,16 @@ export const upgrade = {
   bottom: 8,
 } as const;
 
+// Your week in Parso: the weekly screen, its card on My Parsos, and Done on the save page.
+export const week = {
+  questionTop: 4, // a save's title to its question
+  actionsTop: 12, // the question to Done, Remind me and Open
+  actionGap: 8,
+  doneGap: 12, // "Done on Oct 12" to Undo
+  doneTop: 12, // the summary to the question and Mark as done on the save page
+  doneIcon: 13, // the tick in meta lines
+} as const;
+
 export const theme = {
   colors,
   brandColors,
@@ -464,5 +474,6 @@ export const theme = {
   circle,
   reorder,
   upgrade,
+  week,
 } as const;
 export default theme;

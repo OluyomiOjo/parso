@@ -13,6 +13,7 @@ export type SaveDescription = {
   tags: string[];
   collection: string;
   collection_description: string; // stored only when the collection has none yet
+  next_step: string; // "Cook this pasta this week?"; empty when the intent isn't clear (Your week in Parso)
 };
 
 export type DescribeInput = {
@@ -39,7 +40,7 @@ const MODELS: Record<Provider, { id: string; inputPerM: number; outputPerM: numb
 const SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['title', 'snippet', 'summary', 'tags', 'collection', 'collection_description'],
+  required: ['title', 'snippet', 'summary', 'tags', 'collection', 'collection_description', 'next_step'],
   properties: {
     title: { type: 'string', description: 'What this is, in at most 60 characters.' },
     snippet: { type: 'string', description: 'One line that adds a useful detail, at most 80 characters.' },
@@ -50,8 +51,15 @@ const SCHEMA = {
       type: 'string',
       description: 'One sentence on what belongs in the chosen collection, "Parso files ... here.", at most 90 characters.',
     },
+    next_step: {
+      type: 'string',
+      description: 'A short question about what the person likely meant to do with it, at most 70 characters, or "".',
+    },
   },
 } as const;
+
+// Shared by new saves and the one-off run for existing saves, so both ask the same kind of question.
+const NEXT_STEP_RULE = `one short, friendly question about what the person most likely meant to do with this save, asked as a yes or no question in sentence case, at most 70 characters, no emoji (for example "Cook this pasta for dinner this week?", "Try this workout tomorrow morning?", "Book this beach trip for summer?", "Read this article this weekend?"). Name the thing in a few words so the question makes sense on its own. When it isn't clear what anyone would do with it (a joke, a meme, a plain photo with no clue), write "".`;
 
 const SYSTEM_PROMPT = `You file things people save from Instagram, TikTok, X, YouTube, Pinterest, Threads, LinkedIn, Reddit, Facebook, WhatsApp and the web into their personal library, so they can find them later by searching in their own words.
 
@@ -62,6 +70,7 @@ For each save you get the link, whatever public details could be fetched, someti
 - tags: up to 5 lowercase words or short phrases someone might search for. Include the main subject and type (for example "recipe", "pasta").
 - collection: reuse an existing collection whenever it fits, even loosely. Only when none fits, invent a short, broad name of one or two words in sentence case (for example "Recipes", "Travel", "Home ideas", "Fitness", "Reading list"). Pick by what the thing is about, not where it was posted.
 - collection_description: one sentence on what belongs in the chosen collection in general, not this one save, in the form "Parso files anything that looks like a recipe here." At most 90 characters.
+- next_step: ${NEXT_STEP_RULE}
 
 For screenshots and photos, read any visible text in the image and use it; it is often the most useful detail.
 
@@ -108,7 +117,16 @@ export function tidy(raw: SaveDescription): SaveDescription {
     tags: [...new Set(raw.tags.map((t) => t.trim().toLowerCase()).filter(Boolean))].slice(0, 5),
     collection: capitalised(cut(raw.collection.trim(), 40)) || 'Saved',
     collection_description: shortDescription(raw.collection_description),
+    next_step: nextStep(raw.next_step),
   };
+}
+
+const NEXT_STEP_MAX = 70; // the database's limit (migration 0023)
+
+// Never shown cut off: a question that's too long, or isn't a question, is dropped and that save isn't asked about.
+export function nextStep(text: string | undefined): string {
+  const question = (text ?? '').trim();
+  return question.length <= NEXT_STEP_MAX && question.endsWith('?') ? capitalised(question) : '';
 }
 
 const cost = (p: Provider, inTok: number, outTok: number) =>
@@ -140,6 +158,55 @@ async function viaOpenAI(input: DescribeInput): Promise<Omit<DescribeResult, 'du
     provider: 'openai',
     model: MODELS.openai.id,
     output: tidy(JSON.parse(response.output_text)),
+    inputTokens: inTok,
+    outputTokens: outTok,
+    costUsd: cost('openai', inTok, outTok),
+  };
+}
+
+// The one-off run for saves filed before questions existed: questions only, from what Parso already wrote about
+// each save. Nothing is fetched again and nothing else about the saves changes.
+export type NextStepInput = { id: string; text: string };
+
+const NEXT_STEPS_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['items'],
+  properties: {
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id', 'next_step'],
+        properties: { id: { type: 'string' }, next_step: { type: 'string' } },
+      },
+    },
+  },
+} as const;
+
+export async function writeNextSteps(
+  saves: NextStepInput[],
+): Promise<{ steps: Map<string, string>; inputTokens: number; outputTokens: number; costUsd: number }> {
+  const client = new OpenAI();
+  const response = await client.responses.create({
+    model: MODELS.openai.id,
+    instructions: `People save things from social apps and the web into their personal library. For each save below, write next_step: ${NEXT_STEP_RULE} Use only what is written about the save. Answer for every id.`,
+    input: [
+      {
+        role: 'user',
+        content: [{ type: 'input_text', text: saves.map((s) => `id: ${s.id}\n${s.text}`).join('\n\n') }],
+      },
+    ],
+    max_output_tokens: 4096,
+    text: { format: { type: 'json_schema', name: 'next_steps', schema: NEXT_STEPS_SCHEMA, strict: true } },
+  });
+  if (response.status !== 'completed') throw new Error(`OpenAI response ${response.status}`);
+  const parsed = JSON.parse(response.output_text) as { items: { id: string; next_step: string }[] };
+  const inTok = response.usage?.input_tokens ?? 0;
+  const outTok = response.usage?.output_tokens ?? 0;
+  return {
+    steps: new Map(parsed.items.map((item) => [item.id, nextStep(item.next_step)])),
     inputTokens: inTok,
     outputTokens: outTok,
     costUsd: cost('openai', inTok, outTok),

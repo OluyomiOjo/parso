@@ -60,7 +60,13 @@ export function SaveRow({ save, thumbnailUrl, matches = [], onOpen, titleLines =
             terms={termsFor(matches, 'snippet')}
           />
         ) : null}
-        <SourceLine kind={save.kind} source={save.source} text={meta} highlight={termsFor(matches, 'source')} />
+        <SourceLine
+          kind={save.kind}
+          source={save.source}
+          text={meta}
+          highlight={termsFor(matches, 'source')}
+          done={Boolean(save.done_at)}
+        />
       </View>
     </Pressable>
   );

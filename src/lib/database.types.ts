@@ -80,12 +80,14 @@ export type Database = {
           author_handle: string | null
           collection_id: string | null
           created_at: string
+          done_at: string | null
           edited_at: string | null
           embedding: string | null
           fts: unknown
           id: string
           kind: string
           note: string | null
+          next_step: string | null
           pinned: boolean
           preview_image_url: string | null
           processed_at: string | null
@@ -106,12 +108,14 @@ export type Database = {
           author_handle?: string | null
           collection_id?: string | null
           created_at?: string
+          done_at?: string | null
           edited_at?: string | null
           embedding?: string | null
           fts?: unknown
           id?: string
           kind: string
           note?: string | null
+          next_step?: string | null
           pinned?: boolean
           preview_image_url?: string | null
           processed_at?: string | null
@@ -132,12 +136,14 @@ export type Database = {
           author_handle?: string | null
           collection_id?: string | null
           created_at?: string
+          done_at?: string | null
           edited_at?: string | null
           embedding?: string | null
           fts?: unknown
           id?: string
           kind?: string
           note?: string | null
+          next_step?: string | null
           pinned?: boolean
           preview_image_url?: string | null
           processed_at?: string | null

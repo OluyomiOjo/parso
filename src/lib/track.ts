@@ -20,7 +20,9 @@ export type EventName =
   | 'view_switched'
   | 'upgrade_shown'
   | 'purchase_made'
-  | 'restore_tapped';
+  | 'restore_tapped'
+  | 'save_done'
+  | 'week_opened';
 
 export type EventDetails = {
   source?: string;

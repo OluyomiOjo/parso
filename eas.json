@@ -6,7 +6,8 @@
   "build": {
     "preview": {
       "distribution": "internal",
-      "environment": "preview"
+      "environment": "preview",
+      "env": { "EXPO_PUBLIC_TEST_TOOLS": "1" }
     },
     "production": {
       "autoIncrement": true,

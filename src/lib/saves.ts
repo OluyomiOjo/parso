@@ -26,10 +26,11 @@ export type SaveListItem = Pick<
   | 'processed_at'
   | 'pinned'
   | 'edited_at'
+  | 'done_at'
 >;
 
 export const LIST_COLUMNS =
-  'id, kind, source, url, title, snippet, thumbnail_path, thumbnail_width, thumbnail_height, author_handle, created_at, processed_at, pinned, edited_at';
+  'id, kind, source, url, title, snippet, thumbnail_path, thumbnail_width, thumbnail_height, author_handle, created_at, processed_at, pinned, edited_at, done_at';
 const LIST_LIMIT = 50;
 
 export const savesKey = (userId: string | undefined) => ['saves', userId] as const;
@@ -59,10 +60,12 @@ export type SaveDetail = Pick<
   | 'author_handle'
   | 'pinned'
   | 'edited_at'
+  | 'next_step'
+  | 'done_at'
 >;
 
 const DETAIL_COLUMNS =
-  'id, kind, source, url, title, snippet, summary, raw_text, tags, note, collection_id, thumbnail_path, created_at, processed_at, reminder_at, preview_image_url, author_handle, pinned, edited_at';
+  'id, kind, source, url, title, snippet, summary, raw_text, tags, note, collection_id, thumbnail_path, created_at, processed_at, reminder_at, preview_image_url, author_handle, pinned, edited_at, next_step, done_at';
 
 export function useSaves() {
   const { session } = useSession();
@@ -192,6 +195,7 @@ export function useCreateLinkSave(via: 'add' | 'clipboard') {
         processed_at: null,
         pinned: false,
         edited_at: null,
+        done_at: null,
       };
       queryClient.setQueryData<SaveListItem[]>(key, (previous) => [optimistic, ...(previous ?? [])]);
 
@@ -249,6 +253,28 @@ export function useUpdateSave(id: string) {
         queryKey: ['collections', session?.user.id],
       }); // counts and tiles
       queryClient.invalidateQueries({ queryKey: ['search', session?.user.id] });
+    },
+  });
+}
+
+export const DONE_FAILED = "Couldn't change this save. Check your connection and try again.";
+
+// Done (Your week in Parso): marks a save done, or not done again (Undo). Lists and the weekly screen pick it up
+// when they next load; the save's own page changes straight away.
+export function useMarkDone(id: string) {
+  const queryClient = useQueryClient();
+  const { session } = useSession();
+  return useMutation({
+    mutationFn: async (done: boolean) => {
+      const done_at = done ? new Date().toISOString() : null;
+      const { error } = await supabase.from('saves').update({ done_at }).eq('id', id);
+      if (error) throw new Error(DONE_FAILED);
+      if (done) track('save_done');
+      return done_at;
+    },
+    onSuccess: (done_at) => {
+      queryClient.setQueryData<SaveDetail>(saveKey(id), (previous) => (previous ? { ...previous, done_at } : previous));
+      queryClient.invalidateQueries({ queryKey: savesKey(session?.user.id) });
     },
   });
 }

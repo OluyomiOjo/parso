@@ -54,7 +54,7 @@ export function SaveTile({ save, width, imageHeight, thumbnailUrl }: Props) {
         </View>
       )}
       <View style={styles.source}>
-        <SourceLine kind={save.kind} source={save.source} text={source} />
+        <SourceLine kind={save.kind} source={save.source} text={source} done={Boolean(save.done_at)} />
       </View>
     </Pressable>
   );

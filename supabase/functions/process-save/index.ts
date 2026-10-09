@@ -4,6 +4,7 @@ import {
   admin,
   embedMissing,
   handlesMissing,
+  nextStepsMissing,
   noteSave,
   redescribe,
   getConfig,
@@ -36,6 +37,7 @@ Deno.serve(async (req) => {
   let redescribeIds: unknown;
   let noteSaveId: unknown;
   let noteEditedAt: unknown;
+  let nextStepsOnly: unknown;
   try {
     ({
       save_id: saveId,
@@ -48,6 +50,7 @@ Deno.serve(async (req) => {
       redescribe: redescribeIds,
       note_save: noteSaveId,
       edited_at: noteEditedAt,
+      next_steps_missing: nextStepsOnly,
     } = await req.json());
   } catch {
     return new Response('Bad request', { status: 400 });
@@ -71,6 +74,11 @@ Deno.serve(async (req) => {
   if (handlesOnly === true) {
     const added = await handlesMissing(db);
     return Response.json({ added });
+  }
+  // One-off for Your week in Parso: questions for saves filed before questions existed. "preview" only shows a
+  // sample; true writes them. The AI reads Parso's own descriptions; nothing is fetched again.
+  if (nextStepsOnly === true || nextStepsOnly === 'preview') {
+    return Response.json(await nextStepsMissing(db, nextStepsOnly === 'preview'));
   }
   // Owner-approved one-off: describe the listed saves again, keeping their collections.
   if (Array.isArray(redescribeIds) && redescribeIds.every((x) => typeof x === 'string') && redescribeIds.length <= 25) {

@@ -17,6 +17,7 @@ import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { Text } from '@/components/Text';
 import { ViewSwitch } from '@/components/ViewSwitch';
+import { WeekCard } from '@/components/WeekCard';
 import { REORDER_FAILED, useCollectionOverview, useReorderCollections } from '@/lib/collections';
 import { useNotes } from '@/lib/notes';
 import { canSave, openUpgrade } from '@/lib/pro';
@@ -24,6 +25,7 @@ import { useUpcomingReminders } from '@/lib/reminders';
 import { useViewMode } from '@/lib/viewMode';
 import { useSaves, useSavesLiveUpdates, useThumbnailUrls } from '@/lib/saves';
 import { useNewScreenshots } from '@/lib/screenshots';
+import { useWeekCard } from '@/lib/weekData';
 import { circle, colors, firstRun, sheet, size, spacing, type } from '@/theme';
 
 const openAdd = () => router.push('/add');
@@ -45,6 +47,7 @@ export default function HomeScreen() {
   const [dragging, setDragging] = useState(false); // the page and the circle row hold still while a circle moves
   const notes = useNotes(filter === 'notes');
   const shots = useNewScreenshots();
+  const weekReady = useWeekCard();
   // Picks up a change made on the You tab (screenshot check turned on or off).
   useFocusEffect(useCallback(() => shots.refresh(), [shots.refresh]));
   useSavesLiveUpdates();
@@ -71,6 +74,12 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <ScreenTitle>My Parsos</ScreenTitle>
         </View>
+
+        {weekReady && hasSaves ? (
+          <View style={styles.section}>
+            <WeekCard />
+          </View>
+        ) : null}
 
         {/* New screenshots waiting to be saved. A copied link is offered in its own mini sheet (copied-link). */}
         {['ask', 'needsFullAccess', 'new'].includes(shots.state.status) ? (

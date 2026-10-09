@@ -7,17 +7,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DetailActions } from '@/components/DetailActions';
 import { DetailsPanel } from '@/components/DetailsPanel';
 import { IconButton } from '@/components/IconButton';
+import { Pill } from '@/components/Pill';
 import { SourceLine } from '@/components/SourceLine';
 import { Text } from '@/components/Text';
 import { ChevronLeftIcon } from '@/icons/ChevronLeftIcon';
 import { useCollections } from '@/lib/collections';
-import { metaLabel, openLabel, relativeTime } from '@/lib/format';
+import { metaLabel, MONTHS, openLabel, relativeTime } from '@/lib/format';
 import { displayUrl } from '@/lib/links';
 import { addPreviewImage } from '@/lib/previewImage';
 import { shortReminder } from '@/lib/reminderTime';
-import { DELETE_FAILED, useDeleteSave, useSave, useThumbnailUrls } from '@/lib/saves';
+import { DELETE_FAILED, useDeleteSave, useMarkDone, useSave, useThumbnailUrls } from '@/lib/saves';
 import { track } from '@/lib/track';
-import { colors, detail, size, spacing } from '@/theme';
+import { doneLabel } from '@/lib/week';
+import { colors, detail, size, spacing, week } from '@/theme';
 
 const OPEN_FAILED = "Couldn't open this link. Check that the app is installed, or try again.";
 const goBack = () => (router.canGoBack() ? router.back() : router.replace('/'));
@@ -31,6 +33,8 @@ export default function SaveDetailScreen() {
   const { data: collections = [] } = useCollections();
   const { data: thumbnails } = useThumbnailUrls(save?.thumbnail_path ? [save.thumbnail_path] : []);
   const deleteSave = useDeleteSave(save);
+  const markDone = useMarkDone(id);
+  const setDone = (done: boolean) => markDone.mutate(done, { onError: (error) => Alert.alert(error.message) });
 
   // Older website saves with no picture (sites that refuse our server, like Medium): look on the phone.
   // One "save opened" per visit, with its source and kind (never its content).
@@ -147,6 +151,29 @@ export default function SaveDetailScreen() {
             </Text>
           ) : null}
 
+          {/* What the person meant to do with it (the AI's question), and Done (Your week in Parso). */}
+          <View style={styles.next}>
+            {save.done_at ? (
+              <View style={styles.doneRow}>
+                <Text variant="secondary" color={colors.secondary}>
+                  {doneLabel(save.done_at, MONTHS)}
+                </Text>
+                <Pressable onPress={() => setDone(false)} accessibilityRole="button" hitSlop={spacing.sm}>
+                  <Text variant="secondary" style={styles.link}>
+                    Undo
+                  </Text>
+                </Pressable>
+              </View>
+            ) : (
+              <>
+                {save.next_step ? <Text>{save.next_step}</Text> : null}
+                <View style={styles.doneButton}>
+                  <Pill label="Mark as done" onPress={() => setDone(true)} />
+                </View>
+              </>
+            )}
+          </View>
+
           <View style={styles.panel}>
             <DetailsPanel
               rows={[
@@ -213,6 +240,10 @@ const styles = StyleSheet.create({
   title: { marginTop: detail.metaToTitle },
   summary: { marginTop: detail.titleToSummary },
   panel: { marginTop: detail.summaryToPanel },
+  next: { marginTop: week.doneTop, gap: week.actionGap },
+  doneButton: { flexDirection: 'row' },
+  doneRow: { flexDirection: 'row', alignItems: 'center', gap: week.doneGap },
+  link: { textDecorationLine: 'underline' },
   delete: {
     marginTop: detail.panelToDelete,
     paddingVertical: spacing.md,
