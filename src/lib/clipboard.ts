@@ -28,6 +28,7 @@ async function shouldOffer(): Promise<boolean> {
 const BLOCKED = new Set([
   'save',
   'add',
+  'add-menu',
   'copied-link',
   'item-edit',
   'photo',

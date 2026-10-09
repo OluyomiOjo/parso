@@ -106,7 +106,7 @@ export async function markWeekOpened() {
   await AsyncStorage.setItem(OPENED_KEY, new Date().toISOString()).catch(() => undefined);
 }
 
-// Whether My Parsos shows "Your week in Parso is ready": rechecked each time the tab comes back into view.
+// Whether Parsos shows "Your week in Parso is ready": rechecked each time the tab comes back into view.
 export function useWeekCard(): boolean {
   const [visible, setVisible] = useState(false);
   useFocusEffect(

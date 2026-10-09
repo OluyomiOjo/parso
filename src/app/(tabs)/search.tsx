@@ -35,7 +35,7 @@ export default function SearchScreen() {
     (results ?? []).flatMap((r) => (r.thumbnail_path ? [r.thumbnail_path] : [])),
   );
 
-  // Opening the tab (or tapping the field on My Parsos) is a request to type. Coming back from a result
+  // Opening the tab (or tapping the field on Parsos) is a request to type. Coming back from a result
   // keeps the results on screen without raising the keyboard over them.
   const queryRef = useRef(query);
   queryRef.current = query;

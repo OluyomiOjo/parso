@@ -76,7 +76,7 @@ export default function CollectionsScreen() {
         ) : collections?.length && reordering ? (
           <>
             <Text variant="secondary" color={colors.secondary} style={styles.hint}>
-              Press and hold a collection, then drag it. My Parsos shows them in this order.
+              Press and hold a collection, then drag it. Parsos shows them in this order.
             </Text>
             <View style={[styles.section, styles.panel]}>
               <ReorderList

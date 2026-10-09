@@ -14,7 +14,7 @@ import { AddButton } from './AddButton';
 import { Text } from './Text';
 
 const TABS: Record<string, { label: string; Icon: ComponentType<IconProps> }> = {
-  index: { label: 'My Parsos', Icon: BookmarkIcon },
+  index: { label: 'Parsos', Icon: BookmarkIcon },
   search: { label: 'Search', Icon: SearchIcon },
   collections: { label: 'Collections', Icon: CollectionsIcon },
   you: { label: 'You', Icon: YouIcon },

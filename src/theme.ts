@@ -249,7 +249,7 @@ export const photoViewer = {
   maxZoom: 4,
 } as const;
 
-// Grid view on My Parsos and Collections (owner asked in step 10, after Pinterest): two columns, each
+// Grid view on Parsos and Collections (owner asked in step 10, after Pinterest): two columns, each
 // picture at its own shape within these limits.
 export const grid = {
   columnGap: 10,
@@ -288,7 +288,7 @@ export const segmented = {
   iconGap: 6,
 } as const;
 
-// Reminder card on My Parsos, measured from design/3. Home@2x.png.
+// Reminder card on Parsos, measured from design/3. Home@2x.png.
 export const reminderCard = {
   padding: 12,
   tile: 44,
@@ -325,7 +325,7 @@ export const illustration = {
   stroke: 6, // in the drawings' own units (2x points)
 } as const;
 
-// First-run card on My Parsos, measured from design/3b. Home, first run@2x.png.
+// First-run card on Parsos, measured from design/3b. Home, first run@2x.png.
 export const firstRun = {
   padding: 20,
   titleToBody: 12,
@@ -362,7 +362,7 @@ export const copiedLinkSheet = {
   buttonToNotNow: 6,
 } as const;
 
-// New-screenshots card on My Parsos.
+// New-screenshots card on Parsos.
 export const screenshotsCard = {
   padding: 16,
   thumb: 44,
@@ -395,7 +395,7 @@ export const note = {
   bottomSpace: 120, // empty page under the last line; tapping it puts the cursor at the end
 } as const;
 
-// Collections as circles on My Parsos (owner request, step 10): one picture in a thin grey ring, the name under it.
+// Collections as circles on Parsos (owner request, step 10): one picture in a thin grey ring, the name under it.
 export const circle = {
   size: 68,
   ring: 2, // grey ring, then a white gap, then the picture
@@ -434,7 +434,7 @@ export const upgrade = {
   bottom: 8,
 } as const;
 
-// Your week in Parso: the weekly screen, its card on My Parsos, and Done on the save page.
+// Your week in Parso: the weekly screen, its card on Parsos, and Done on the save page.
 export const week = {
   actionsTop: 12, // the question to Done, Remind me and Open
   actionGap: 8,
@@ -474,6 +474,26 @@ export const settings = {
   profileGap: 14,
 } as const;
 
+// The Parso logo at the top of Parsos (home), in solid black like Pinterest's header (owner request after build 14).
+export const homeLogo = {
+  height: 28,
+  top: 10, // below the safe area, where the screen title sat
+  bottom: 4,
+} as const;
+
+// The Add sheet, opened by the + (owner request after build 14, after Pinterest's): three large tiles in a row.
+export const addMenu = {
+  paddingX: 24,
+  paddingTop: 28,
+  titleToTiles: 24,
+  tile: 88,
+  tileRadius: 22,
+  icon: 30,
+  tileGap: 16, // between tiles
+  labelTop: 8,
+  bottom: 12,
+} as const;
+
 export const theme = {
   colors,
   brandColors,
@@ -505,5 +525,7 @@ export const theme = {
   dock,
   press,
   settings,
+  homeLogo,
+  addMenu,
 } as const;
 export default theme;

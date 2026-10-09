@@ -24,7 +24,7 @@ function Step({ icon, children }: { icon: ReactNode; children: string }) {
   );
 }
 
-// My Parsos before anything is saved (design 3b): how to save from another app.
+// Parsos before anything is saved (design 3b): how to save from another app.
 export function FirstSaveCard() {
   return (
     <View style={styles.card}>

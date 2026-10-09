@@ -1,5 +1,3 @@
-import { Link } from 'expo-router';
-import type { ReactNode } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
 import { metaLabel } from '@/lib/format';
@@ -20,16 +18,13 @@ type Props = {
 };
 
 // One save in the grid: the picture at its own shape with the title and source under it, or, with no
-// picture, a faint grey tile holding the title and its first line. On iOS 18 and later a picture grows into the
-// save's page when tapped, and shrinks back on the way out (owner decision, step 11).
+// picture, a faint grey tile holding the title and its first line.
 export function SaveTile({ save, width, imageHeight, thumbnailUrl }: Props) {
   const title = save.title ?? (save.url ? displayUrl(save.url) : 'Saving…');
   const source = metaLabel(save);
-  const zooms = imageHeight !== null && save.kind !== 'text' && !save.id.startsWith('pending-');
-
-  const tile = (
+  return (
     <PressableScale
-      onPress={zooms ? undefined : () => openSave(save)}
+      onPress={() => openSave(save)}
       disabled={save.id.startsWith('pending-')}
       accessibilityRole="button"
       accessibilityLabel={`${title}. ${source}`}
@@ -37,15 +32,11 @@ export function SaveTile({ save, width, imageHeight, thumbnailUrl }: Props) {
     >
       {imageHeight !== null ? (
         <>
-          <ZoomSource enabled={zooms}>
-            {/* One flattened style: the zoom wrapper (a Slot) drops style lists, which lost the picture's height and
-                corners and drew each photo at full size (owner report, build 13). */}
-            <View style={StyleSheet.flatten([styles.picture, { height: imageHeight }])}>
-              {thumbnailUrl ? (
-                <Image source={{ uri: thumbnailUrl }} style={styles.fill} accessibilityIgnoresInvertColors />
-              ) : null}
-            </View>
-          </ZoomSource>
+          <View style={[styles.picture, { height: imageHeight }]}>
+            {thumbnailUrl ? (
+              <Image source={{ uri: thumbnailUrl }} style={styles.fill} accessibilityIgnoresInvertColors />
+            ) : null}
+          </View>
           <Text variant="rowTitle" numberOfLines={2} style={styles.caption}>
             {title}
           </Text>
@@ -67,18 +58,7 @@ export function SaveTile({ save, width, imageHeight, thumbnailUrl }: Props) {
       </View>
     </PressableScale>
   );
-
-  return zooms ? (
-    <Link href={{ pathname: '/item/[id]', params: { id: save.id } }} asChild>
-      {tile}
-    </Link>
-  ) : (
-    tile
-  );
 }
-
-const ZoomSource = ({ enabled, children }: { enabled: boolean; children: ReactNode }) =>
-  enabled ? <Link.AppleZoom>{children}</Link.AppleZoom> : children;
 
 const styles = StyleSheet.create({
   picture: { borderRadius: radius.thumb, overflow: 'hidden', backgroundColor: colors.divider },

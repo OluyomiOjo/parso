@@ -17,7 +17,7 @@ const PRIVACY_URL = 'https://parso.ai/privacy';
 const BUY_FAILED = "Couldn't complete the purchase. You weren't charged. Check your connection and try again.";
 const RESTORE_NONE = 'No Parso Pro subscription was found for this Apple Account.';
 const RESTORE_FAILED = "Couldn't restore purchases. Check your connection and try again.";
-const BENEFITS = ['Unlimited saves', 'Save videos up to 3 minutes', 'Everything stays searchable'];
+const BENEFITS = ['Unlimited saves', 'Everything stays searchable and filed for you'];
 
 type Choice = 'yearly' | 'monthly';
 

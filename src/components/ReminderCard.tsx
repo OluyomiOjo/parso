@@ -12,7 +12,7 @@ import { colors, radius, reminderCard, size, type } from '@/theme';
 import { PressableScale } from './PressableScale';
 import { Text } from './Text';
 
-// The next reminder on My Parsos (design 3): yellow bell tile, when, what, and Open.
+// The next reminder on Parsos (design 3): yellow bell tile, when, what, and Open.
 export function ReminderCard({ save, more = 0 }: { save: ReminderSave; more?: number }) {
   const when = formatReminder(new Date(save.reminder_at));
   const title = save.title ?? (save.url ? displayUrl(save.url) : 'Your save');

@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { CollectionCircle } from '@/components/CollectionCircle';
 import { FirstSaveCard } from '@/components/FirstSaveCard';
@@ -14,7 +14,6 @@ import { ReorderList } from '@/components/ReorderList';
 import { SaveGrid } from '@/components/SaveGrid';
 import { SaveRow } from '@/components/SaveRow';
 import { Screen } from '@/components/Screen';
-import { ScreenTitle } from '@/components/ScreenTitle';
 import { Text } from '@/components/Text';
 import { ViewSwitch } from '@/components/ViewSwitch';
 import { WeekCard } from '@/components/WeekCard';
@@ -26,7 +25,7 @@ import { useViewMode } from '@/lib/viewMode';
 import { useSaves, useSavesLiveUpdates, useThumbnailUrls } from '@/lib/saves';
 import { useNewScreenshots } from '@/lib/screenshots';
 import { useWeekCard } from '@/lib/weekData';
-import { circle, colors, firstRun, sheet, size, spacing, type } from '@/theme';
+import { circle, colors, firstRun, homeLogo, sheet, size, spacing, type, welcome } from '@/theme';
 
 const openAdd = () => router.push('/add');
 const openNewNote = () => router.push({ pathname: '/note/[id]', params: { id: 'new' } });
@@ -72,7 +71,15 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refresh} />}
       >
         <View style={styles.header}>
-          <ScreenTitle>My Parsos</ScreenTitle>
+          {/* The logo in solid black (the brand file, tinted), in place of a title; the screen is called Parsos. */}
+          <Image
+            source={require('../../../assets/brand/parso_logo_new.png')}
+            style={styles.logo}
+            tintColor={colors.ink}
+            resizeMode="contain"
+            accessibilityRole="header"
+            accessibilityLabel="Parsos"
+          />
         </View>
 
         {weekReady && hasSaves ? (
@@ -210,6 +217,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+  },
+  logo: {
+    height: homeLogo.height,
+    width: homeLogo.height * welcome.logoAspect,
+    marginTop: homeLogo.top,
+    marginBottom: homeLogo.bottom,
+    marginLeft: spacing.titleInset,
   },
   section: { marginTop: spacing.sectionGapLarge },
   filters: { flexDirection: 'row', gap: sheet.pillGap, marginBottom: spacing.sectionGap },

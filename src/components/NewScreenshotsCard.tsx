@@ -19,7 +19,7 @@ type Props = {
 
 const count = (n: number) => `${n} new screenshot${n === 1 ? '' : 's'}`;
 
-// My Parsos: offers screenshots taken since Parso was last opened, or asks once to turn the check on.
+// Parsos: offers screenshots taken since Parso was last opened, or asks once to turn the check on.
 export function NewScreenshotsCard({ state, saving, onTurnOn, onNotNow, onSave, onChanged }: Props) {
   const [failed, setFailed] = useState(0);
 

@@ -7,7 +7,7 @@ type IconButtonProps = {
   label: string; // read by VoiceOver
   onPress: () => void;
   children: ReactNode;
-  variant?: 'surface' | 'ink'; // ink: the larger black + on My Parsos
+  variant?: 'surface' | 'ink'; // ink: the larger black + on Parsos
 };
 
 export function IconButton({ label, onPress, children, variant = 'surface' }: IconButtonProps) {

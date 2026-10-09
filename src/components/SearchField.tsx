@@ -50,7 +50,7 @@ export function SearchField({ value, onChangeText, inputRef, autoFocus, onSubmit
   );
 }
 
-// The same field on My Parsos, as a button that opens the Search tab.
+// The same field on Parsos, as a button that opens the Search tab.
 export function SearchFieldButton({ onPress }: { onPress: () => void }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="search" accessibilityLabel={PLACEHOLDER} style={styles.field}>

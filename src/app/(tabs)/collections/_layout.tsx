@@ -16,5 +16,5 @@ export default function CollectionsLayout() {
   );
 }
 
-// Opening a collection from My Parsos still leaves the list underneath, so back goes there.
+// Opening a collection from Parsos still leaves the list underneath, so back goes there.
 export const unstable_settings = { initialRouteName: 'index' };

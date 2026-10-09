@@ -1,6 +1,6 @@
 // "Your week in Parso" (owner decisions in step 11): the rules, kept free of app code so they're tested in tests/.
 // A week ends on Sunday at 6 PM, phone time. From then until the end of Wednesday the update is "ready": the
-// screen shows that finished week and My Parsos shows a card until it's opened. Any other time, the screen shows
+// screen shows that finished week and Parsos shows a card until it's opened. Any other time, the screen shows
 // the week so far.
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -37,7 +37,7 @@ export function weekRange(now: Date): WeekRange {
   return { start: boundary, end: now, ready: false };
 }
 
-// The card on My Parsos: only while the week is ready and it hasn't been opened since the week ended.
+// The card on Parsos: only while the week is ready and it hasn't been opened since the week ended.
 export function showWeekCard(now: Date, lastOpened: Date | null): boolean {
   const range = weekRange(now);
   return range.ready && (!lastOpened || lastOpened < range.end);

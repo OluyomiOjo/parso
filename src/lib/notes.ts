@@ -30,7 +30,7 @@ export function openSave(save: { id: string; kind: string }) {
   else router.push({ pathname: '/item/[id]', params: { id: save.id } });
 }
 
-// The Notes filter on My Parsos: pinned first, then the most recently edited.
+// The Notes filter on Parsos: pinned first, then the most recently edited.
 export function useNotes(enabled: boolean) {
   const { session } = useSession();
   const userId = session?.user.id;

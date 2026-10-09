@@ -18,7 +18,7 @@ export type CollectionSummary = {
   description: string | null;
   saveCount: number;
   recent: RecentTile[];
-  cover: string | null; // thumbnail path of the newest save with a picture, for the circles on My Parsos
+  cover: string | null; // thumbnail path of the newest save with a picture, for the circles on Parsos
 };
 
 export function useCollections() {

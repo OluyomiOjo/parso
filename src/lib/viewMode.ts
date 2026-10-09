@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react';
 
 import { track } from './track';
 
-// List or grid on My Parsos and Collections, one choice for both, remembered on the phone (owner asked in
+// List or grid on Parsos and Collections, one choice for both, remembered on the phone (owner asked in
 // step 10). Starts on list.
 export type ViewMode = 'list' | 'grid';
 

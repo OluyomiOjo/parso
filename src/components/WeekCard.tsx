@@ -8,7 +8,7 @@ import { Text } from './Text';
 
 const openWeek = () => router.push('/week');
 
-// My Parsos, from Sunday 6 PM until the weekly screen is opened (or Wednesday ends).
+// Parsos, from Sunday 6 PM until the weekly screen is opened (or Wednesday ends).
 export function WeekCard() {
   return (
     <PressableScale

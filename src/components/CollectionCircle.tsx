@@ -8,7 +8,7 @@ import { Text } from './Text';
 
 type Props = { collection: CollectionSummary; coverUrl?: string; onOpen: () => void };
 
-// A collection on My Parsos: its newest picture in a circle with a thin grey ring, the name underneath. A collection
+// A collection on Parsos: its newest picture in a circle with a thin grey ring, the name underneath. A collection
 // with no pictures (only notes, say) shows a grey circle with the collections icon. Presses and dragging are
 // handled by the row around it (ReorderList).
 export function CollectionCircle({ collection, coverUrl, onOpen }: Props) {
