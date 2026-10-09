@@ -7,10 +7,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DetailActions } from '@/components/DetailActions';
 import { DetailsPanel } from '@/components/DetailsPanel';
 import { IconButton } from '@/components/IconButton';
+import { ListPanel } from '@/components/ListPanel';
 import { Pill } from '@/components/Pill';
 import { SourceLine } from '@/components/SourceLine';
 import { Text } from '@/components/Text';
 import { ChevronLeftIcon } from '@/icons/ChevronLeftIcon';
+import { TrashIcon } from '@/icons/TrashIcon';
 import { useCollections } from '@/lib/collections';
 import { metaLabel, MONTHS, openLabel, relativeTime } from '@/lib/format';
 import { displayUrl } from '@/lib/links';
@@ -205,17 +207,20 @@ export default function SaveDetailScreen() {
             />
           </View>
 
-          <Pressable
-            onPress={confirmDelete}
-            disabled={deleteSave.isPending}
-            accessibilityRole="button"
-            hitSlop={spacing.sm}
-            style={styles.delete}
-          >
-            <Text variant="secondary" color={colors.secondary}>
-              {deleteSave.isPending ? 'Deleting…' : 'Delete save'}
-            </Text>
-          </Pressable>
+          {/* Its own row under the panel, so it's easy to find (owner request, build 14); still asks first. */}
+          <View style={styles.deletePanel}>
+            <ListPanel>
+              <Pressable
+                onPress={confirmDelete}
+                disabled={deleteSave.isPending}
+                accessibilityRole="button"
+                style={({ pressed }) => [styles.deleteRow, pressed && styles.deletePressed]}
+              >
+                <TrashIcon color={colors.ink} size={size.buttonIcon} strokeWidth={size.iconStroke} />
+                <Text variant="rowTitle">{deleteSave.isPending ? 'Deleting…' : 'Delete save'}</Text>
+              </Pressable>
+            </ListPanel>
+          </View>
         </View>
       </ScrollView>
 
@@ -244,12 +249,15 @@ const styles = StyleSheet.create({
   doneButton: { flexDirection: 'row' },
   doneRow: { flexDirection: 'row', alignItems: 'center', gap: week.doneGap },
   link: { textDecorationLine: 'underline' },
-  delete: {
-    marginTop: detail.panelToDelete,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.titleInset,
-    alignSelf: 'flex-start',
+  deletePanel: { marginTop: spacing.sectionGap },
+  deleteRow: {
+    minHeight: detail.rowHeight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.rowPaddingX,
   },
+  deletePressed: { backgroundColor: colors.divider },
   message: {
     marginTop: spacing.sectionGapLarge,
     paddingHorizontal: spacing.screen,

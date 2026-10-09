@@ -235,7 +235,6 @@ export const detail = {
   summaryToPanel: 16,
   rowHeight: 51,
   rowGap: 16, // label to value
-  panelToDelete: 8,
   buttonAreaTop: 12, // above the fixed buttons (Open, Share, Download)
   actionGap: 10, // between those buttons
   shareWidth: 116, // Share beside Open in …
