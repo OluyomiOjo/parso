@@ -11,6 +11,12 @@ export type Source =
   | 'spotify'
   | 'safari'
   | 'whatsapp'
+  | 'vimeo'
+  | 'bluesky'
+  | 'tumblr'
+  | 'soundcloud'
+  | 'twitch'
+  | 'snapchat'
   | 'other';
 
 // Hosts (and their subdomains) that map to a known source.
@@ -26,6 +32,12 @@ const SOURCE_HOSTS: [Source, string[]][] = [
   ['reddit', ['reddit.com', 'redd.it']],
   ['spotify', ['spotify.com', 'spotify.link']],
   ['whatsapp', ['whatsapp.com', 'wa.me']],
+  ['vimeo', ['vimeo.com']],
+  ['bluesky', ['bsky.app']],
+  ['tumblr', ['tumblr.com']],
+  ['soundcloud', ['soundcloud.com', 'on.soundcloud.com']],
+  ['twitch', ['twitch.tv']],
+  ['snapchat', ['snapchat.com']],
 ];
 
 // scheme://host[:port]/rest. Parsed by hand because React Native's URL object is incomplete.

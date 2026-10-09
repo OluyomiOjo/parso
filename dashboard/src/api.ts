@@ -43,7 +43,8 @@ export const FREE_LIMIT = 50;
 export const SOURCE_NAMES: Record<string, string> = {
   instagram: 'Instagram', tiktok: 'TikTok', x: 'X', threads: 'Threads', youtube: 'YouTube',
   facebook: 'Facebook', pinterest: 'Pinterest', linkedin: 'LinkedIn', reddit: 'Reddit',
-  spotify: 'Spotify', safari: 'Safari', whatsapp: 'WhatsApp', other: 'Websites',
+  spotify: 'Spotify', safari: 'Safari', whatsapp: 'WhatsApp', vimeo: 'Vimeo', bluesky: 'Bluesky',
+  tumblr: 'Tumblr', soundcloud: 'SoundCloud', twitch: 'Twitch', snapchat: 'Snapchat', other: 'Websites',
 };
 export const KIND_NAMES: Record<string, string> = { link: 'Links', image: 'Photos', screenshot: 'Screenshots', text: 'Notes' };
 

@@ -28,6 +28,12 @@ export const brandColors = {
   reddit: '#FF4500',
   spotify: '#1DB954',
   whatsapp: '#25D366',
+  vimeo: '#1AB7EA',
+  bluesky: '#0285FF',
+  tumblr: '#36465D',
+  soundcloud: '#FF5500',
+  twitch: '#9146FF',
+  snapchat: '#000000', // its yellow is unreadable on white
 } as const;
 
 // Family names match each TTF's PostScript name, so the same name works on iOS and Android.
@@ -203,7 +209,8 @@ export const card = {
 export const collectionScreen = {
   headerButtonGap: 10, // grid/list and rename
   headerToTitle: 16,
-  titleToDescription: 6,
+  titleToCount: 4, // "13 saves", its own small grey line
+  countToDescription: 6,
   descriptionToFilter: 20,
   filterToList: 20,
 } as const;

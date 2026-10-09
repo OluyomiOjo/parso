@@ -44,7 +44,6 @@ export default function CollectionScreen() {
   const shown = activeKind ? all.filter((s) => s.kind === activeKind) : all;
 
   const count = saveCount(collection?.saveCount ?? all.length);
-  const description = collection?.description ? `${count}. ${collection.description}` : `${count}.`;
 
   return (
     <Screen>
@@ -81,8 +80,13 @@ export default function CollectionScreen() {
           {collection?.name ?? ''}
         </Text>
         {collection ? (
+          <Text variant="meta" style={styles.count}>
+            {count}
+          </Text>
+        ) : null}
+        {collection?.description ? (
           <Text variant="body" color={colors.secondary} style={styles.description}>
-            {description}
+            {collection.description}
           </Text>
         ) : null}
 
@@ -133,7 +137,8 @@ const styles = StyleSheet.create({
   },
   headerActions: { flexDirection: 'row', gap: collectionScreen.headerButtonGap },
   title: { marginTop: collectionScreen.headerToTitle, paddingHorizontal: spacing.titleInset },
-  description: { marginTop: collectionScreen.titleToDescription, paddingHorizontal: spacing.titleInset },
+  count: { marginTop: collectionScreen.titleToCount, paddingHorizontal: spacing.titleInset },
+  description: { marginTop: collectionScreen.countToDescription, paddingHorizontal: spacing.titleInset },
   filter: { marginTop: collectionScreen.descriptionToFilter },
   list: { marginTop: collectionScreen.filterToList },
   message: { marginTop: collectionScreen.filterToList, paddingHorizontal: spacing.titleInset },

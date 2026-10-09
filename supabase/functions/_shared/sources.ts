@@ -2,5 +2,6 @@
 export const PLATFORM_NAMES: Record<string, string> = {
   instagram: 'Instagram', tiktok: 'TikTok', x: 'X', threads: 'Threads', youtube: 'YouTube',
   facebook: 'Facebook', pinterest: 'Pinterest', linkedin: 'LinkedIn', reddit: 'Reddit',
-  spotify: 'Spotify', safari: 'Safari', whatsapp: 'WhatsApp', other: 'Website',
+  spotify: 'Spotify', safari: 'Safari', whatsapp: 'WhatsApp', vimeo: 'Vimeo', bluesky: 'Bluesky',
+  tumblr: 'Tumblr', soundcloud: 'SoundCloud', twitch: 'Twitch', snapchat: 'Snapchat', other: 'Website',
 };

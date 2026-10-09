@@ -13,6 +13,12 @@ const SOURCE_LABELS: Record<Exclude<Source, 'other'>, string> = {
   spotify: 'Spotify',
   safari: 'Safari',
   whatsapp: 'WhatsApp',
+  vimeo: 'Vimeo',
+  bluesky: 'Bluesky',
+  tumblr: 'Tumblr',
+  soundcloud: 'SoundCloud',
+  twitch: 'Twitch',
+  snapchat: 'Snapchat',
 };
 
 export function sourceLabel(source: string, url: string | null): string {

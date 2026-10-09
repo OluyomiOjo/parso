@@ -2,6 +2,7 @@
 // processes in the background, so the trigger's HTTP call never waits on the AI.
 import {
   admin,
+  collectionDescriptions,
   embedMissing,
   handlesMissing,
   noteSave,
@@ -36,6 +37,7 @@ Deno.serve(async (req) => {
   let redescribeIds: unknown;
   let noteSaveId: unknown;
   let noteEditedAt: unknown;
+  let collectionDescriptionsOnly: unknown;
   try {
     ({
       save_id: saveId,
@@ -48,6 +50,7 @@ Deno.serve(async (req) => {
       redescribe: redescribeIds,
       note_save: noteSaveId,
       edited_at: noteEditedAt,
+      collection_descriptions: collectionDescriptionsOnly,
     } = await req.json());
   } catch {
     return new Response('Bad request', { status: 400 });
@@ -71,6 +74,11 @@ Deno.serve(async (req) => {
   if (handlesOnly === true) {
     const added = await handlesMissing(db);
     return Response.json({ added });
+  }
+  // One-off (owner request after build 16): rewrite collection descriptions from what's inside. "preview" only
+  // returns a sample.
+  if (collectionDescriptionsOnly === true || collectionDescriptionsOnly === 'preview') {
+    return Response.json(await collectionDescriptions(db, collectionDescriptionsOnly === 'preview'));
   }
   // Owner-approved one-off: describe the listed saves again, keeping their collections.
   if (Array.isArray(redescribeIds) && redescribeIds.every((x) => typeof x === 'string') && redescribeIds.length <= 25) {

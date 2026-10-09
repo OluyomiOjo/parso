@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
-import { describeSave, type DescribeResult, type Provider } from './ai.ts';
+import { describeCollection, describeSave, type DescribeResult, type Provider } from './ai.ts';
 import { embed, toVector } from './embeddings.ts';
 import { downloadImage, extensionFor, imageSize, type ImageData } from './image.ts';
 import { fetchLinkMetadata } from './metadata.ts';
@@ -44,6 +44,12 @@ const SOURCE_HOSTS: [string, string[]][] = [
   ['reddit', ['reddit.com', 'redd.it']],
   ['spotify', ['spotify.com', 'spotify.link']],
   ['whatsapp', ['whatsapp.com', 'wa.me']],
+  ['vimeo', ['vimeo.com']],
+  ['bluesky', ['bsky.app']],
+  ['tumblr', ['tumblr.com']],
+  ['soundcloud', ['soundcloud.com', 'on.soundcloud.com']],
+  ['twitch', ['twitch.tv']],
+  ['snapchat', ['snapchat.com']],
 ];
 
 export function detectSource(url: string): string {
@@ -143,20 +149,16 @@ export async function logRun(
   });
 }
 
-type CollectionRef = { id: string; description: string | null };
+type CollectionRef = { id: string };
 
 async function findOrCreateCollection(db: SupabaseClient, userId: string, name: string): Promise<CollectionRef> {
   const find = async () => {
-    const { data } = await db.from('collections').select('id, name, description').eq('user_id', userId);
+    const { data } = await db.from('collections').select('id, name').eq('user_id', userId);
     return data?.find((c) => c.name.toLowerCase() === name.toLowerCase());
   };
   const existing = await find();
   if (existing) return existing;
-  const { data, error } = await db
-    .from('collections')
-    .insert({ user_id: userId, name })
-    .select('id, description')
-    .single();
+  const { data, error } = await db.from('collections').insert({ user_id: userId, name }).select('id').single();
   if (data) return data;
   // Another save created the same collection a moment ago (unique on lower(name)): use that one.
   const raced = await find();
@@ -198,15 +200,6 @@ export async function processSave(db: SupabaseClient, saveId: string, provider: 
   await logRun(db, save, 'live', provider, result, null, prepared);
 
   const collection = await findOrCreateCollection(db, save.user_id, result.output.collection);
-  // Written once; a description the person already has (or one from an earlier save) is kept.
-  if (!collection.description && result.output.collection_description) {
-    await db
-      .from('collections')
-      .update({ description: result.output.collection_description })
-      .eq('id', collection.id)
-      .eq('user_id', save.user_id)
-      .is('description', null);
-  }
   const thumbnail = prepared.image ? await storeThumbnail(db, save, prepared.image) : null;
   const { title, snippet, summary, tags } = result.output;
   await db
@@ -225,6 +218,68 @@ export async function processSave(db: SupabaseClient, saveId: string, provider: 
     .eq('user_id', save.user_id);
 
   await storeEmbedding(db, save.id, save.user_id).catch((error) => console.error('embedding failed', save.id, error));
+  await refreshCollectionDescription(db, collection.id, save.user_id).catch((error) =>
+    console.error('collection description failed', collection.id, error),
+  );
+}
+
+// A collection's description is written from what's inside once it holds 3 saves, and again at 6, 12, 25, 50, 100
+// and 200, so it keeps up as the collection grows (owner request after build 16).
+const DESCRIBE_AT = [3, 6, 12, 25, 50, 100, 200];
+const DESCRIBE_FROM = 20; // the newest saves it's written from
+
+export const describeDue = (count: number, describedCount: number | null) =>
+  DESCRIBE_AT.some((n) => count >= n && (describedCount ?? 0) < n);
+
+export async function refreshCollectionDescription(
+  db: SupabaseClient,
+  collectionId: string,
+  userId: string,
+  options: { force?: boolean; dryRun?: boolean } = {},
+): Promise<{ name: string; before: string | null; after: string } | null> {
+  const { data: collection } = await db
+    .from('collections')
+    .select('id, name, description, described_count')
+    .eq('id', collectionId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (!collection) return null;
+  const { data: saves, count } = await db
+    .from('saves')
+    .select('title, tags', { count: 'exact' })
+    .eq('collection_id', collectionId)
+    .eq('user_id', userId)
+    .not('title', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(DESCRIBE_FROM);
+  const total = count ?? 0;
+  if (total < DESCRIBE_AT[0] || !(options.force || describeDue(total, collection.described_count))) return null;
+  const items = (saves ?? []).map((s) => `- ${s.title}${s.tags?.length ? ` (${s.tags.join(', ')})` : ''}`);
+  const { description } = await describeCollection(collection.name, items);
+  if (!description) return null;
+  if (!options.dryRun) {
+    await db
+      .from('collections')
+      .update({ description, described_count: total })
+      .eq('id', collectionId)
+      .eq('user_id', userId);
+  }
+  return { name: collection.name, before: collection.description, after: description };
+}
+
+// One-off: new descriptions for collections that already have 3 or more saves. dryRun returns a sample only.
+export async function collectionDescriptions(db: SupabaseClient, dryRun: boolean) {
+  const { data } = await db
+    .from('collections')
+    .select('id, user_id')
+    .order('created_at')
+    .limit(dryRun ? 8 : 60);
+  const results = [];
+  for (const c of data ?? []) {
+    const done = await refreshCollectionDescription(db, c.id, c.user_id, { force: true, dryRun }).catch(() => null);
+    if (done) results.push(done);
+  }
+  return { written: dryRun ? 0 : results.length, results };
 }
 
 const NOTE_QUIET_MS = 4000; // filed once the person has stopped typing for this long

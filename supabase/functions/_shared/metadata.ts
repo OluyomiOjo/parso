@@ -21,7 +21,14 @@ const OEMBED: Record<string, (url: string) => string> = {
   x: (u) => `https://publish.twitter.com/oembed?omit_script=1&url=${encodeURIComponent(u)}`,
   reddit: (u) => `https://www.reddit.com/oembed?url=${encodeURIComponent(u)}`,
   spotify: (u) => `https://open.spotify.com/oembed?url=${encodeURIComponent(u)}`,
+  vimeo: (u) => `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(u)}`,
+  soundcloud: (u) => `https://soundcloud.com/oembed?format=json&url=${encodeURIComponent(u)}`,
+  tumblr: (u) => `https://www.tumblr.com/oembed/1.0?url=${encodeURIComponent(u)}`,
+  bluesky: (u) => `https://embed.bsky.app/oembed?format=json&url=${encodeURIComponent(u)}`,
 };
+
+// Platforms whose oEmbed carries the post's words only inside its embed HTML (the first paragraph).
+const TEXT_IN_HTML = new Set(['x', 'bluesky', 'tumblr']);
 
 // X's oEmbed only accepts the plain post address, not /video/1 or /photo/1 or tracking parameters.
 function canonicalXUrl(url: string): string {
@@ -117,6 +124,10 @@ function handleFrom(
     }
     case 'reddit':
       return oembed.author_name ? `u/${oembed.author_name}` : undefined;
+    case 'bluesky': {
+      const at = /bsky\.app\/profile\/([^/?#]+)/i.exec(oembed.author_url ?? url)?.[1];
+      return at && !at.startsWith('did:') ? `@${at}` : undefined;
+    }
     case 'threads': {
       const at = /threads\.(?:net|com)\/(@[^/?#]+)/i.exec(url)?.[1];
       return at ?? undefined;
@@ -206,12 +217,11 @@ async function fromOEmbed(source: string, url: string): Promise<LinkMetadata> {
   if (!res) return {};
   try {
     const data = await res.json();
-    // X returns the post text only inside its embed HTML.
-    // A post with only media has just a pic.twitter.com link as its text; drop it.
-    const text =
-      source === 'x'
-        ? clean(/<p[^>]*>([\s\S]*?)<\/p>/i.exec(data.html ?? '')?.[1]?.replace(/pic\.twitter\.com\/\S+/g, ''))
-        : undefined;
+    // X, Bluesky and Tumblr return the post's words only inside their embed HTML. A post with only media has just
+    // a pic.twitter.com link as its text; drop it. Vimeo and SoundCloud send a description of their own.
+    const text = TEXT_IN_HTML.has(source)
+      ? clean(/<p[^>]*>([\s\S]*?)<\/p>/i.exec(data.html ?? '')?.[1]?.replace(/pic\.twitter\.com\/\S+/g, ''))
+      : clean(data.description);
     return {
       title: clean(data.title),
       description: text,
@@ -282,8 +292,54 @@ async function pinterestHandle(url: string): Promise<string | undefined> {
   }
 }
 
+// YouTube's own Data API (owner-approved after build 16): title, full description, tags and channel for videos and
+// Shorts. YouTube's pages refuse servers and its oEmbed has no description. Needs YOUTUBE_API_KEY in the function's
+// secrets; without it, YouTube falls back to oEmbed (title and channel only). Spoken words (captions) are only
+// available to a video's owner, so they're never read.
+const YOUTUBE_ID = /(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|shorts\/|live\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/i;
+
+async function fromYouTubeApi(url: string): Promise<LinkMetadata> {
+  const key = Deno.env.get('YOUTUBE_API_KEY');
+  const id = YOUTUBE_ID.exec(url)?.[1];
+  if (!key || !id) return {};
+  const res = await fetchWithTimeout(
+    `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${id}&key=${encodeURIComponent(key)}`,
+    'application/json',
+  );
+  if (!res) return {};
+  try {
+    const snippet = (await res.json()).items?.[0]?.snippet;
+    if (!snippet) return {};
+    const thumbs = snippet.thumbnails ?? {};
+    const tags =
+      Array.isArray(snippet.tags) && snippet.tags.length ? `Tags: ${snippet.tags.slice(0, 15).join(', ')}` : '';
+    return {
+      title: clean(snippet.title),
+      description: [snippet.description?.trim(), tags].filter(Boolean).join('\n') || undefined,
+      author: clean(snippet.channelTitle),
+      siteName: 'YouTube',
+      imageUrl: (thumbs.maxres ?? thumbs.standard ?? thumbs.high ?? thumbs.medium)?.url,
+    };
+  } catch {
+    return {};
+  }
+}
+
 export async function fetchLinkMetadata(url: string, source: string): Promise<LinkMetadata> {
   if (LOGIN_WALLED.has(source)) return {};
+  if (source === 'youtube') {
+    const [api, oembed] = await Promise.all([fromYouTubeApi(url), fromOEmbed(source, url)]);
+    const merged: LinkMetadata = {
+      title: api.title ?? oembed.title,
+      description: api.description ?? oembed.description,
+      author: api.author ?? oembed.author,
+      siteName: 'YouTube',
+      imageUrl: api.imageUrl ?? oembed.imageUrl,
+      handle: oembed.handle,
+    };
+    merged.imageUrl = absolutize(merged.imageUrl, url);
+    return merged;
+  }
   if (source === 'instagram') {
     const embed = await fromInstagramEmbed(url);
     if (embed.description || embed.imageUrl) return embed;

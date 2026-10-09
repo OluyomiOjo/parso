@@ -12,7 +12,6 @@ export type SaveDescription = {
   summary: string;
   tags: string[];
   collection: string;
-  collection_description: string; // stored only when the collection has none yet
 };
 
 export type DescribeInput = {
@@ -39,17 +38,13 @@ const MODELS: Record<Provider, { id: string; inputPerM: number; outputPerM: numb
 const SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['title', 'snippet', 'summary', 'tags', 'collection', 'collection_description'],
+  required: ['title', 'snippet', 'summary', 'tags', 'collection'],
   properties: {
     title: { type: 'string', description: 'What this is, in at most 60 characters.' },
     snippet: { type: 'string', description: 'One line that adds a useful detail, at most 80 characters.' },
     summary: { type: 'string', description: 'One or two short sentences, never more.' },
     tags: { type: 'array', items: { type: 'string' }, description: 'At most 5 lowercase tags.' },
     collection: { type: 'string', description: 'An existing collection name, or a new short one.' },
-    collection_description: {
-      type: 'string',
-      description: 'One sentence on what belongs in the chosen collection, "Parso files ... here.", at most 90 characters.',
-    },
   },
 } as const;
 
@@ -61,7 +56,6 @@ For each save you get the link, whatever public details could be fetched, someti
 - summary: one or two short sentences, never more, on what it is and why someone would come back to it.
 - tags: up to 5 lowercase words or short phrases someone might search for. Include the main subject and type (for example "recipe", "pasta").
 - collection: reuse an existing collection whenever it fits, even loosely. Only when none fits, invent a short, broad name of one or two words in sentence case (for example "Recipes", "Travel", "Home ideas", "Fitness", "Reading list"). Pick by what the thing is about, not where it was posted.
-- collection_description: one sentence on what belongs in the chosen collection in general, not this one save, in the form "Parso files anything that looks like a recipe here." At most 90 characters.
 
 For screenshots and photos, read any visible text in the image and use it; it is often the most useful detail.
 
@@ -86,14 +80,6 @@ export function firstSentences(text: string, max: number): string {
   return text.trim().split(SENTENCE_END).slice(0, max).join(' ');
 }
 
-const DESCRIPTION_MAX = 90;
-
-// Never shown cut off: a description that's too long is dropped, and the next save writes another.
-function shortDescription(text: string): string {
-  const sentence = firstSentences(text, 1);
-  return sentence.length <= DESCRIPTION_MAX ? sentence : '';
-}
-
 // Capitalise the first letter only, so acronyms like "UX design" survive.
 const capitalised = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
@@ -107,7 +93,6 @@ export function tidy(raw: SaveDescription): SaveDescription {
     summary: firstSentences(raw.summary, 2),
     tags: [...new Set(raw.tags.map((t) => t.trim().toLowerCase()).filter(Boolean))].slice(0, 5),
     collection: capitalised(cut(raw.collection.trim(), 40)) || 'Saved',
-    collection_description: shortDescription(raw.collection_description),
   };
 }
 
@@ -142,6 +127,47 @@ async function viaOpenAI(input: DescribeInput): Promise<Omit<DescribeResult, 'du
     output: tidy(JSON.parse(response.output_text)),
     inputTokens: inTok,
     outputTokens: outTok,
+    costUsd: cost('openai', inTok, outTok),
+  };
+}
+
+// A collection's description, written from what's actually in it (owner request after build 16): one short line
+// naming a few concrete things inside, like a friend describing it. Refreshed as the collection grows
+// (refreshCollectionDescription in pipeline.ts).
+const COLLECTION_DESCRIPTION_MAX = 110;
+
+const COLLECTION_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['description'],
+  properties: { description: { type: 'string' } },
+} as const;
+
+const COLLECTION_PROMPT = `You write the one-line description shown under a collection's name in someone's personal library of saved posts, links and photos. You get the collection's name and the titles and tags of what's in it, newest first.
+
+Write one short line, at most ${COLLECTION_DESCRIPTION_MAX} characters, that tells them what's actually in there by naming two or three concrete, specific things from the list, the way a friend would sum it up. For example "Cosy living rooms, kitchen makeovers and a lake-house tour on Bowen Island." or "Funding tips, founder interviews and the NSF grant for early-stage teams."
+
+Rules: sentence case, plain words, no emoji, no hashtags, no counts. Don't start with "A collection of", "This collection", "Saves about" or "Parso". Don't repeat the collection's name. Only mention things that appear in the list; never invent.`;
+
+export async function describeCollection(
+  name: string,
+  items: string[],
+): Promise<{ description: string; costUsd: number }> {
+  const client = new OpenAI();
+  const response = await client.responses.create({
+    model: MODELS.openai.id,
+    instructions: COLLECTION_PROMPT,
+    input: [{ role: 'user', content: [{ type: 'input_text', text: `Collection: ${name}\n${items.join('\n')}` }] }],
+    max_output_tokens: 256,
+    text: { format: { type: 'json_schema', name: 'collection_description', schema: COLLECTION_SCHEMA, strict: true } },
+  });
+  if (response.status !== 'completed') throw new Error(`OpenAI response ${response.status}`);
+  const line = firstSentences(JSON.parse(response.output_text).description ?? '', 1).trim();
+  const inTok = response.usage?.input_tokens ?? 0;
+  const outTok = response.usage?.output_tokens ?? 0;
+  // Never shown cut off: a line that's too long is dropped and the old description stays.
+  return {
+    description: line.length <= COLLECTION_DESCRIPTION_MAX ? capitalised(line) : '',
     costUsd: cost('openai', inTok, outTok),
   };
 }

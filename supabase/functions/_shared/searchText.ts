@@ -19,6 +19,12 @@ const SOURCE_ALIASES: Record<string, string> = {
   spotify: 'spotify',
   whatsapp: 'whatsapp',
   safari: 'safari',
+  vimeo: 'vimeo',
+  bluesky: 'bluesky', bsky: 'bluesky',
+  tumblr: 'tumblr',
+  soundcloud: 'soundcloud', 'sound cloud': 'soundcloud',
+  twitch: 'twitch',
+  snapchat: 'snapchat',
 };
 
 const KIND_WORDS: Record<string, string> = {
