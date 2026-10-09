@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
-import { describeCollection, describeSave, type DescribeResult, type Provider } from './ai.ts';
+import { describeCollection, describeSave, isFormatName, type DescribeResult, type Provider } from './ai.ts';
 import { embed, toVector } from './embeddings.ts';
 import { downloadImage, extensionFor, imageSize, type ImageData } from './image.ts';
 import { fetchLinkMetadata } from './metadata.ts';
@@ -118,7 +118,7 @@ export async function prepare(db: SupabaseClient, save: Save): Promise<PreparedS
   return {
     text: lines.join('\n'),
     image,
-    collections: (data ?? []).map((c) => c.name),
+    collections: (data ?? []).map((c) => c.name).filter((name) => !isFormatName(name)),
     handle: meta.handle?.slice(0, HANDLE_MAX) ?? null,
   };
 }

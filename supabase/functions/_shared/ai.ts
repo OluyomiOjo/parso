@@ -54,8 +54,8 @@ For each save you get the link, whatever public details could be fetched, someti
 - title: what the thing actually is, in plain words (for example "Garlic butter steak tortellini" or "5 quiet beaches near Lisbon"), not the page or account name. Sentence case, no emoji, no hashtags, at most 60 characters.
 - snippet: one line with the most useful detail (an ingredient, a place, a price, a date, the key idea), at most 80 characters.
 - summary: one or two short sentences, never more, on what it is and why someone would come back to it.
-- tags: up to 5 lowercase words or short phrases someone might search for. Include the main subject and type (for example "recipe", "pasta").
-- collection: reuse an existing collection whenever it fits, even loosely. Only when none fits, invent a short, broad name of one or two words in sentence case (for example "Recipes", "Travel", "Home ideas", "Fitness", "Reading list"). Pick by what the thing is about, not where it was posted.
+- tags: up to 5 lowercase words or short phrases someone might search for, all about the subject: what it is, the topic, place, dish or activity (for example "recipe", "pasta", "lisbon", "winter travel"). Never the format or the app it came from: no "video", "reel", "clip", "short", "photo", "image", "post", "screenshot", "link", "instagram" or "pinterest", and not "travel video" but "travel".
+- collection: reuse an existing collection whenever it fits, even loosely. Only when none fits, invent a short, broad name of one or two words in sentence case (for example "Recipes", "Travel", "Home ideas", "Fitness", "Reading list"). Pick by what the thing is about, never by its format or app: a travel video goes in "Travel", not "Videos", and never use or create collections like "Videos", "Photos", "Reels", "Posts" or "Screenshots".
 
 For screenshots and photos, read any visible text in the image and use it; it is often the most useful detail.
 
@@ -83,6 +83,41 @@ export function firstSentences(text: string, max: number): string {
 // Capitalise the first letter only, so acronyms like "UX design" survive.
 const capitalised = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
+// Format words aren't topics (owner report after build 16: a travel video tagged "video"). The AI is told so, also
+// for phrases like "travel video"; this drops a tag that is only a format word. Phrases stay, since "ai video" or
+// "instagram reels" can be the topic itself.
+const FORMAT_WORDS = new Set([
+  'video',
+  'videos',
+  'reel',
+  'reels',
+  'clip',
+  'clips',
+  'short',
+  'shorts',
+  'photo',
+  'photos',
+  'image',
+  'images',
+  'picture',
+  'pictures',
+  'pic',
+  'post',
+  'posts',
+  'screenshot',
+  'screenshots',
+  'link',
+  'links',
+]);
+
+// A collection named after a format ("Photos", "Videos") isn't offered to the AI, so new saves are filed by topic.
+export const isFormatName = (name: string) => FORMAT_WORDS.has(name.trim().toLowerCase());
+
+export function topicTags(tags: string[]): string[] {
+  const cleaned = tags.map((tag) => tag.trim().toLowerCase()).filter((tag) => tag && !FORMAT_WORDS.has(tag));
+  return [...new Set(cleaned)];
+}
+
 // Enforce the limits the schema can't express. The summary is capped at two sentences whatever the
 // model returns (owner's rule).
 export function tidy(raw: SaveDescription): SaveDescription {
@@ -91,7 +126,7 @@ export function tidy(raw: SaveDescription): SaveDescription {
     title: cut(raw.title.trim(), 60),
     snippet: cut(raw.snippet.trim(), 80),
     summary: firstSentences(raw.summary, 2),
-    tags: [...new Set(raw.tags.map((t) => t.trim().toLowerCase()).filter(Boolean))].slice(0, 5),
+    tags: topicTags(raw.tags).slice(0, 5),
     collection: capitalised(cut(raw.collection.trim(), 40)) || 'Saved',
   };
 }
