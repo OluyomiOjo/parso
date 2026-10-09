@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   field: {
     height: search.fieldHeight,
     borderRadius: search.fieldRadius,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.panel,
     paddingHorizontal: search.fieldPaddingX,
     flexDirection: 'row',
     alignItems: 'center',

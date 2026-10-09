@@ -46,8 +46,8 @@ export function BestMatchCard({ result, thumbnailUrl, onOpen }: Props) {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.panel, overflow: 'hidden' },
+  card: { backgroundColor: colors.panel, borderRadius: radius.panel, overflow: 'hidden' },
   pressed: { opacity: 0.8 },
-  image: { width: '100%', height: size.bestMatchHeight, backgroundColor: colors.background },
+  image: { width: '100%', height: size.bestMatchHeight, backgroundColor: colors.divider },
   text: { padding: search.bestMatchPadding, gap: search.bestMatchTextGap },
 });

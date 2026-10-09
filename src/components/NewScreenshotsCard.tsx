@@ -108,7 +108,7 @@ function Card({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.panel,
     borderRadius: radius.panel,
     padding: screenshotsCard.padding,
     gap: screenshotsCard.thumbGap,
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     width: screenshotsCard.thumb,
     height: screenshotsCard.thumb,
     borderRadius: radius.thumb,
-    backgroundColor: colors.background,
+    backgroundColor: colors.divider,
   },
   actions: { flexDirection: 'row', gap: screenshotsCard.actionGap, marginTop: screenshotsCard.textToActions },
   action: { flex: 1 },

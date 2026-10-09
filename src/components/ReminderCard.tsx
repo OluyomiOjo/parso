@@ -9,6 +9,7 @@ import type { ReminderSave } from '@/lib/reminders';
 import { formatReminder } from '@/lib/reminderTime';
 import { colors, radius, reminderCard, size, type } from '@/theme';
 
+import { PressableScale } from './PressableScale';
 import { Text } from './Text';
 
 // The next reminder on My Parsos (design 3): yellow bell tile, when, what, and Open.
@@ -17,11 +18,11 @@ export function ReminderCard({ save, more = 0 }: { save: ReminderSave; more?: nu
   const title = save.title ?? (save.url ? displayUrl(save.url) : 'Your save');
   const open = () => openSave(save);
   return (
-    <Pressable
+    <PressableScale
       onPress={open}
       accessibilityRole="button"
       accessibilityLabel={`Reminder ${when}: ${title}`}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={styles.card}
     >
       <View style={styles.tile}>
         <BellIcon color={colors.ink} size={reminderCard.icon} strokeWidth={size.iconStroke} />
@@ -49,7 +50,7 @@ export function ReminderCard({ save, more = 0 }: { save: ReminderSave; more?: nu
           Open
         </Text>
       </Pressable>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -59,10 +60,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: reminderCard.gap,
     padding: reminderCard.padding,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.panel,
     borderRadius: radius.panel,
   },
-  pressed: { opacity: 0.8 },
   tile: {
     width: reminderCard.tile,
     height: reminderCard.tile,

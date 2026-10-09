@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { colors, radius, reminderCard, size, type } from '@/theme';
 
+import { PressableScale } from './PressableScale';
 import { Text } from './Text';
 
 const openWeek = () => router.push('/week');
@@ -10,11 +11,11 @@ const openWeek = () => router.push('/week');
 // My Parsos, from Sunday 6 PM until the weekly screen is opened (or Wednesday ends).
 export function WeekCard() {
   return (
-    <Pressable
+    <PressableScale
       onPress={openWeek}
       accessibilityRole="button"
       accessibilityLabel="Your week in Parso is ready. Open"
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={styles.card}
     >
       <View style={styles.text}>
         <Text variant="cardTitle">Your week in Parso is ready</Text>
@@ -27,7 +28,7 @@ export function WeekCard() {
           Open
         </Text>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -38,10 +39,9 @@ const styles = StyleSheet.create({
     gap: reminderCard.gap,
     padding: reminderCard.padding,
     paddingLeft: reminderCard.padding + reminderCard.gap / 2,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.panel,
     borderRadius: radius.panel,
   },
-  pressed: { opacity: 0.8 },
   text: { flex: 1 },
   button: {
     height: reminderCard.buttonHeight,

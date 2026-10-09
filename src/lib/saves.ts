@@ -6,6 +6,7 @@ import { useSession } from './auth';
 import { detectSource } from './links';
 import { LIMIT_MESSAGE } from './plan';
 import { addPreviewImage } from './previewImage';
+import { success } from './haptics';
 import { canSave } from './pro';
 import { supabase } from './supabase';
 import { track } from './track';
@@ -268,7 +269,10 @@ export function useMarkDone(id: string) {
       const done_at = done ? new Date().toISOString() : null;
       const { error } = await supabase.from('saves').update({ done_at }).eq('id', id);
       if (error) throw new Error(DONE_FAILED);
-      if (done) track('save_done');
+      if (done) {
+        track('save_done');
+        success();
+      }
       return done_at;
     },
     onSuccess: (done_at) => {

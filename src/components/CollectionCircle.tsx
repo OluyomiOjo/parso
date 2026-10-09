@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.surface,
   },
-  picture: { width: inner, height: inner, borderRadius: inner / 2, backgroundColor: colors.background },
+  picture: { width: inner, height: inner, borderRadius: inner / 2, backgroundColor: colors.panel },
   empty: { alignItems: 'center', justifyContent: 'center' },
   name: { marginTop: circle.nameTop, maxWidth: circle.nameWidth, textAlign: 'center' },
 });

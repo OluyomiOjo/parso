@@ -1,6 +1,6 @@
 import * as Linking from 'expo-linking';
 import { useEffect } from 'react';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -117,20 +117,23 @@ export default function SaveDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         {hasImage ? (
-          <View style={styles.imageBox}>
-            {imageUrl ? (
-              // Tap the picture to see it whole, full screen (photos at their original size).
-              <Pressable
-                onPress={openPhoto}
-                accessibilityRole="imagebutton"
-                accessibilityLabel="Open picture full screen"
-                style={styles.image}
-              >
-                <Image source={{ uri: imageUrl }} style={styles.image} accessibilityIgnoresInvertColors />
-              </Pressable>
-            ) : null}
-            <View style={[styles.overlayHeader, { top: insets.top + detail.headerTop }]}>{back}</View>
-          </View>
+          // The grid picture grows into this one on iOS 18 and later (src/components/SaveTile.tsx).
+          <Link.AppleZoomTarget>
+            <View style={styles.imageBox}>
+              {imageUrl ? (
+                // Tap the picture to see it whole, full screen (photos at their original size).
+                <Pressable
+                  onPress={openPhoto}
+                  accessibilityRole="imagebutton"
+                  accessibilityLabel="Open picture full screen"
+                  style={styles.image}
+                >
+                  <Image source={{ uri: imageUrl }} style={styles.image} accessibilityIgnoresInvertColors />
+                </Pressable>
+              ) : null}
+              <View style={[styles.overlayHeader, { top: insets.top + detail.headerTop }]}>{back}</View>
+            </View>
+          </Link.AppleZoomTarget>
         ) : (
           <View style={styles.inlineHeader}>{back}</View>
         )}

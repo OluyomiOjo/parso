@@ -2,8 +2,9 @@
 import type { TextStyle } from 'react-native';
 
 export const colors = {
-  background: '#F2F3F5',
-  surface: '#FFFFFF',
+  background: '#FFFFFF', // screens: white, so pictures carry the page (owner decision, step 11)
+  panel: '#F4F5F7', // lists, cards and settings on a white screen: a faint grey, no borders or shadows
+  surface: '#FFFFFF', // sheets, chips and fields
   ink: '#000000',
   onInk: '#FFFFFF',
   secondary: '#5B5E66',
@@ -116,9 +117,7 @@ export const size = {
   tabIcon: 24,
   tabIconStroke: 1.8,
   tabIconStrokeActive: 2.4,
-  tabBarPaddingTop: 12,
-  tabBarPaddingBottom: 0, // the home-indicator inset already gives the space the design shows
-  tabBarPaddingX: 16,
+  tabBarPaddingX: 8, // inside the floating bar
   tabLabelGap: 2,
   buttonIcon: 18,
   iconButton: 40, // round header button, e.g. paste a link
@@ -128,7 +127,7 @@ export const size = {
   addButtonIcon: 26,
   addButtonStroke: 2.4,
   addButtonGap: 16, // above the tab bar, and from the right edge
-  addButtonClearance: 88, // extra space at the end of tab screens so the + never covers the last row
+  addButtonClearance: 120, // extra space at the end of tab screens so the floating bar and + never cover the last row
   thumbIcon: 22, // placeholder icon inside an empty thumbnail
   iconStroke: 1.8,
   fieldHeight: 52,
@@ -188,16 +187,15 @@ export const welcome = {
   highlightPadX: 2,
 } as const;
 
-// Collection cards (home row and Collections tab), measured from design/3. Home@2x.png.
+// Collections tab cards, board style (owner decision, step 11): one large picture with two small ones stacked
+// beside it, the name and count underneath, no box around the card.
 export const card = {
-  width: 150, // home row; the Collections tab fits two per line
-  padding: 12,
-  tile: 38,
-  tileGap: 4,
-  tileRadius: 8,
-  tileIcon: 18,
-  tilesToName: 12,
-  gap: 10, // between cards
+  boardRatio: 0.68, // the picture block's height, as a share of the card's width
+  boardGap: 2, // between the three pictures
+  boardRadius: 16,
+  placeholderIcon: 22,
+  boardToName: 8,
+  gap: 12, // between cards, both ways
 } as const;
 
 // Collection screen, measured from design/5. Collection@2x.png.
@@ -446,6 +444,37 @@ export const week = {
   doneIcon: 13, // the tick in meta lines
 } as const;
 
+// The floating tab bar (owner decision, step 11): frosted glass, rounded, hovering above the bottom edge, with the
+// black + beside it. Its soft shadow is the one shadow exception in the design system.
+export const dock = {
+  height: 64,
+  radius: 32,
+  sideGap: 16, // from the screen edges
+  addGap: 10, // the bar to the +
+  bottomMin: 12, // above the bottom edge on phones without a home indicator
+  homeIndicatorOverlap: 4, // sits slightly into the home-indicator area, like the system's own bars
+  blur: 60,
+  shadowOpacity: 0.12,
+  shadowRadius: 18,
+  shadowY: 6,
+} as const;
+
+// Press feedback: things shrink a touch under the finger and spring back.
+export const press = {
+  scale: 0.97,
+  damping: 18,
+  stiffness: 320,
+} as const;
+
+// The You tab: a profile card, then one settings panel (owner decision, step 11).
+export const settings = {
+  rowHeight: 60,
+  chevron: 18,
+  avatar: 52,
+  profilePadding: 16,
+  profileGap: 14,
+} as const;
+
 export const theme = {
   colors,
   brandColors,
@@ -474,5 +503,8 @@ export const theme = {
   reorder,
   upgrade,
   week,
+  dock,
+  press,
+  settings,
 } as const;
 export default theme;

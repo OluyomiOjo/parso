@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     width: size.thumb,
     height: size.thumb,
     borderRadius: radius.thumb,
-    backgroundColor: colors.background,
+    backgroundColor: colors.divider,
     alignItems: 'center',
     justifyContent: 'center',
   },

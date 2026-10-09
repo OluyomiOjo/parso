@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     width: s.iconTile,
     height: s.iconTile,
     borderRadius: radius.thumb,
-    backgroundColor: colors.background,
+    backgroundColor: colors.panel,
     alignItems: 'center',
     justifyContent: 'center',
   },

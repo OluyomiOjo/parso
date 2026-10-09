@@ -42,5 +42,5 @@ export function NoteRow({ save }: { save: SaveListItem }) {
 const styles = StyleSheet.create({
   row: { paddingHorizontal: spacing.rowPaddingX, paddingVertical: spacing.rowPaddingY },
   meta: { flexDirection: 'row', alignItems: 'center', gap: size.sourceIconGap },
-  pressed: { backgroundColor: colors.background },
+  pressed: { backgroundColor: colors.divider },
 });

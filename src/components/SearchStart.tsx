@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.rowPaddingX,
     paddingVertical: spacing.md,
   },
-  pressed: { backgroundColor: colors.background },
+  pressed: { backgroundColor: colors.divider },
   recentText: { flex: 1 },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: sheet.pillGap },
 });

@@ -1,24 +1,15 @@
 import { Tabs } from 'expo-router';
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
 
-import { AddButton } from '@/components/AddButton';
 import { TabBar } from '@/components/TabBar';
 
-// The four tabs, with the floating + drawn over them just above the tab bar.
+// The four tabs under the floating tab bar (with the + beside it). Switching tabs glides with a soft shift.
 export default function TabsLayout() {
-  const [barHeight, setBarHeight] = useState(0);
   return (
-    <View style={styles.fill}>
-      <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => <TabBar {...props} onHeight={setBarHeight} />}>
-        <Tabs.Screen name="index" />
-        <Tabs.Screen name="search" />
-        <Tabs.Screen name="collections" />
-        <Tabs.Screen name="you" />
-      </Tabs>
-      {barHeight ? <AddButton bottom={barHeight} /> : null}
-    </View>
+    <Tabs screenOptions={{ headerShown: false, animation: 'shift' }} tabBar={(props) => <TabBar {...props} />}>
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="search" />
+      <Tabs.Screen name="collections" />
+      <Tabs.Screen name="you" />
+    </Tabs>
   );
 }
-
-const styles = StyleSheet.create({ fill: { flex: 1 } });

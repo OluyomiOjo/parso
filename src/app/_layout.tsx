@@ -44,7 +44,15 @@ function RootStack() {
   if (loading) return null;
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+    // Pages slide in from the right and go back with a swipe from anywhere on the page (owner decision, step 11).
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.background },
+        animation: 'slide_from_right',
+        fullScreenGestureEnabled: true,
+      }}
+    >
       <Stack.Protected guard={session !== null}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="add" options={{ presentation: 'modal' }} />

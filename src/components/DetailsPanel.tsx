@@ -44,6 +44,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: detail.rowGap,
   },
-  pressed: { backgroundColor: colors.background },
+  pressed: { backgroundColor: colors.divider },
   value: { flex: 1, textAlign: 'right' },
 });

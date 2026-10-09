@@ -5,7 +5,9 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 
 import { Button } from '@/components/Button';
+import { ListPanel } from '@/components/ListPanel';
 import { Screen } from '@/components/Screen';
+import { SettingRow } from '@/components/SettingRow';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { Text } from '@/components/Text';
 import { deleteAccount, signOut, useSession } from '@/lib/auth';
@@ -15,7 +17,7 @@ import { openUpgrade, usePlan } from '@/lib/pro';
 import { ensureNotificationPermission } from '@/lib/reminders';
 import { screenshotCheckEnabled, setScreenshotCheck } from '@/lib/screenshots';
 import { sendWeeklyUpdateNow, setWeeklyUpdate, weeklyUpdateEnabled } from '@/lib/weekNotification';
-import { colors, radius, size, spacing, tabularNums } from '@/theme';
+import { colors, radius, settings, size, spacing } from '@/theme';
 
 const MANAGE_URL = 'https://apps.apple.com/account/subscriptions'; // Apple's own subscriptions page
 // Private (preview) builds only, set in eas.json: the weekly update's test button.
@@ -68,75 +70,67 @@ export default function YouScreen() {
       },
     ]);
 
+  const name = (session?.user.user_metadata?.full_name ?? session?.user.user_metadata?.name) as string | undefined;
+  const initial = (name || email || 'P').trim().charAt(0).toUpperCase();
+  const proAction = !plan ? null : !plan.pro ? (
+    <Pressable onPress={() => openUpgrade()} accessibilityRole="button" hitSlop={spacing.sm}>
+      <Text variant="button">Upgrade</Text>
+    </Pressable>
+  ) : !plan.adminPro ? (
+    <Pressable onPress={() => Linking.openURL(MANAGE_URL)} accessibilityRole="button" hitSlop={spacing.sm}>
+      <Text variant="button">Manage</Text>
+    </Pressable>
+  ) : null;
+  const toggle = (value: boolean, onChange: (on: boolean) => void, label: string) => (
+    <Switch
+      value={value}
+      onValueChange={onChange}
+      trackColor={{ true: colors.ink, false: colors.controlBorder }}
+      accessibilityLabel={label}
+    />
+  );
+
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <ScreenTitle>You</ScreenTitle>
-        {email ? (
-          <Text variant="secondary" color={colors.secondary} style={styles.email}>
-            Signed in as {email}
-          </Text>
-        ) : null}
-        {plan ? (
-          <View style={styles.setting}>
-            <View style={styles.settingText}>
-              <Text variant="rowTitle">Parso Pro</Text>
-              <Text variant="secondary" color={colors.secondary} style={tabularNums}>
-                {planLine(plan, MONTHS)}
+        {/* Profile card: initial, name (when Apple or Google gave one) and email. */}
+        <View style={styles.profile}>
+          <View style={styles.avatar}>
+            <Text variant="sectionHeading">{initial}</Text>
+          </View>
+          <View style={styles.profileText}>
+            <Text variant="rowTitle" numberOfLines={1}>
+              {name || 'Your Parso account'}
+            </Text>
+            {email ? (
+              <Text variant="secondary" color={colors.secondary} numberOfLines={1}>
+                {email}
               </Text>
-            </View>
-            {!plan.pro ? (
-              <Pressable onPress={() => openUpgrade()} accessibilityRole="button" hitSlop={spacing.sm}>
-                <Text variant="button">Upgrade</Text>
-              </Pressable>
-            ) : !plan.adminPro ? (
-              <Pressable onPress={() => Linking.openURL(MANAGE_URL)} accessibilityRole="button" hitSlop={spacing.sm}>
-                <Text variant="button">Manage</Text>
-              </Pressable>
             ) : null}
           </View>
-        ) : null}
-        <Pressable
-          onPress={() => router.push('/week')}
-          accessibilityRole="button"
-          style={({ pressed }) => [styles.setting, pressed && styles.pressed]}
-        >
-          <View style={styles.settingText}>
-            <Text variant="rowTitle">Your week in Parso</Text>
-            <Text variant="secondary" color={colors.secondary}>
-              What you saved this week, and what's waiting on you.
-            </Text>
-          </View>
-        </Pressable>
-        <View style={styles.setting}>
-          <View style={styles.settingText}>
-            <Text variant="rowTitle">Weekly update</Text>
-            <Text variant="secondary" color={colors.secondary}>
-              A notification every Sunday at 6 PM.
-            </Text>
-          </View>
-          <Switch
-            value={weekly}
-            onValueChange={toggleWeekly}
-            trackColor={{ true: colors.ink, false: colors.controlBorder }}
-            accessibilityLabel="Weekly update"
-          />
         </View>
+
+        <ListPanel>
+          {plan ? <SettingRow label="Parso Pro" line={planLine(plan, MONTHS)} accessory={proAction} /> : null}
+          <SettingRow
+            label="Your week in Parso"
+            line="What you saved this week, and what's waiting on you."
+            onPress={() => router.push('/week')}
+          />
+          <SettingRow
+            label="Weekly update"
+            line="A notification every Sunday at 6 PM."
+            accessory={toggle(weekly, toggleWeekly, 'Weekly update')}
+          />
+          <SettingRow
+            label="Check for new screenshots"
+            line="When you open Parso, offer screenshots taken since last time."
+            accessory={toggle(checkScreenshots, toggleScreenshots, 'Check for new screenshots')}
+          />
+        </ListPanel>
+
         {TEST_TOOLS ? <Button label="Send the weekly update now" variant="secondary" onPress={testWeekly} /> : null}
-        <View style={styles.setting}>
-          <View style={styles.settingText}>
-            <Text variant="rowTitle">Check for new screenshots</Text>
-            <Text variant="secondary" color={colors.secondary}>
-              When you open Parso, offer screenshots taken since last time.
-            </Text>
-          </View>
-          <Switch
-            value={checkScreenshots}
-            onValueChange={toggleScreenshots}
-            trackColor={{ true: colors.ink, false: colors.controlBorder }}
-            accessibilityLabel="Check for new screenshots"
-          />
-        </View>
         <Button label="Sign out" variant="secondary" onPress={signOut} />
         <Pressable
           onPress={confirmDelete}
@@ -156,17 +150,22 @@ export default function YouScreen() {
 
 const styles = StyleSheet.create({
   content: { gap: spacing.sectionGap, paddingBottom: spacing.sectionGapLarge + size.addButtonClearance },
-  email: { paddingHorizontal: spacing.titleInset },
-  setting: {
+  profile: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
+    gap: settings.profileGap,
+    padding: settings.profilePadding,
+    backgroundColor: colors.panel,
     borderRadius: radius.panel,
-    paddingHorizontal: spacing.rowPaddingX,
-    paddingVertical: spacing.rowPaddingY,
   },
-  settingText: { flex: 1 },
-  pressed: { opacity: 0.8 },
+  avatar: {
+    width: settings.avatar,
+    height: settings.avatar,
+    borderRadius: settings.avatar / 2,
+    backgroundColor: colors.divider,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileText: { flex: 1 },
   delete: { alignSelf: 'flex-start', paddingVertical: spacing.md, paddingHorizontal: spacing.titleInset },
 });

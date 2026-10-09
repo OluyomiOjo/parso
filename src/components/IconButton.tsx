@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
     width: size.iconButton,
     height: size.iconButton,
     borderRadius: size.iconButton / 2,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.panel,
     alignItems: 'center',
     justifyContent: 'center',
   },

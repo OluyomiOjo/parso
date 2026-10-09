@@ -18,7 +18,7 @@ function SaveScene() {
     <G>
       {/* Phone with a post, three buttons and Parso's highlighted */}
       <Rect x={114} y={70} width={220} height={385} rx={36} fill={colors.surface} />
-      <Path d="M114 333 H334 V419 a36 36 0 0 1 -36 36 H150 a36 36 0 0 1 -36 -36 Z" fill={colors.background} />
+      <Path d="M114 333 H334 V419 a36 36 0 0 1 -36 36 H150 a36 36 0 0 1 -36 -36 Z" fill={colors.panel} />
       <Path d="M114 333 H334" {...line} />
       <Rect x={114} y={70} width={220} height={385} rx={36} fill="none" {...line} />
       <Rect x={141} y={110} width={166} height={137} rx={8} fill={c.photo} {...line} />

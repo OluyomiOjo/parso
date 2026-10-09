@@ -50,7 +50,7 @@ export function FirstSaveCard() {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.panel, padding: firstRun.padding },
+  card: { backgroundColor: colors.panel, borderRadius: radius.panel, padding: firstRun.padding },
   body: { marginTop: firstRun.titleToBody },
   steps: { marginTop: firstRun.bodyToSteps, gap: firstRun.stepGap },
   step: { flexDirection: 'row', alignItems: 'center', gap: firstRun.stepIconGap },

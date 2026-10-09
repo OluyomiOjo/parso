@@ -20,7 +20,7 @@ export function ListPanel({ children }: { children: ReactNode }) {
 
 const styles = StyleSheet.create({
   panel: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.panel,
     borderRadius: radius.panel,
     overflow: 'hidden',
   },

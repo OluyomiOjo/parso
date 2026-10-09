@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { colors, radius, size, spacing } from '@/theme';
 
+import { PressableScale } from './PressableScale';
 import { Text } from './Text';
 
 type ButtonProps = {
@@ -18,13 +19,13 @@ export function Button({ label, onPress, variant = 'primary', icon, busy = false
   const primary = variant === 'primary';
   const fg = primary ? colors.onInk : colors.ink;
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       disabled={disabled || busy}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: disabled || busy, busy }}
-      style={({ pressed }) => [styles.base, primary ? styles.primary : styles.secondary, pressed && styles.pressed]}
+      style={[styles.base, primary ? styles.primary : styles.secondary]}
     >
       {busy ? (
         <ActivityIndicator color={fg} />
@@ -36,7 +37,7 @@ export function Button({ label, onPress, variant = 'primary', icon, busy = false
           </Text>
         </View>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -53,6 +54,5 @@ const styles = StyleSheet.create({
     borderWidth: size.hairline,
     borderColor: colors.controlBorder,
   },
-  pressed: { opacity: 0.8 },
   content: { flexDirection: 'row', alignItems: 'center', gap: spacing.iconLabelGap },
 });

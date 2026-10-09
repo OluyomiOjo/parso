@@ -282,7 +282,7 @@ export default function NoteScreen() {
         <Pressable onPress={focusEnd} accessible={false} style={{ height: note.bottomSpace }} />
       </ScrollView>
 
-      <InputAccessoryView nativeID={TOOLBAR} backgroundColor={colors.background}>
+      <InputAccessoryView nativeID={TOOLBAR} backgroundColor={colors.panel}>
         <View style={styles.toolbar}>
           <ToolbarButton label="Checklist" onPress={() => toggle('check')}>
             <ChecklistIcon color={colors.ink} size={note.toolbarIcon} strokeWidth={size.iconStroke} />

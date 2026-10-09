@@ -31,14 +31,14 @@ export function DemoSearchCard() {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.panel,
     borderRadius: radius.panel,
     padding: welcome.cardPadding,
   },
   field: {
     height: welcome.fieldHeight,
     borderRadius: radius.field,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     paddingHorizontal: welcome.fieldPaddingX,
     flexDirection: 'row',
     alignItems: 'center',

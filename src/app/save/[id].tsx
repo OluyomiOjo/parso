@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, BackHandler, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,6 +10,7 @@ import { SavedTo } from '@/components/SavedTo';
 import { SheetPreview } from '@/components/SheetPreview';
 import { Text } from '@/components/Text';
 import { useCollections, useCreateCollection } from '@/lib/collections';
+import { success } from '@/lib/haptics';
 import { freeSavesLeft } from '@/lib/plan';
 import { usePlan } from '@/lib/pro';
 import { useSave, useThumbnailUrls, useUpdateSave } from '@/lib/saves';
@@ -26,6 +27,11 @@ export default function SaveSheet() {
   const createCollection = useCreateCollection();
   const [note, setNote] = useState<string | null>(null);
   const left = freeSavesLeft(usePlan().data); // "5 free saves left", near the free limit
+
+  // A success tap as the sheet confirms a new save (not for a link that was already saved).
+  useEffect(() => {
+    if (existing !== '1') success();
+  }, [existing]);
 
   const collection = collections.find((c) => c.id === save?.collection_id) ?? null;
   const filed = Boolean(save?.processed_at && collection);

@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { GridIcon } from '@/icons/GridIcon';
 import { ListIcon } from '@/icons/ListIcon';
+import { tap } from '@/lib/haptics';
 import { useViewMode, type ViewMode } from '@/lib/viewMode';
 import { colors, size, viewSwitch } from '@/theme';
 
@@ -21,7 +22,10 @@ export function ViewSwitch() {
         return (
           <Pressable
             key={option}
-            onPress={() => setMode(option)}
+            onPress={() => {
+              if (option !== mode) tap();
+              setMode(option);
+            }}
             accessibilityRole="tab"
             accessibilityLabel={label}
             accessibilityState={{ selected: active }}

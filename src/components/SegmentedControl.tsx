@@ -49,7 +49,7 @@ export function SegmentedControl<T>({ segments, selected, onSelect, track = fals
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row' },
-  track: { backgroundColor: colors.background, borderRadius: segmented.radius, padding: segmented.inset },
+  track: { backgroundColor: colors.panel, borderRadius: segmented.radius, padding: segmented.inset },
   segment: {
     flex: 1,
     height: segmented.height - 2 * segmented.inset,

@@ -1,67 +1,74 @@
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 
-import { SourceIcon } from '@/icons/SourceIcon';
+import { CollectionsIcon } from '@/icons/CollectionsIcon';
 import type { CollectionSummary } from '@/lib/collections';
 import { saveCount } from '@/lib/format';
-import { card, colors, radius, tabularNums } from '@/theme';
+import { card, colors, size, tabularNums } from '@/theme';
 
+import { PressableScale } from './PressableScale';
 import { Text } from './Text';
 
 type Props = {
   collection: CollectionSummary;
   thumbnails?: Record<string, string>;
   onPress: () => void;
-  width?: number;
+  width: number;
 };
 
-// Two picture tiles from the newest saves, then the name and the count.
-export function CollectionCard({ collection, thumbnails, onPress, width = card.width }: Props) {
-  const tiles = collection.recent.length ? collection.recent : [null];
+// A collection on the Collections tab, board style (owner decision, step 11): its three newest pictures, one large
+// and two small stacked beside it, then the name and the count. Empty spots are faint grey; a collection with no
+// pictures at all shows the collections icon.
+export function CollectionCard({ collection, thumbnails, onPress, width }: Props) {
   const count = saveCount(collection.saveCount);
+  const height = Math.round(width * card.boardRatio);
+  const small = (height - card.boardGap) / 2;
+  const urls = [0, 1, 2].map((i) => {
+    const path = collection.recent[i]?.thumbnail_path;
+    return path ? thumbnails?.[path] : undefined;
+  });
+
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${collection.name}, ${count}`}
-      style={({ pressed }) => [styles.card, { width }, pressed && styles.pressed]}
+      style={{ width }}
     >
-      <View style={styles.tiles}>
-        {tiles.map((tile, i) => {
-          const url = tile?.thumbnail_path ? thumbnails?.[tile.thumbnail_path] : undefined;
-          return url ? (
-            <Image key={i} source={{ uri: url }} style={styles.tile} accessibilityIgnoresInvertColors />
-          ) : (
-            <View key={i} style={styles.tile}>
-              {tile ? <SourceIcon kind={tile.kind} source={tile.source} size={card.tileIcon} /> : null}
-            </View>
-          );
-        })}
+      <View style={[styles.board, { height }]}>
+        <Picture url={urls[0]} style={styles.large} icon={!collection.recent.length} />
+        <View style={[styles.side, { width: small }]}>
+          <Picture url={urls[1]} style={styles.small} />
+          <Picture url={urls[2]} style={styles.small} />
+        </View>
       </View>
-      <Text variant="cardTitle" numberOfLines={1} style={styles.name}>
+      <Text variant="rowTitle" numberOfLines={1} style={styles.name}>
         {collection.name}
       </Text>
-      <Text variant="secondary" color={colors.secondary} style={tabularNums}>
+      <Text variant="meta" color={colors.secondary} style={tabularNums}>
         {count}
       </Text>
-    </Pressable>
+    </PressableScale>
+  );
+}
+
+function Picture({ url, style, icon = false }: { url?: string; style: object; icon?: boolean }) {
+  return url ? (
+    <Image source={{ uri: url }} style={[styles.fill, style]} accessibilityIgnoresInvertColors />
+  ) : (
+    <View style={[styles.fill, styles.empty, style]}>
+      {icon ? (
+        <CollectionsIcon color={colors.secondary} size={card.placeholderIcon} strokeWidth={size.iconStroke} />
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.panel,
-    padding: card.padding,
-  },
-  pressed: { opacity: 0.7 },
-  tiles: { flexDirection: 'row', gap: card.tileGap },
-  tile: {
-    width: card.tile,
-    height: card.tile,
-    borderRadius: card.tileRadius,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  name: { marginTop: card.tilesToName },
+  board: { flexDirection: 'row', gap: card.boardGap, borderRadius: card.boardRadius, overflow: 'hidden' },
+  large: { flex: 1 },
+  side: { gap: card.boardGap },
+  small: { flex: 1 },
+  fill: { backgroundColor: colors.panel },
+  empty: { alignItems: 'center', justifyContent: 'center' },
+  name: { marginTop: card.boardToName },
 });

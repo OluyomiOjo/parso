@@ -1,7 +1,8 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { colors, radius, sheet, size } from '@/theme';
 
+import { PressableScale } from './PressableScale';
 import { Text } from './Text';
 
 type Props = {
@@ -14,7 +15,7 @@ type Props = {
 // 36pt pill: black when selected, white with the control border otherwise.
 export function Pill({ label, selected = false, onPress, accessibilityLabel }: Props) {
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected }}
@@ -24,7 +25,7 @@ export function Pill({ label, selected = false, onPress, accessibilityLabel }: P
       <Text variant="pill" color={selected ? colors.onInk : colors.ink}>
         {label}
       </Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 

@@ -50,7 +50,8 @@ Automatic background screenshot import, a public web app (the admin dashboard, i
 - Auth: @supabase/supabase-js with @react-native-async-storage/async-storage for the session, expo-apple-authentication and @react-native-google-signin/google-signin for native sign-in, expo-crypto for the Apple nonce.
 - Payments (owner-approved in step 10): react-native-purchases (RevenueCat), our own upgrade sheet (no RevenueCat paywall package). The public key comes from Expo's build settings as EXPO_PUBLIC_REVENUECAT_IOS_KEY (the App Store `appl_` key for preview and production builds; RevenueCat's Test Store is not used, since it crashes release builds on purpose and Debug builds here can't carry the JavaScript, so purchases are tested in Apple's sandbox). RevenueCat logs in with the Parso account id. Server secrets REVENUECAT_SECRET_KEY and REVENUECAT_WEBHOOK_AUTH are typed by the owner into Supabase and RevenueCat, never into the chat.
 - State and data: TanStack Query for server data. No Redux.
-- Gestures (owner-approved in step 10): react-native-gesture-handler, react-native-reanimated and react-native-worklets (Expo's standard set), for press-and-hold dragging to rearrange collections (src/components/ReorderList.tsx). The app root is wrapped in GestureHandlerRootView.
+- Gestures (owner-approved in step 10): react-native-gesture-handler, react-native-reanimated and react-native-worklets (Expo's standard set), for press-and-hold dragging to rearrange collections (src/components/ReorderList.tsx) and the press shrink (src/components/PressableScale.tsx). The app root is wrapped in GestureHandlerRootView.
+- Look and feel (owner-approved in step 11): expo-blur for the frosted floating tab bar, expo-haptics for light taps (src/lib/haptics.ts). The iOS 18 picture zoom uses expo-router's own Link.AppleZoom (no package).
 - Usage events (owner-approved in step 10): `track()` in src/lib/track.ts writes to the `events` table: an event name plus only source, kind and via. Never titles, links, notes, text or search words; the table's checks refuse anything else.
 - Admin dashboard (owner-approved in step 10): `dashboard/`, a separate Vite + React + TypeScript site (react, react-dom, @supabase/supabase-js; charts drawn as plain SVG, no chart library), hosted on Cloudflare Pages at dash.parso.ai. Admins sign in with an email link. All numbers come from the `admin-stats` Edge Function and the service-role-only `admin_*` SQL functions (migration 0016).
 - Secrets live in environment variables and Supabase secrets. Never commit keys. Never put the AI or embeddings key in the app bundle.
@@ -96,7 +97,7 @@ Designs live in the Parso App Screens canvas (Clean page). Exported PNGs of each
 3. Home ("My Parsos"): reminder card, Collections row as circles (owner decision in step 10: 68 circle with the newest picture inside a thin grey ring, or a grey circle with the collections icon; the name under it in 13pt; no gradients, no counts; tap to open, press and hold to drag into a new order), Recent list with a list/grid switch beside the heading (grid: two columns, Pinterest style, each picture at its own shape; one remembered choice for My Parsos and Collections; owner decision in step 10). No search field: Search lives in the tab bar (owner decision in step 10). All and Notes pills above Recent; Notes lists notes pinned first, then newest edited, each row with title, next line and "Edited 2 hours ago".
 3b. Home empty state: "Save your first thing" with share-sheet instructions and "Or paste a link".
 4. Search: focused search field, kind filter pills, result count, best match with large image, other results as list rows. Before typing: recent searches (stored on the phone) and "Try" pills built from the person's own tags, apps and collections.
-4b. Collections tab: two-column cards with counts, in the same order as the circles, and a Reorder button beside the title that switches to a list with drag handles until Done.
+4b. Collections tab: two-column board cards (owner decision in step 11): the three newest pictures, one large with two small stacked beside it (radius 16, 2 apart, faint grey where a picture is missing), then the name and count underneath, no box around the card; in the same order as the circles, and a Reorder button beside the title that switches to a list with drag handles until Done.
 5. Collection: back, list/grid and rename buttons (the design's share button waits until sharing is in scope), name, description line (written by the AI once per collection), segmented filter by kind, list rows.
 6. Save detail: full-width image (tap it to see the picture full screen, pinch to zoom), source line, title, summary, details panel (Collection, Tags, Reminder, Note), fixed buttons: links get "Open in [source]" and Share; photos and screenshots get Open (full screen), Share and Download; notes get Share. "Delete save" sits under the panel. Tapping a save anywhere opens this screen (notes open in the note editor instead); sharing into Parso still shows the save sheet.
 6b. Note editor (`note/[id]`, "new" for a new note): white page, back, pin and more (Collection, Tags, Remind me, Share, Delete note), "Edited ..." line with any reminder, one line per text box with tick boxes and bullets beside them, Done while typing, and a toolbar above the keyboard (Checklist, Bullet, Remind me, Hide keyboard). Return continues a list and ends it on an empty item; Backspace at the start removes the marker, then joins the line above. Shared as text with ☐, ☑ and •, ending with "Saved with Parso.ai".
@@ -105,15 +106,20 @@ Designs live in the Parso App Screens canvas (Clean page). Exported PNGs of each
 
 8. Your week in Parso (`week`): back, title, the week's dates (or "This week so far, since ..."), a numbers panel (Saved, Done, Most saved), "What were you going to do with these?" rows (picture, title, meta line, then Done, Remind me, Open pills; a row marked done stays with "Done on Oct 12" and Undo), and "From your past". The save page shows Mark as done under the summary, or "Done on ..." with Undo. The week ends Sunday 6 PM; Sunday evening to Wednesday the screen shows that finished week, otherwise the week so far (src/lib/week.ts, tested in tests/).
 
-Tab bar: My Parsos, Search, Collections, You. A floating black round + (Add to Parso, 56) sits above the tab bar at the bottom right on every tab and hides while the keyboard is up (owner decision in step 10).
+Tab bar (owner decision in step 11): a floating, frosted-glass bar (64 tall, radius 32, 16 from the sides, just above the home indicator) with My Parsos, Search, Collections and You (icons with labels), and the black round + (Add to Parso, 56) floating beside it on the right. Content scrolls underneath; both hide while the keyboard is up.
+
+You tab (owner decision in step 11): a profile card (initial in a grey circle, name when Apple or Google gave one, email), then one settings panel (Parso Pro with Upgrade or Manage, Your week in Parso, Weekly update, Check for new screenshots), then Sign out and Delete account.
+
+Motion (owner decision in step 11): pages slide in from the right and go back with a swipe from anywhere on the page; sheets rise from the bottom; tabs glide with a soft shift; on iOS 18 and later a grid picture grows into the save page and shrinks back; pictures, circles, cards, buttons and pills shrink to 0.97 under the finger and spring back; a success tap when a save is saved or marked done, a light tap when a dragged collection drops or list/grid switches.
 
 Meta lines (list rows, grid tiles, save sheet, detail page) lead with the poster's handle for social posts when Parso knows it ("@pplreunitedsurprise, 2 days ago"), beside the brand icon; otherwise the platform, site or kind. Search results keep the platform name so "from instagram" stays highlighted (owner decision in step 10).
 
 ## Design system (Clean)
 
 Color:
-- background `#F2F3F5`
-- surface `#FFFFFF`
+- background `#FFFFFF` (screens are white so pictures carry the page; owner decision in step 11)
+- panel `#F4F5F7` (lists, cards and settings on a white screen)
+- surface `#FFFFFF` (sheets, fields, chips)
 - ink (text, primary buttons) `#000000`
 - secondary text `#5B5E66`
 - divider `#E1E3E7`
@@ -137,7 +143,7 @@ Type (Inter):
 Shape and spacing:
 - Screen side padding 16 (24 on intro and welcome).
 - Gap between sections 16 to 20.
-- List panels: one white panel, radius 18, rows separated by 1px dividers. Do not wrap each row in its own card.
+- List panels: one faint grey panel (`panel`), radius 18, rows separated by 1px dividers. Do not wrap each row in its own card. Pictures and grid tiles sit straight on the white page, with no box.
 - Buttons: height 52, radius 14, black fill, white text 16/600.
 - Pills: height 36, radius 18; selected is black fill, unselected white with control border.
 - Thumbnails: 72 in rows (owner asked for bigger pictures in step 10; the designs show 56), radius 10. Best-match image full width, 176 tall.
@@ -149,7 +155,7 @@ Highlighter rules (the one bold element):
 
 Brand assets in `/assets/brand`: `parso_logo_new.png` (yellow icon plus wordmark), `icon.png` (yellow bookmark), `icon-black.png`. Use the black icon at sizes under 24pt or on white where yellow is hard to see. The bookmark shape in the tab bar and illustrations follows the logo (flat top, notched bottom that rises to the right).
 
-Do not use: ALL-CAPS labels, text joined with middle dots, emoji in UI, gradients, colored single words in headlines, drop shadows on list panels, more than one accent color.
+Do not use: ALL-CAPS labels, text joined with middle dots, emoji in UI, gradients, colored single words in headlines, drop shadows (the one exception: a soft shadow under the floating tab bar and the +, owner-approved in step 11), more than one accent color.
 
 Owner-approved exception: source icons (Instagram, TikTok, X, LinkedIn and so on) before the source in meta lines are drawn in each platform's own solid brand colour, about 14pt, from `brandColors` in `theme.ts`. Solid only, never the gradient versions. Websites, photos, screenshots and notes use grey glyphs.
 

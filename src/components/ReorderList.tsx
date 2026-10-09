@@ -10,7 +10,8 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { reorder } from '@/theme';
+import { tap } from '@/lib/haptics';
+import { press, reorder } from '@/theme';
 
 type Props<T> = {
   items: T[];
@@ -86,6 +87,7 @@ type ItemProps = {
 
 function Item({ id, count, order, horizontal, extent, crossSize, onPress, onDrop, onDragChange, children }: ItemProps) {
   const dragging = useSharedValue(false);
+  const pressed = useSharedValue(false); // shrinks a touch under the finger, like every other card
   const offset = useSharedValue((order.value[id] ?? 0) * extent); // where the item is drawn while dragging
   const start = useSharedValue(0);
 
@@ -120,18 +122,30 @@ function Item({ id, count, order, horizontal, extent, crossSize, onPress, onDrop
       offset.value = withSpring(order.value[id] * extent, reorder.spring);
       runOnJS(onDrop)(order.value);
       runOnJS(changed)(false);
+      runOnJS(tap)();
     });
 
-  const tap = Gesture.Tap().onEnd((_event, success) => {
-    if (success && onPress) runOnJS(onPress)();
-  });
+  const tapGesture = Gesture.Tap()
+    .onBegin(() => {
+      pressed.value = true;
+    })
+    .onFinalize(() => {
+      pressed.value = false;
+    })
+    .onEnd((_event, success) => {
+      if (success && onPress) runOnJS(onPress)();
+    });
 
   const style = useAnimatedStyle(() => {
     const place = dragging.value ? offset.value : withTiming(order.value[id] * extent, { duration: reorder.slideMs });
     return {
       transform: [
         horizontal ? { translateX: place } : { translateY: place },
-        { scale: withTiming(dragging.value ? reorder.liftScale : 1, { duration: reorder.slideMs }) },
+        {
+          scale: dragging.value
+            ? withTiming(reorder.liftScale, { duration: reorder.slideMs })
+            : withSpring(pressed.value ? press.scale : 1, { damping: press.damping, stiffness: press.stiffness }),
+        },
       ],
       zIndex: dragging.value ? 1 : 0,
       opacity: withTiming(dragging.value ? reorder.liftOpacity : 1, { duration: reorder.slideMs }),
@@ -139,7 +153,7 @@ function Item({ id, count, order, horizontal, extent, crossSize, onPress, onDrop
   });
 
   return (
-    <GestureDetector gesture={Gesture.Race(pan, tap)}>
+    <GestureDetector gesture={Gesture.Race(pan, tapGesture)}>
       <Animated.View style={[styles.item, horizontal ? { height: crossSize } : { width: crossSize }, style]}>
         {children}
       </Animated.View>
