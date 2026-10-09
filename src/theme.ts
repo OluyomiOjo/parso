@@ -12,6 +12,7 @@ export const colors = {
   controlBorder: '#CDD0D6',
   highlighter: '#FFCC2A',
   dashedBorder: '#B9BDC5', // "Or paste a link" outline, from design/3b
+  scrim: 'rgba(0, 0, 0, 0.35)', // behind the Android menu sheet
 } as const;
 
 // Source icons only, in each platform's own solid colour (owner-approved exception to the one-accent rule).
@@ -456,6 +457,7 @@ export const dock = {
   shadowOpacity: 0.12,
   shadowRadius: 18,
   shadowY: 6,
+  elevation: 8, // Android's shadow
 } as const;
 
 // Press feedback: things shrink a touch under the finger and spring back.

@@ -7,7 +7,12 @@
     "preview": {
       "distribution": "internal",
       "environment": "preview",
-      "env": { "EXPO_PUBLIC_TEST_TOOLS": "1" }
+      "env": {
+        "EXPO_PUBLIC_TEST_TOOLS": "1"
+      },
+      "android": {
+        "buildType": "apk"
+      }
     },
     "production": {
       "autoIncrement": true,

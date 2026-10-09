@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Image, Linking, StyleSheet, View } from 'react-native';
+import { Alert, Image, Linking, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
@@ -43,16 +43,19 @@ export default function WelcomeScreen() {
       </View>
 
       <View style={styles.actions}>
-        <Button
-          label="Continue with Apple"
-          icon={(color) => <AppleLogo color={color} size={size.buttonIcon} />}
-          busy={busy === 'apple'}
-          disabled={busy !== null}
-          onPress={() => run('apple', signInWithApple)}
-        />
+        {/* Apple sign-in is iPhone only; on Android, Google is the one (black) button. */}
+        {Platform.OS === 'ios' ? (
+          <Button
+            label="Continue with Apple"
+            icon={(color) => <AppleLogo color={color} size={size.buttonIcon} />}
+            busy={busy === 'apple'}
+            disabled={busy !== null}
+            onPress={() => run('apple', signInWithApple)}
+          />
+        ) : null}
         <Button
           label="Continue with Google"
-          variant="secondary"
+          variant={Platform.OS === 'ios' ? 'secondary' : 'primary'}
           busy={busy === 'google'}
           disabled={busy !== null}
           onPress={() => run('google', signInWithGoogle)}
@@ -63,7 +66,12 @@ export default function WelcomeScreen() {
             Terms
           </Text>{' '}
           and{' '}
-          <Text variant="legal" style={styles.link} onPress={() => Linking.openURL(PRIVACY_URL)} accessibilityRole="link">
+          <Text
+            variant="legal"
+            style={styles.link}
+            onPress={() => Linking.openURL(PRIVACY_URL)}
+            accessibilityRole="link"
+          >
             Privacy Policy
           </Text>
         </Text>

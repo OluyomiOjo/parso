@@ -6,6 +6,7 @@ import {
   Alert,
   InputAccessoryView,
   Keyboard,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +15,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ActionMenu, type MenuOption } from '@/components/ActionMenu';
 import { IconButton } from '@/components/IconButton';
 import { NoteLineInput } from '@/components/NoteLineInput';
 import { Text } from '@/components/Text';
@@ -48,6 +50,10 @@ const goBack = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
 // A note, like Apple Notes: the first line is the title, lines can be checklist items or bullets, and it saves
 // itself as you type. Opened from + then Note (id "new"), and from any note in Parso.
+// iOS announces the keyboard before it moves; Android only after.
+const KEYBOARD_SHOW = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+const KEYBOARD_HIDE = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
 export default function NoteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
@@ -63,10 +69,11 @@ export default function NoteScreen() {
   const cursor = useRef(0);
   const pendingFocus = useRef<{ key: string; at: number } | null>(null);
   const [keyboardUp, setKeyboardUp] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false); // Android's menu sheet
 
   useEffect(() => {
-    const shown = Keyboard.addListener('keyboardWillShow', () => setKeyboardUp(true));
-    const hidden = Keyboard.addListener('keyboardWillHide', () => setKeyboardUp(false));
+    const shown = Keyboard.addListener(KEYBOARD_SHOW, () => setKeyboardUp(true));
+    const hidden = Keyboard.addListener(KEYBOARD_HIDE, () => setKeyboardUp(false));
     return () => {
       shown.remove();
       hidden.remove();
@@ -168,8 +175,22 @@ export default function NoteScreen() {
       },
     ]);
 
+  const done = Boolean(save?.done_at);
+  // The same choices for both: iOS's own action sheet, or Parso's menu sheet on Android (no action sheet there).
+  const menu: MenuOption[] = [
+    { label: 'Collection', onPress: () => edit('collection') },
+    { label: 'Tags', onPress: () => edit('tags') },
+    { label: 'Remind me', onPress: remind },
+    {
+      label: done ? 'Mark as not done' : 'Mark as done',
+      onPress: () => markDone.mutate(!done, { onError: (error) => Alert.alert(error.message) }),
+    },
+    { label: 'Share', onPress: () => void share() },
+    { label: 'Delete note', onPress: confirmDelete },
+  ];
   const more = () => {
-    const done = Boolean(save?.done_at);
+    Keyboard.dismiss();
+    if (Platform.OS !== 'ios') return setMenuOpen(true);
     const options = [
       'Collection',
       'Tags',
@@ -179,15 +200,9 @@ export default function NoteScreen() {
       'Delete note',
       'Cancel',
     ];
-    Keyboard.dismiss();
-    ActionSheetIOS.showActionSheetWithOptions({ options, destructiveButtonIndex: 5, cancelButtonIndex: 6 }, (index) => {
-      if (index === 0) edit('collection');
-      else if (index === 1) edit('tags');
-      else if (index === 2) remind();
-      else if (index === 3) markDone.mutate(!done, { onError: (error) => Alert.alert(error.message) });
-      else if (index === 4) void share();
-      else if (index === 5) confirmDelete();
-    });
+    ActionSheetIOS.showActionSheetWithOptions({ options, destructiveButtonIndex: 5, cancelButtonIndex: 6 }, (index) =>
+      menu[index]?.onPress(),
+    );
   };
 
   const pinned = save?.pinned ?? false;
@@ -201,6 +216,17 @@ export default function NoteScreen() {
           <ChevronLeftIcon color={colors.ink} size={size.iconButtonIcon} strokeWidth={size.iconStroke} />
         </IconButton>
         <View style={styles.headerActions}>
+          {/* Android has no toolbar above the keyboard, so Checklist and Bullet sit up here instead. */}
+          {Platform.OS === 'android' ? (
+            <>
+              <IconButton label="Checklist" onPress={() => toggle('check')}>
+                <ChecklistIcon color={colors.ink} size={size.iconButtonIcon} strokeWidth={size.iconStroke} />
+              </IconButton>
+              <IconButton label="Bullet" onPress={() => toggle('bullet')}>
+                <BulletIcon color={colors.ink} size={size.iconButtonIcon} strokeWidth={size.iconStroke} />
+              </IconButton>
+            </>
+          ) : null}
           {noteId ? (
             <>
               <IconButton label={pinned ? 'Unpin note' : 'Pin note'} onPress={() => togglePin.mutate(!pinned)}>
@@ -281,6 +307,8 @@ export default function NoteScreen() {
         {/* The empty page under the last line: a tap there puts the cursor at the end, as in Apple Notes. */}
         <Pressable onPress={focusEnd} accessible={false} style={{ height: note.bottomSpace }} />
       </ScrollView>
+
+      <ActionMenu visible={menuOpen} options={menu} onClose={() => setMenuOpen(false)} />
 
       <InputAccessoryView nativeID={TOOLBAR} backgroundColor={colors.panel}>
         <View style={styles.toolbar}>

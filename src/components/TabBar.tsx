@@ -1,7 +1,7 @@
 import { BlurView } from 'expo-blur';
 import type { BottomTabBarProps } from 'expo-router/tabs';
-import { useEffect, useState, type ComponentType } from 'react';
-import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useState, type ComponentType, type ReactNode } from 'react';
+import { Keyboard, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { BookmarkIcon } from '@/icons/BookmarkIcon';
 import { CollectionsIcon } from '@/icons/CollectionsIcon';
@@ -24,8 +24,13 @@ const TABS: Record<string, { label: string; Icon: ComponentType<IconProps> }> = 
 function useKeyboardShown() {
   const [shown, setShown] = useState(false);
   useEffect(() => {
-    const show = Keyboard.addListener('keyboardWillShow', () => setShown(true));
-    const hide = Keyboard.addListener('keyboardWillHide', () => setShown(false));
+    // iOS announces the keyboard before it moves; Android only after.
+    const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () =>
+      setShown(true),
+    );
+    const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () =>
+      setShown(false),
+    );
     return () => {
       show.remove();
       hide.remove();
@@ -44,7 +49,7 @@ export function TabBar({ state, navigation, insets }: BottomTabBarProps) {
   return (
     <View style={[styles.layer, { bottom }]} pointerEvents="box-none">
       <View style={[styles.shadow, styles.bar]}>
-        <BlurView intensity={dock.blur} tint="systemChromeMaterialLight" style={styles.glass}>
+        <Glass>
           {state.routes.map((route, index) => {
             const tab = TABS[route.name];
             if (!tab) return null;
@@ -79,12 +84,24 @@ export function TabBar({ state, navigation, insets }: BottomTabBarProps) {
               </Pressable>
             );
           })}
-        </BlurView>
+        </Glass>
       </View>
       <View style={styles.shadow}>
         <AddButton />
       </View>
     </View>
+  );
+}
+
+// Frosted glass on iPhone. Android's blur is unreliable, so there the bar is solid white (owner-approved, Android
+// part 1).
+function Glass({ children }: { children: ReactNode }) {
+  return Platform.OS === 'ios' ? (
+    <BlurView intensity={dock.blur} tint="systemChromeMaterialLight" style={styles.glass}>
+      {children}
+    </BlurView>
+  ) : (
+    <View style={[styles.glass, styles.solid]}>{children}</View>
   );
 }
 
@@ -97,13 +114,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: dock.addGap,
   },
-  // The one shadow in the design system: soft, under the floating bar and the +.
+  // The one shadow in the design system: soft, under the floating bar and the +. Android draws it from elevation,
+  // which needs a filled, rounded view.
   shadow: {
     shadowColor: colors.ink,
     shadowOpacity: dock.shadowOpacity,
     shadowRadius: dock.shadowRadius,
     shadowOffset: { width: 0, height: dock.shadowY },
+    elevation: dock.elevation,
+    borderRadius: dock.radius,
+    backgroundColor: Platform.OS === 'android' ? colors.surface : undefined, // elevation needs a fill
   },
+  solid: { backgroundColor: colors.surface },
   bar: { flex: 1, height: dock.height, borderRadius: dock.radius },
   glass: {
     flex: 1,

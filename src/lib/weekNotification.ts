@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { AppState } from 'react-native';
 
 import { useSession } from './auth';
+import { WEEKLY_CHANNEL } from './reminders';
 import { supabase } from './supabase';
 import { askSince, lastWeekEnd, nextWeekEnd, weekNotificationBody } from './week';
 import { openAsks } from './weekData';
@@ -42,7 +43,11 @@ async function reschedule() {
   await Notifications.scheduleNotificationAsync({
     identifier: IDENTIFIER,
     content: words,
-    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: nextWeekEnd(new Date()) },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date: nextWeekEnd(new Date()),
+      channelId: WEEKLY_CHANNEL,
+    },
   });
 }
 
@@ -57,7 +62,11 @@ export async function sendWeeklyUpdateNow() {
   if (!words) throw new Error("Couldn't reach Parso. Check your connection and try again.");
   await Notifications.scheduleNotificationAsync({
     content: words,
-    trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: TEST_DELAY_SECONDS },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: TEST_DELAY_SECONDS,
+      channelId: WEEKLY_CHANNEL,
+    },
   });
 }
 

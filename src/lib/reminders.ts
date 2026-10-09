@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 
 import { useSession } from './auth';
 import { reminderTime, type ReminderChoice } from './reminderTime';
@@ -15,8 +16,22 @@ import { track } from './track';
 const PREFIX = 'reminder-';
 const BODY = 'You asked Parso to remind you about this.';
 
+// Android files notifications under named channels people can manage in Settings. Unused on iOS.
+export const REMINDER_CHANNEL = 'reminders';
+export const WEEKLY_CHANNEL = 'weekly';
+
 // Show reminders as banners even while Parso is open.
 export function configureNotifications() {
+  if (Platform.OS === 'android') {
+    void Notifications.setNotificationChannelAsync(REMINDER_CHANNEL, {
+      name: 'Reminders',
+      importance: Notifications.AndroidImportance.HIGH,
+    }).catch(() => undefined);
+    void Notifications.setNotificationChannelAsync(WEEKLY_CHANNEL, {
+      name: 'Weekly update',
+      importance: Notifications.AndroidImportance.DEFAULT,
+    }).catch(() => undefined);
+  }
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowBanner: true,
@@ -47,7 +62,7 @@ async function schedule(save: Remindable, when: Date) {
   await Notifications.scheduleNotificationAsync({
     identifier,
     content: { title: save.title ?? save.url ?? 'Your save', body: BODY, data: { saveId: save.id } },
-    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when, channelId: REMINDER_CHANNEL },
   });
 }
 
