@@ -483,15 +483,19 @@ export const homeLogo = {
 
 // The Add sheet, opened by the + (owner request after build 14, after Pinterest's): three large tiles in a row.
 export const addMenu = {
-  paddingX: 24,
-  paddingTop: 28,
-  titleToTiles: 24,
-  tile: 88,
-  tileRadius: 22,
-  icon: 30,
-  tileGap: 16, // between tiles
-  labelTop: 8,
-  bottom: 12,
+  cornerRadius: 28,
+  paddingX: 20,
+  headerTop: 16,
+  headerHeight: 44,
+  close: 26,
+  closeStroke: 2,
+  titleToTiles: 28,
+  tile: 84,
+  tileRadius: 24,
+  icon: 28,
+  tileGap: 20, // between tiles
+  labelTop: 10,
+  bottom: 28,
 } as const;
 
 export const theme = {

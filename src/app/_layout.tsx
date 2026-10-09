@@ -16,7 +16,7 @@ import { configureNotifications, useReminderSync, useReminderTaps } from '@/lib/
 import { supabase } from '@/lib/supabase';
 import { useOpenTracking } from '@/lib/track';
 import { useWeeklyNotification } from '@/lib/weekNotification';
-import { colors, radius } from '@/theme';
+import { addMenu, colors, radius } from '@/theme';
 
 // Keep the launch screen up until the saved session has loaded, so signed-in people never see the welcome screen flash.
 SplashScreen.preventAutoHideAsync();
@@ -61,8 +61,8 @@ function RootStack() {
           options={{
             presentation: 'formSheet',
             sheetAllowedDetents: 'fitToContents',
-            sheetGrabberVisible: true,
-            sheetCornerRadius: radius.panel,
+            sheetGrabberVisible: false, // a close button instead, like Pinterest's sheet
+            sheetCornerRadius: addMenu.cornerRadius,
             contentStyle: { backgroundColor: colors.surface },
           }}
         />

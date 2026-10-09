@@ -2,11 +2,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useState, type ComponentType } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PressableScale } from '@/components/PressableScale';
 import { Text } from '@/components/Text';
+import { CloseIcon } from '@/icons/CloseIcon';
 import { LinkIcon } from '@/icons/LinkIcon';
 import { NoteIcon } from '@/icons/NoteIcon';
 import { PhotoIcon } from '@/icons/PhotoIcon';
@@ -58,9 +59,21 @@ export default function AddMenu() {
 
   return (
     <SafeAreaView edges={['bottom']} style={styles.sheet}>
-      <Text variant="sheetTitle" accessibilityRole="header">
-        Add to Parso
-      </Text>
+      {/* Like Pinterest's sheet: a close button on the left and a quiet title in the middle. */}
+      <View style={styles.header}>
+        <Text variant="cardTitle" accessibilityRole="header">
+          Add to Parso
+        </Text>
+        <Pressable
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          hitSlop={spacing.sm}
+          style={styles.close}
+        >
+          <CloseIcon color={colors.ink} size={addMenu.close} strokeWidth={addMenu.closeStroke} />
+        </Pressable>
+      </View>
       <View style={styles.tiles}>
         <Tile label="Link" Icon={LinkIcon} onPress={() => router.replace('/add')} />
         <Tile label="Note" Icon={NoteIcon} onPress={openNote} />
@@ -94,7 +107,7 @@ function Tile({ label, Icon, onPress, busy = false }: TileProps) {
           <Icon color={colors.ink} size={addMenu.icon} strokeWidth={size.iconStroke} />
         )}
       </View>
-      <Text variant="secondary" style={styles.label}>
+      <Text variant="body" style={styles.label}>
         {label}
       </Text>
     </PressableScale>
@@ -105,8 +118,16 @@ const styles = StyleSheet.create({
   sheet: {
     backgroundColor: colors.surface,
     paddingHorizontal: addMenu.paddingX,
-    paddingTop: addMenu.paddingTop,
+    paddingTop: addMenu.headerTop,
     paddingBottom: addMenu.bottom,
+  },
+  header: { height: addMenu.headerHeight, alignItems: 'center', justifyContent: 'center' },
+  close: {
+    position: 'absolute',
+    left: 0,
+    width: size.minTouch,
+    height: size.minTouch,
+    justifyContent: 'center',
   },
   tiles: { flexDirection: 'row', justifyContent: 'center', gap: addMenu.tileGap, marginTop: addMenu.titleToTiles },
   tileItem: { alignItems: 'center' },
