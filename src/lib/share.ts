@@ -14,7 +14,9 @@ const SCREENSHOT_RATIO = 1.9; // phone screens are about 2.17:1; photos are 4:3 
 const MAX_TEXT = 20_000; // the database's limit (migration 0018)
 
 // kind and source come back for the usage numbers (src/lib/track.ts).
-export type ShareResult = { saveId: string; kind: string; source: string } | { error: string; limit?: true };
+export type ShareResult =
+  | { saveId: string; kind: string; source: string; existing?: true }
+  | { error: string; limit?: true };
 
 // A free account has used its 50 saves (CLAUDE.md scope 15): the caller opens Parso Pro instead of an error.
 export const LIMIT_REACHED: ShareResult = { error: LIMIT_MESSAGE, limit: true };
@@ -91,6 +93,17 @@ async function saveLinkOrText(intent: ShareIntent): Promise<ShareResult> {
   const extra = [intent.meta?.title, text && text !== intent.webUrl ? text : null].filter(Boolean).join('\n');
 
   if (!url && !text) return { error: 'Nothing to save in what was shared.' };
+  // Already saved: its sheet opens as "Already in …" instead of saving it again (owner report on Android: the
+  // same link shared twice made two saves). Same check as a pasted link (useCreateLinkSave).
+  if (url) {
+    const { data: found } = await supabase
+      .from('saves')
+      .select('id, kind, source')
+      .eq('url', url)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (found?.[0]) return { saveId: found[0].id, kind: found[0].kind, source: found[0].source, existing: true };
+  }
   if (!(await canSave())) return LIMIT_REACHED;
   const previewImage = sharedPreviewImage(intent);
   const { data, error } = await supabase

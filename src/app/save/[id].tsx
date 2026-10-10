@@ -39,10 +39,11 @@ export default function SaveSheet() {
   const done = () => {
     const trimmed = note?.trim() ?? '';
     if (note !== null && trimmed !== (save?.note ?? '')) updateSave.mutate({ note: trimmed || null });
-    // On Android, closing Parso returns to the app the person shared from. iOS has no such call;
-    // the system's "◀ App" link at the top-left goes back.
+    // The sheet always closes, so coming back to Parso shows Parsos, not this sheet again. On Android, Parso then
+    // steps aside for the app the person shared from (owner report: the sheet was still open on return). iOS has no
+    // such call; the system's "◀ App" link at the top-left goes back.
+    router.back();
     if (shared === '1' && Platform.OS === 'android') BackHandler.exitApp();
-    else router.back();
   };
 
   return (

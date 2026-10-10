@@ -23,8 +23,11 @@ export function ShareHandler() {
     const save = () =>
       saveShare(intent, userId).then((result) => {
         if ('saveId' in result) {
-          track('save_created', { kind: result.kind, source: result.source, via: 'share' });
-          router.push({ pathname: '/save/[id]', params: { id: result.saveId, shared: '1' } });
+          if (!result.existing) track('save_created', { kind: result.kind, source: result.source, via: 'share' });
+          router.push({
+            pathname: '/save/[id]',
+            params: { id: result.saveId, shared: '1', ...(result.existing ? { existing: '1' } : {}) },
+          });
         } else if (result.limit) openUpgrade(() => void save());
         else Alert.alert(result.error);
       });

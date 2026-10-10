@@ -163,7 +163,7 @@ Owner-approved exception: source icons (Instagram, TikTok, X, LinkedIn and so on
 
 ## Copy rules
 
-- The library is called "Parsos" (owner decision after build 14; the tab label, with the black Parso logo at the top of its screen). Actions stay plain: Save, Saved to [Collection], Search, Remind me, Open in [Source]. A pasted link that is already saved opens its sheet as "Already in [Collection]" and is not saved twice.
+- The library is called "Parsos" (owner decision after build 14; the tab label, with the black Parso logo at the top of its screen). Actions stay plain: Save, Saved to [Collection], Search, Remind me, Open in [Source]. A pasted or shared link that is already saved opens its sheet as "Already in [Collection]" and is not saved twice. Done always closes the save sheet (on Android, Parso then steps back to the app shared from).
 - Sentence case everywhere. Buttons say exactly what happens.
 - Errors say what happened and what to do next. No apologies, no vague messages.
 - Empty states tell the user the next action.
