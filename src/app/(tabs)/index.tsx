@@ -9,7 +9,7 @@ import { ListPanel } from '@/components/ListPanel';
 import { NoteRow } from '@/components/NoteRow';
 import { PasteLinkButton } from '@/components/PasteLinkButton';
 import { Pill } from '@/components/Pill';
-import { ReminderCard } from '@/components/ReminderCard';
+import { RemindersBell } from '@/components/RemindersBell';
 import { ReorderList } from '@/components/ReorderList';
 import { SaveGrid } from '@/components/SaveGrid';
 import { SaveRow } from '@/components/SaveRow';
@@ -20,7 +20,6 @@ import { WeekCard } from '@/components/WeekCard';
 import { REORDER_FAILED, useCollectionOverview, useReorderCollections } from '@/lib/collections';
 import { useNotes } from '@/lib/notes';
 import { canSave, openUpgrade } from '@/lib/pro';
-import { useUpcomingReminders } from '@/lib/reminders';
 import { useViewMode } from '@/lib/viewMode';
 import { useSaves, useSavesLiveUpdates, useThumbnailUrls } from '@/lib/saves';
 import { useNewScreenshots } from '@/lib/screenshots';
@@ -38,8 +37,6 @@ const openCollections = () => router.navigate('/collections');
 export default function HomeScreen() {
   const { data: saves, isPending, isError, isRefetching, refetch } = useSaves();
   const { data: collections, refetch: refetchCollections } = useCollectionOverview();
-  // Checked again on screen, so a reminder left over from before the app went to the background never shows.
-  const upcoming = (useUpcomingReminders().data ?? []).filter((r) => new Date(r.reminder_at) > new Date());
   const { mode: viewMode } = useViewMode();
   const [filter, setFilter] = useState<Filter>('all');
   const reorderCollections = useReorderCollections();
@@ -80,6 +77,9 @@ export default function HomeScreen() {
             accessibilityRole="header"
             accessibilityLabel="Parsos"
           />
+          <View style={styles.bell}>
+            <RemindersBell />
+          </View>
         </View>
 
         {weekReady && hasSaves ? (
@@ -110,11 +110,6 @@ export default function HomeScreen() {
           </Text>
         ) : hasSaves ? (
           <>
-            {upcoming.length ? (
-              <View style={styles.section}>
-                <ReminderCard save={upcoming[0]} more={upcoming.length - 1} />
-              </View>
-            ) : null}
             {collections?.length ? (
               <View style={styles.section}>
                 <View style={[styles.heading, styles.headingRow]}>
@@ -225,6 +220,8 @@ const styles = StyleSheet.create({
     marginBottom: homeLogo.bottom,
     marginLeft: spacing.titleInset,
   },
+  // Centred on the logo: the logo sits homeLogo.top down and is homeLogo.height tall.
+  bell: { marginTop: homeLogo.top + (homeLogo.height - size.minTouch) / 2 },
   section: { marginTop: spacing.sectionGapLarge },
   filters: { flexDirection: 'row', gap: sheet.pillGap, marginBottom: spacing.sectionGap },
   emptyNotes: { paddingHorizontal: spacing.titleInset, paddingVertical: spacing.sm },

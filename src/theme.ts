@@ -296,15 +296,23 @@ export const segmented = {
 } as const;
 
 // Reminder card on Parsos, measured from design/3. Home@2x.png.
-export const reminderCard = {
+// Cards on Parsos (Your week in Parso).
+export const homeCard = {
   padding: 12,
-  tile: 44,
-  tileRadius: 12,
-  icon: 22,
   gap: 12,
   buttonHeight: 36,
   buttonPaddingX: 16,
-  moreHitSlop: 8,
+} as const;
+
+// The bell at the top right of Parsos (owner request after build 16): opens Reminders; a yellow badge counts
+// reminders that went off since that page was last opened.
+export const bell = {
+  icon: 24,
+  badge: 18,
+  badgePaddingX: 5,
+  badgeTop: 4,
+  badgeRight: 2,
+  count: { fontFamily: fonts.bold, fontSize: 11, lineHeight: 14 },
 } as const;
 
 // Intro screens, measured from design/0.1 to 0.3 Intro@2x.png. The illustration colours are the designs' own
@@ -376,7 +384,16 @@ export const screenshotsCard = {
   thumbGap: 6,
   textToActions: 12,
   actionGap: 10,
-  maxThumbs: 3,
+  // The slim "new screenshots" row (owner request after build 16).
+  rowPaddingY: 10,
+  rowPaddingRight: 4, // the close button's own touch area makes up the rest
+  rowGap: 12,
+  closeIcon: 18,
+  saveMinWidth: 72,
+  savePaddingX: 16,
+  moreInset: 3,
+  morePaddingX: 4,
+  moreRadius: 6,
 } as const;
 
 // The note editor (/note/[id]), like Apple Notes: a white page, the first line as the title, tick boxes and
@@ -522,7 +539,8 @@ export const theme = {
   search,
   detail,
   segmented,
-  reminderCard,
+  homeCard,
+  bell,
   intro,
   illustration,
   firstRun,

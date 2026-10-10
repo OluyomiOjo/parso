@@ -149,9 +149,37 @@ export function useReminderTaps() {
 
 export type ReminderSave = SaveListItem & { reminder_at: string };
 
-// Every reminder still to come, soonest first: the home card shows the first ("and 2 more" for the rest) and
-// the Reminders screen lists them all. Once a reminder's time passes it drops off (owner's choice).
+const REMINDER_COLUMNS = 'id, kind, source, url, title, snippet, thumbnail_path, created_at, processed_at, reminder_at';
+
+// Every reminder still to come, soonest first, for the Reminders page's "Coming up".
 const UPCOMING_LIMIT = 100;
+const DUE_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Reminders that went off in the last 30 days on saves not marked done, newest first: the Reminders page's "Due",
+// and the bell's number on Parsos (counted from the last time the page was opened).
+export function useDueReminders() {
+  const { session } = useSession();
+  const userId = session?.user.id;
+  return useQuery({
+    queryKey: ['saves', userId, 'due-reminders'],
+    enabled: Boolean(userId),
+    refetchInterval: 60_000, // so a reminder joins the count within a minute of going off
+    queryFn: async (): Promise<ReminderSave[]> => {
+      const now = Date.now();
+      const { data, error } = await supabase
+        .from('saves')
+        .select(REMINDER_COLUMNS)
+        .lte('reminder_at', new Date(now).toISOString())
+        .gt('reminder_at', new Date(now - DUE_DAYS * DAY_MS).toISOString())
+        .is('done_at', null)
+        .order('reminder_at', { ascending: false })
+        .limit(UPCOMING_LIMIT);
+      if (error) throw error;
+      return data as ReminderSave[];
+    },
+  });
+}
 
 export function useUpcomingReminders() {
   const { session } = useSession();
@@ -159,11 +187,11 @@ export function useUpcomingReminders() {
   return useQuery({
     queryKey: ['saves', userId, 'upcoming-reminders'],
     enabled: Boolean(userId),
-    refetchInterval: 60_000, // so a passed reminder goes away within a minute of its time
+    refetchInterval: 60_000, // so a passed reminder moves to Due within a minute of its time
     queryFn: async (): Promise<ReminderSave[]> => {
       const { data, error } = await supabase
         .from('saves')
-        .select('id, kind, source, url, title, snippet, thumbnail_path, created_at, processed_at, reminder_at')
+        .select(REMINDER_COLUMNS)
         .gt('reminder_at', new Date().toISOString())
         .order('reminder_at')
         .limit(UPCOMING_LIMIT);

@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
-import { colors, radius, reminderCard, size, type } from '@/theme';
+import { colors, radius, homeCard, size, type } from '@/theme';
 
 import { PressableScale } from './PressableScale';
 import { Text } from './Text';
@@ -36,18 +36,18 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: reminderCard.gap,
-    padding: reminderCard.padding,
-    paddingLeft: reminderCard.padding + reminderCard.gap / 2,
+    gap: homeCard.gap,
+    padding: homeCard.padding,
+    paddingLeft: homeCard.padding + homeCard.gap / 2,
     backgroundColor: colors.panel,
     borderRadius: radius.panel,
   },
   text: { flex: 1 },
   button: {
-    height: reminderCard.buttonHeight,
+    height: homeCard.buttonHeight,
     minWidth: size.minTouch,
-    borderRadius: reminderCard.buttonHeight / 2,
-    paddingHorizontal: reminderCard.buttonPaddingX,
+    borderRadius: homeCard.buttonHeight / 2,
+    paddingHorizontal: homeCard.buttonPaddingX,
     backgroundColor: colors.ink,
     justifyContent: 'center',
   },
