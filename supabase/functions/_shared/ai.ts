@@ -166,47 +166,6 @@ async function viaOpenAI(input: DescribeInput): Promise<Omit<DescribeResult, 'du
   };
 }
 
-// A collection's description, written from what's actually in it (owner request after build 16): one short line
-// naming a few concrete things inside, like a friend describing it. Refreshed as the collection grows
-// (refreshCollectionDescription in pipeline.ts).
-const COLLECTION_DESCRIPTION_MAX = 110;
-
-const COLLECTION_SCHEMA = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['description'],
-  properties: { description: { type: 'string' } },
-} as const;
-
-const COLLECTION_PROMPT = `You write the one-line description shown under a collection's name in someone's personal library of saved posts, links and photos. You get the collection's name and the titles and tags of what's in it, newest first.
-
-Write one short line, at most ${COLLECTION_DESCRIPTION_MAX} characters, that tells them what's actually in there by naming two or three concrete, specific things from the list, the way a friend would sum it up. For example "Cosy living rooms, kitchen makeovers and a lake-house tour on Bowen Island." or "Funding tips, founder interviews and the NSF grant for early-stage teams."
-
-Rules: sentence case, plain words, no emoji, no hashtags, no counts. Don't start with "A collection of", "This collection", "Saves about" or "Parso". Don't repeat the collection's name. Only mention things that appear in the list; never invent.`;
-
-export async function describeCollection(
-  name: string,
-  items: string[],
-): Promise<{ description: string; costUsd: number }> {
-  const client = new OpenAI();
-  const response = await client.responses.create({
-    model: MODELS.openai.id,
-    instructions: COLLECTION_PROMPT,
-    input: [{ role: 'user', content: [{ type: 'input_text', text: `Collection: ${name}\n${items.join('\n')}` }] }],
-    max_output_tokens: 256,
-    text: { format: { type: 'json_schema', name: 'collection_description', schema: COLLECTION_SCHEMA, strict: true } },
-  });
-  if (response.status !== 'completed') throw new Error(`OpenAI response ${response.status}`);
-  const line = firstSentences(JSON.parse(response.output_text).description ?? '', 1).trim();
-  const inTok = response.usage?.input_tokens ?? 0;
-  const outTok = response.usage?.output_tokens ?? 0;
-  // Never shown cut off: a line that's too long is dropped and the old description stays.
-  return {
-    description: line.length <= COLLECTION_DESCRIPTION_MAX ? capitalised(line) : '',
-    costUsd: cost('openai', inTok, outTok),
-  };
-}
-
 export async function describeSave(provider: Provider, input: DescribeInput): Promise<DescribeResult> {
   const started = Date.now();
   const result = await viaOpenAI(input);

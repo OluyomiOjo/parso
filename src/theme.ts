@@ -210,8 +210,7 @@ export const collectionScreen = {
   headerButtonGap: 10, // grid/list and rename
   headerToTitle: 16,
   titleToCount: 4, // "13 saves", its own small grey line
-  countToDescription: 6,
-  descriptionToFilter: 20,
+  countToFilter: 20,
   filterToList: 20,
 } as const;
 

@@ -84,11 +84,6 @@ export default function CollectionScreen() {
             {count}
           </Text>
         ) : null}
-        {collection?.description ? (
-          <Text variant="body" color={colors.secondary} style={styles.description}>
-            {collection.description}
-          </Text>
-        ) : null}
 
         {options.length ? (
           <View style={styles.filter}>
@@ -138,8 +133,7 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: 'row', gap: collectionScreen.headerButtonGap },
   title: { marginTop: collectionScreen.headerToTitle, paddingHorizontal: spacing.titleInset },
   count: { marginTop: collectionScreen.titleToCount, paddingHorizontal: spacing.titleInset },
-  description: { marginTop: collectionScreen.countToDescription, paddingHorizontal: spacing.titleInset },
-  filter: { marginTop: collectionScreen.descriptionToFilter },
+  filter: { marginTop: collectionScreen.countToFilter },
   list: { marginTop: collectionScreen.filterToList },
   message: { marginTop: collectionScreen.filterToList, paddingHorizontal: spacing.titleInset },
 });
