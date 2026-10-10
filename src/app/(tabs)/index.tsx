@@ -20,6 +20,7 @@ import { WeekCard } from '@/components/WeekCard';
 import { REORDER_FAILED, useCollectionOverview, useReorderCollections } from '@/lib/collections';
 import { useNotes } from '@/lib/notes';
 import { canSave, openUpgrade } from '@/lib/pro';
+import { usePullToRefresh } from '@/lib/pullToRefresh';
 import { useViewMode } from '@/lib/viewMode';
 import { useSaves, useSavesLiveUpdates, useThumbnailUrls } from '@/lib/saves';
 import { useNewScreenshots } from '@/lib/screenshots';
@@ -35,7 +36,7 @@ const CIRCLE_ROW_HEIGHT = circle.size + circle.nameTop + type.meta.lineHeight;
 const openCollections = () => router.navigate('/collections');
 
 export default function HomeScreen() {
-  const { data: saves, isPending, isError, isRefetching, refetch } = useSaves();
+  const { data: saves, isPending, isError, refetch } = useSaves();
   const { data: collections, refetch: refetchCollections } = useCollectionOverview();
   const { mode: viewMode } = useViewMode();
   const [filter, setFilter] = useState<Filter>('all');
@@ -52,11 +53,9 @@ export default function HomeScreen() {
     ...(saves ?? []).flatMap((save) => (save.thumbnail_path ? [save.thumbnail_path] : [])),
     ...(collections ?? []).flatMap((c) => (c.cover ? [c.cover] : [])),
   ]);
-  const refresh = () => {
-    refetch();
-    refetchCollections();
-    if (filter === 'notes') notes.refetch();
-  };
+  const pull = usePullToRefresh(() =>
+    Promise.all([refetch(), refetchCollections(), filter === 'notes' ? notes.refetch() : null]),
+  );
   const hasSaves = (saves?.length ?? 0) > 0;
 
   return (
@@ -65,7 +64,7 @@ export default function HomeScreen() {
         scrollEnabled={!dragging}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refresh} />}
+        refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} />}
       >
         <View style={styles.header}>
           {/* The logo in solid black (the brand file, tinted), in place of a title; the screen is called Parsos. */}

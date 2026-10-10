@@ -15,6 +15,7 @@ import { ListIcon } from '@/icons/ListIcon';
 import { PencilIcon } from '@/icons/PencilIcon';
 import { useCollectionSummary } from '@/lib/collections';
 import { KIND_FILTERS, saveCount } from '@/lib/format';
+import { usePullToRefresh } from '@/lib/pullToRefresh';
 import { useCollectionSaves, useThumbnailUrls } from '@/lib/saves';
 import { useViewMode } from '@/lib/viewMode';
 import { collectionScreen, colors, size, spacing } from '@/theme';
@@ -24,7 +25,8 @@ const goBack = () => (router.canGoBack() ? router.back() : router.replace('/coll
 export default function CollectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: collection } = useCollectionSummary(id);
-  const { data: saves, isPending, isError, isRefetching, refetch } = useCollectionSaves(id);
+  const { data: saves, isPending, isError, refetch } = useCollectionSaves(id);
+  const pull = usePullToRefresh(refetch);
   const { data: thumbnails } = useThumbnailUrls(
     (saves ?? []).flatMap((save) => (save.thumbnail_path ? [save.thumbnail_path] : [])),
   );
@@ -50,7 +52,7 @@ export default function CollectionScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+        refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} />}
       >
         <View style={styles.header}>
           <IconButton label="Back" onPress={goBack}>

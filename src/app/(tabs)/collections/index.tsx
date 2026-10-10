@@ -26,11 +26,13 @@ import {
   type CollectionSummary,
 } from '@/lib/collections';
 import { saveCount } from '@/lib/format';
+import { usePullToRefresh } from '@/lib/pullToRefresh';
 import { useThumbnailUrls } from '@/lib/saves';
 import { card, colors, radius, reorder, size, spacing, tabularNums } from '@/theme';
 
 export default function CollectionsScreen() {
-  const { data: collections, isPending, isError, isRefetching, refetch } = useCollectionOverview();
+  const { data: collections, isPending, isError, refetch } = useCollectionOverview();
+  const pull = usePullToRefresh(refetch);
   const { data: thumbnails } = useThumbnailUrls(
     (collections ?? []).flatMap((c) => [
       ...c.recent.flatMap((t) => (t.thumbnail_path ? [t.thumbnail_path] : [])),
@@ -50,7 +52,9 @@ export default function CollectionsScreen() {
         scrollEnabled={!dragging}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={reordering ? undefined : <RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+        refreshControl={
+          reordering ? undefined : <RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} />
+        }
       >
         <View style={styles.header}>
           <ScreenTitle>Collections</ScreenTitle>
