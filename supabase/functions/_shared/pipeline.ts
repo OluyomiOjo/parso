@@ -220,6 +220,38 @@ export async function processSave(db: SupabaseClient, saveId: string, provider: 
   await storeEmbedding(db, save.id, save.user_id).catch((error) => console.error('embedding failed', save.id, error));
 }
 
+// A deleted save's files (trigger in migration 0029): its picture in thumbnails and, for photos and screenshots,
+// the uploaded original. Only paths inside a person's own folder are accepted.
+const OWN_FILE = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|png|webp|gif)$/;
+const REMOVE_BATCH = 100;
+
+export async function deleteFiles(db: SupabaseClient, files: { thumbnails?: unknown; uploads?: unknown }) {
+  let removed = 0;
+  for (const bucket of ['thumbnails', 'uploads'] as const) {
+    const list = files[bucket];
+    const paths = Array.isArray(list) ? list.filter((p): p is string => typeof p === 'string' && OWN_FILE.test(p)) : [];
+    for (let i = 0; i < paths.length; i += REMOVE_BATCH) {
+      const { data } = await db.storage.from(bucket).remove(paths.slice(i, i + REMOVE_BATCH));
+      removed += data?.length ?? 0;
+    }
+  }
+  return removed;
+}
+
+// One-off: files whose save no longer exists (deleted before migration 0029, or when the app's own clean-up
+// failed). "preview" only counts them.
+export async function orphanFiles(db: SupabaseClient, dryRun: boolean) {
+  const { data, error } = await db.rpc('orphan_files');
+  if (error) throw error;
+  const rows = (data ?? []) as { bucket: 'thumbnails' | 'uploads'; name: string }[];
+  const files = {
+    thumbnails: rows.filter((r) => r.bucket === 'thumbnails').map((r) => r.name),
+    uploads: rows.filter((r) => r.bucket === 'uploads').map((r) => r.name),
+  };
+  const found = { thumbnails: files.thumbnails.length, uploads: files.uploads.length };
+  return dryRun ? { found, removed: 0 } : { found, removed: await deleteFiles(db, files) };
+}
+
 const NOTE_QUIET_MS = 4000; // filed once the person has stopped typing for this long
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

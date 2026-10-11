@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { IconButton } from '@/components/IconButton';
@@ -24,7 +24,12 @@ const goBack = () => (router.canGoBack() ? router.back() : router.replace('/coll
 
 export default function CollectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: collection } = useCollectionSummary(id);
+  const { data: collection, isSuccess: collectionsLoaded } = useCollectionSummary(id);
+  // Its last save was deleted or moved out, so the collection is gone (migration 0029): leave the empty page.
+  const gone = collectionsLoaded && !collection;
+  useEffect(() => {
+    if (gone) goBack();
+  }, [gone]);
   const { data: saves, isPending, isError, refetch } = useCollectionSaves(id);
   const pull = usePullToRefresh(refetch);
   const { data: thumbnails } = useThumbnailUrls(

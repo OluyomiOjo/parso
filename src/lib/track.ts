@@ -21,6 +21,7 @@ export type EventName =
   | 'upgrade_shown'
   | 'purchase_made'
   | 'restore_tapped'
+  | 'subscribe_tapped'
   | 'save_done'
   | 'week_opened';
 

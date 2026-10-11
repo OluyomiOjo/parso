@@ -8,8 +8,17 @@ import type { PurchasesPackage } from 'react-native-purchases';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { CheckIcon } from '@/icons/CheckIcon';
-import { FREE_SAVES } from '@/lib/plan';
-import { cancelledPurchase, purchasesAvailable, takePendingSave, useOffer, usePlan, usePurchase } from '@/lib/pro';
+import { percentSaved, proLine } from '@/lib/plan';
+import {
+  cancelledPurchase,
+  type Offer,
+  purchasesAvailable,
+  takePendingSave,
+  useMyNumbers,
+  useOffer,
+  usePlan,
+  usePurchase,
+} from '@/lib/pro';
 import { colors, radius, size, upgrade } from '@/theme';
 
 const TERMS_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'; // Apple's standard terms
@@ -21,16 +30,24 @@ const BENEFITS = ['Unlimited saves', 'Everything stays searchable and filed for 
 
 type Choice = 'yearly' | 'monthly';
 
+// "$3.33 a month. Save 33%.", from Apple's own prices (owner request after build 18).
+function yearlyDetail(offer: Offer): string | null {
+  const perMonth = offer.yearly?.product.pricePerMonthString;
+  const saved = percentSaved(offer.monthly?.product.price, offer.yearly?.product.price);
+  const parts = [perMonth ? `${perMonth} a month.` : null, saved ? `Save ${saved}%.` : null].filter(Boolean);
+  return parts.length ? parts.join(' ') : null;
+}
+
 // Parso Pro: opened when a free account reaches its 50th save, and from the You tab. Prices come from Apple in the
 // viewer's own currency. Apple's required wording and links sit under the button.
 export default function UpgradeSheet() {
   const { data: plan } = usePlan();
+  const { data: numbers } = useMyNumbers();
   const { data: offer, isPending, isError } = useOffer();
   const { buy, restore } = usePurchase();
   const [choice, setChoice] = useState<Choice>('yearly');
   const [busy, setBusy] = useState<'buy' | 'restore' | null>(null);
 
-  const atLimit = plan && !plan.pro && plan.used >= FREE_SAVES;
   const chosen: PurchasesPackage | null = offer?.[choice] ?? null;
   const loading = purchasesAvailable() && isPending;
   const unavailable = !purchasesAvailable() || isError || (!isPending && !offer?.yearly && !offer?.monthly);
@@ -72,11 +89,7 @@ export default function UpgradeSheet() {
         <Text variant="sheetTitle" accessibilityRole="header">
           Parso Pro
         </Text>
-        <Text color={colors.secondary}>
-          {atLimit
-            ? `You've used your ${FREE_SAVES} free saves. Everything you saved stays yours.`
-            : `Parso is free for your first ${FREE_SAVES} saves. Pro has no limit.`}
-        </Text>
+        <Text color={colors.secondary}>{proLine(plan, numbers)}</Text>
 
         <View style={styles.benefits}>
           {BENEFITS.map((benefit) => (
@@ -100,11 +113,7 @@ export default function UpgradeSheet() {
                 selected={choice === 'yearly'}
                 onPress={() => setChoice('yearly')}
                 title={`${offer.yearly.product.priceString} a year`}
-                detail={
-                  offer.yearly.product.pricePerMonthString
-                    ? `${offer.yearly.product.pricePerMonthString} a month`
-                    : null
-                }
+                detail={yearlyDetail(offer)}
                 label="Yearly"
               />
             ) : null}

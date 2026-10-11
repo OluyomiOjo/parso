@@ -28,6 +28,13 @@ export type Costs = {
   daily: { day: string; usd: number; runs: number }[];
 };
 
+export type Revenue = {
+  funnel: { shown: number; tapped: number; subscribed: number };
+  subscribers: { paying: number; monthly: number; yearly: number; given: number };
+  revenue_usd: number;
+  daily: { day: string; new_subscribers: number; usd: number }[];
+};
+
 // Every request goes through admin-stats with the signed-in admin's session.
 export async function adminStats<T>(body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke<T>('admin-stats', { body });

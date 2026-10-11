@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 import Purchases, { type PurchasesPackage } from 'react-native-purchases';
 
 import { useSession } from './auth';
-import { needsUpgrade, type Plan } from './plan';
+import { type MyNumbers, needsUpgrade, type Plan } from './plan';
 import { supabase } from './supabase';
 import { track } from './track';
 
@@ -41,6 +41,21 @@ async function fetchPlan(): Promise<Plan> {
   if (error) throw error;
   const row = data as { pro: boolean; used: number; pro_until: string | null; admin_pro: boolean };
   return { pro: row.pro, used: row.used, proUntil: row.pro_until, adminPro: row.admin_pro };
+}
+
+// The person's own counts for the Pro page (my_numbers, migration 0028): saves, collections, saves opened.
+export function useMyNumbers() {
+  const { session } = useSession();
+  const userId = session?.user.id;
+  return useQuery({
+    queryKey: ['saves', userId, 'my-numbers'],
+    enabled: Boolean(userId),
+    queryFn: async (): Promise<MyNumbers> => {
+      const { data, error } = await supabase.rpc('my_numbers');
+      if (error) throw error;
+      return data as unknown as MyNumbers;
+    },
+  });
 }
 
 export function usePlan() {
@@ -103,12 +118,14 @@ export function usePurchase() {
   const refresh = () => queryClient.invalidateQueries({ queryKey: planKey(session?.user.id) });
 
   const buy = async (pkg: PurchasesPackage) => {
+    track('subscribe_tapped');
     const { customerInfo } = await Purchases.purchasePackage(pkg);
     const active = Boolean(customerInfo.entitlements.active[ENTITLEMENT]);
     if (active) track('purchase_made');
     return afterPurchase(active, refresh);
   };
   const restore = async () => {
+    track('restore_tapped');
     const customerInfo = await Purchases.restorePurchases();
     return afterPurchase(Boolean(customerInfo.entitlements.active[ENTITLEMENT]), refresh);
   };

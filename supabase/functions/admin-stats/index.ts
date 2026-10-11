@@ -1,6 +1,6 @@
 // The data behind dash.parso.ai. Answers only signed-in people whose email is in the admins table, and only
 // with counts, behaviour and sources: never what anyone saved (owner's privacy line). The numbers come from
-// the admin_* SQL functions in migration 0016, which only the service role can call.
+// the admin_* SQL functions in migrations 0016 and 0028, which only the service role can call.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 import { deleteAccount } from '../_shared/accounts.ts';
@@ -58,6 +58,8 @@ Deno.serve(async (req) => {
       return result(db.rpc('admin_overview', { p_days: days }));
     case 'users':
       return result(db.rpc('admin_users'));
+    case 'revenue':
+      return result(db.rpc('admin_revenue', { p_days: days }));
     case 'costs':
       return result(db.rpc('admin_costs', { p_days: days }));
     case 'set_pro':

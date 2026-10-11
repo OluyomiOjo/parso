@@ -2,8 +2,10 @@
 // processes in the background, so the trigger's HTTP call never waits on the AI.
 import {
   admin,
+  deleteFiles,
   embedMissing,
   handlesMissing,
+  orphanFiles,
   noteSave,
   redescribe,
   getConfig,
@@ -36,6 +38,8 @@ Deno.serve(async (req) => {
   let redescribeIds: unknown;
   let noteSaveId: unknown;
   let noteEditedAt: unknown;
+  let filesToDelete: unknown;
+  let orphanFilesOnly: unknown;
   try {
     ({
       save_id: saveId,
@@ -48,9 +52,24 @@ Deno.serve(async (req) => {
       redescribe: redescribeIds,
       note_save: noteSaveId,
       edited_at: noteEditedAt,
+      delete_files: filesToDelete,
+      orphan_files: orphanFilesOnly,
     } = await req.json());
   } catch {
     return new Response('Bad request', { status: 400 });
+  }
+  // A save was deleted (trigger in migration 0029): remove its picture and uploaded photo from storage.
+  if (filesToDelete && typeof filesToDelete === 'object') {
+    EdgeRuntime.waitUntil(
+      deleteFiles(db, filesToDelete as { thumbnails?: unknown; uploads?: unknown }).catch((error) =>
+        console.error('delete files failed', error),
+      ),
+    );
+    return Response.json({ accepted: true }, { status: 202 });
+  }
+  // One-off: remove files left behind by saves deleted earlier. "preview" only counts them.
+  if (orphanFilesOnly === true || orphanFilesOnly === 'preview') {
+    return Response.json(await orphanFiles(db, orphanFilesOnly === 'preview'));
   }
   // One-off backfill for search: adds embeddings to filed saves that have none.
   if (embedMissingOnly === true) {
