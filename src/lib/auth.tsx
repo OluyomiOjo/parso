@@ -4,7 +4,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
-import { supabase } from './supabase';
+import { storedSession, supabase } from './supabase';
 import { track } from './track';
 
 const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
@@ -24,8 +24,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ session: null, loading: true });
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setState({ session: data.session, loading: false }));
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => setState({ session, loading: false }));
+    let settled = false;
+    // The sign-in kept on the phone opens Parso straight away, online or not; supabase-js's answer follows.
+    void storedSession().then((stored) => {
+      if (!settled && stored) setState({ session: stored, loading: false });
+    });
+    supabase.auth.getSession().then(({ data, error }) => {
+      settled = true;
+      // No answer from the server (offline) is not a sign-out: keep the phone's sign-in until it can be renewed.
+      if (!data.session && error)
+        return void storedSession().then((stored) => setState({ session: stored, loading: false }));
+      setState({ session: data.session, loading: false });
+    });
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      // Offline, the first event can report no sign-in for the same reason; only a real sign-out clears it.
+      if (!session && event !== 'SIGNED_OUT') return;
+      settled = true;
+      setState({ session, loading: false });
+    });
     return () => data.subscription.unsubscribe();
   }, []);
 

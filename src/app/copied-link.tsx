@@ -1,15 +1,18 @@
 import { ClipboardPasteButton, type PasteEventPayload } from 'expo-clipboard';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/Text';
 import { LinkIcon } from '@/icons/LinkIcon';
+import { ALREADY_SAVED } from '@/lib/outbox';
 import { isLimitError } from '@/lib/plan';
 import { openUpgrade } from '@/lib/pro';
 import { useCreateLinkSave } from '@/lib/saves';
 import { firstUrlIn } from '@/lib/share';
 import { colors, copiedLinkSheet as s, radius, size, spacing } from '@/theme';
+
+const LINK_FAILED = "Couldn't save the link. Check your connection and try again.";
 
 // The mini sheet offered once per newly copied link (src/lib/clipboard.ts). Apple's own Paste button reads the
 // link, so iOS shows no paste alert; the link is then saved and this sheet becomes its save sheet. Swipe it
@@ -22,14 +25,18 @@ export default function CopiedLinkSheet() {
     if (!url) return router.back();
     createLink.mutate(url, {
       onError: (e) => {
-        if (!isLimitError(e)) return;
         router.back();
-        openUpgrade();
+        if (isLimitError(e)) openUpgrade();
+        else Alert.alert(e.message === ALREADY_SAVED ? ALREADY_SAVED : LINK_FAILED);
       },
       onSuccess: (save) =>
         router.replace({
           pathname: '/save/[id]',
-          params: save.existing ? { id: save.id, existing: '1' } : { id: save.id },
+          params: save.existing
+            ? { id: save.id, existing: '1' }
+            : save.queued
+              ? { id: save.id, queued: '1' }
+              : { id: save.id },
         }),
     });
   };

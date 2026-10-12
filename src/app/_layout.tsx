@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { Stack } from 'expo-router';
 import { ShareIntentProvider } from 'expo-share-intent';
 import * as SplashScreen from 'expo-splash-screen';
@@ -11,7 +11,9 @@ import { ShareHandler } from '@/components/ShareHandler';
 import { AuthProvider, useSession } from '@/lib/auth';
 import { useCopiedLinkOffer } from '@/lib/clipboard';
 import { IntroProvider, useIntro } from '@/lib/intro';
+import { useOutboxSync } from '@/lib/outbox';
 import { usePurchasesAccount } from '@/lib/pro';
+import { forgetCache, persistOptions, queryClient } from '@/lib/queryClient';
 import { configureNotifications, useReminderSync, useReminderTaps } from '@/lib/reminders';
 import { supabase } from '@/lib/supabase';
 import { useOpenTracking } from '@/lib/track';
@@ -21,12 +23,13 @@ import { addMenu, colors, radius } from '@/theme';
 // Keep the launch screen up until the saved session has loaded, so signed-in people never see the welcome screen flash.
 SplashScreen.preventAutoHideAsync();
 
-const queryClient = new QueryClient();
 configureNotifications();
 
-// Drop every cached list on sign-out, so the next account never sees the last one's saves.
+// Drop every cached list on sign-out, in memory and on the phone, so the next account never sees the last one's saves.
 supabase.auth.onAuthStateChange((event) => {
-  if (event === 'SIGNED_OUT') queryClient.clear();
+  if (event !== 'SIGNED_OUT') return;
+  queryClient.clear();
+  void forgetCache();
 });
 
 function RootStack() {
@@ -115,9 +118,11 @@ function RootStack() {
   );
 }
 
-// Keeps the phone's reminder notifications in step with the saves, schedules the Sunday weekly update, and opens
+// Sends saves made offline once the connection is back (src/lib/outbox.ts), keeps the phone's reminder
+// notifications in step with the saves, schedules the Sunday weekly update, and opens
 // what a notification is about when it's tapped.
 function Reminders() {
+  useOutboxSync();
   useReminderSync();
   useWeeklyNotification();
   useReminderTaps();
@@ -129,7 +134,7 @@ export default function RootLayout() {
     // Gesture root: press-and-hold dragging (rearranging collections) needs it around the whole app.
     <GestureHandlerRootView style={styles.root}>
       <ShareIntentProvider>
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
           <AuthProvider>
             <IntroProvider>
               <StatusBar style="dark" />
@@ -138,7 +143,7 @@ export default function RootLayout() {
               <Reminders />
             </IntroProvider>
           </AuthProvider>
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
       </ShareIntentProvider>
     </GestureHandlerRootView>
   );

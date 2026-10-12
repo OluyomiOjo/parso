@@ -17,9 +17,10 @@ type Props = {
   matches?: Match[];
   onOpen?: () => void;
   titleLines?: number; // search uses 2, so a matched word isn't cut off
+  disabled?: boolean; // a link waiting to be saved (no internet) has no page to open yet
 };
 
-export function SaveRow({ save, thumbnailUrl, matches = [], onOpen, titleLines = 1 }: Props) {
+export function SaveRow({ save, thumbnailUrl, matches = [], onOpen, titleLines = 1, disabled = false }: Props) {
   // Until processing (step 4) writes a title, the URL is the title.
   const title = save.title ?? (save.url ? displayUrl(save.url) : 'Saving…');
   const meta = `${metaLabel(save)}, ${relativeTime(save.created_at)}`;
@@ -32,7 +33,7 @@ export function SaveRow({ save, thumbnailUrl, matches = [], onOpen, titleLines =
         onOpen?.();
         openSave(save);
       }}
-      disabled={save.id.startsWith('pending-')}
+      disabled={disabled || save.id.startsWith('pending-')}
       accessibilityRole="button"
       accessibilityLabel={`${title}. ${meta}`}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}

@@ -3,7 +3,9 @@ import { useEffect } from 'react';
 
 import type { Tables } from './database.types';
 import { useSession } from './auth';
+import { isOnline } from './connection';
 import { detectSource } from './links';
+import { ALREADY_SAVED, queueNewSave } from './outbox';
 import { LIMIT_MESSAGE } from './plan';
 import { addPreviewImage } from './previewImage';
 import { success } from './haptics';
@@ -156,7 +158,26 @@ export function useThumbnailUrls(paths: string[]) {
   });
 }
 
-export type CreatedLinkSave = SaveListItem & { existing: boolean };
+// queued: no internet, so the link waits on the phone and is sent when the connection is back (src/lib/outbox.ts).
+export type CreatedLinkSave = SaveListItem & { existing: boolean; queued?: boolean };
+
+const newLinkRow = (id: string, url: string): SaveListItem => ({
+  id,
+  kind: 'link',
+  source: detectSource(url),
+  url,
+  title: null,
+  snippet: null,
+  thumbnail_path: null,
+  thumbnail_width: null,
+  thumbnail_height: null,
+  author_handle: null,
+  created_at: new Date().toISOString(),
+  processed_at: null,
+  pinned: false,
+  edited_at: null,
+  done_at: null,
+});
 
 // Saves a link, unless this person already has it: then the existing save comes back with existing: true and
 // nothing is inserted (pasting the same copied link twice made duplicates). A new row shows at the top of the
@@ -167,36 +188,32 @@ export function useCreateLinkSave(via: 'add' | 'clipboard') {
   const { session } = useSession();
   const key = savesKey(session?.user.id);
 
+  const userId = session?.user.id;
+
+  // No internet: the link waits on the phone (or the phone already has it saved).
+  const queue = async (url: string): Promise<CreatedLinkSave> => {
+    if (!userId) throw new Error(ALREADY_SAVED);
+    const queued = await queueNewSave(userId, { kind: 'link', source: detectSource(url), url }, via);
+    if ('alreadySaved' in queued) throw new Error(ALREADY_SAVED);
+    return { ...newLinkRow(queued.id, url), existing: false, queued: true };
+  };
+
   return useMutation({
     mutationFn: async (url: string): Promise<CreatedLinkSave> => {
+      if (!isOnline()) return queue(url);
       const { data: found, error: findError } = await supabase
         .from('saves')
         .select(LIST_COLUMNS)
         .eq('url', url)
         .order('created_at', { ascending: false })
         .limit(1);
+      if (findError && !isOnline()) return queue(url);
       if (findError) throw findError;
       if (found[0]) return { ...found[0], existing: true };
       if (!(await canSave())) throw new Error(LIMIT_MESSAGE); // the caller opens Parso Pro
 
       await queryClient.cancelQueries({ queryKey: key });
-      const optimistic: SaveListItem = {
-        id: `pending-${Date.now()}`,
-        kind: 'link',
-        source: detectSource(url),
-        url,
-        title: null,
-        snippet: null,
-        thumbnail_path: null,
-        thumbnail_width: null,
-        thumbnail_height: null,
-        author_handle: null,
-        created_at: new Date().toISOString(),
-        processed_at: null,
-        pinned: false,
-        edited_at: null,
-        done_at: null,
-      };
+      const optimistic = newLinkRow(`pending-${Date.now()}`, url);
       queryClient.setQueryData<SaveListItem[]>(key, (previous) => [optimistic, ...(previous ?? [])]);
 
       const { data, error } = await supabase
@@ -204,12 +221,16 @@ export function useCreateLinkSave(via: 'add' | 'clipboard') {
         .insert({ kind: 'link', source: detectSource(url), url })
         .select(LIST_COLUMNS)
         .single();
+      if (error && !isOnline()) {
+        queryClient.setQueryData<SaveListItem[]>(key, (previous) => previous?.filter((s) => s !== optimistic));
+        return queue(url);
+      }
       if (error) throw error;
       void addPreviewImage(data);
       track('save_created', { kind: 'link', source: data.source, via });
       return { ...data, existing: false };
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: key }),
   });
 }
 

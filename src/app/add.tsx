@@ -6,6 +6,7 @@ import { StyleSheet, TextInput, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { normalizeUrl } from '@/lib/links';
+import { ALREADY_SAVED } from '@/lib/outbox';
 import { isLimitError } from '@/lib/plan';
 import { openUpgrade } from '@/lib/pro';
 import { useCreateLinkSave } from '@/lib/saves';
@@ -26,12 +27,14 @@ export default function AddScreen() {
     if (!url) return setError(NOT_A_LINK);
     setError(null);
     createLink.mutate(url, {
-      // Already saved: show its sheet ("Already in …") instead of saving it twice.
+      // Already saved: show its sheet ("Already in …") instead of saving it twice. Saved with no internet: it
+      // waits at the top of Parsos until it's sent.
       onSuccess: (save) =>
         save.existing
           ? router.replace({ pathname: '/save/[id]', params: { id: save.id, existing: '1' } })
           : router.back(),
-      onError: (e) => (isLimitError(e) ? openUpgrade(saveLink) : setError(LINK_FAILED)),
+      onError: (e) =>
+        isLimitError(e) ? openUpgrade(saveLink) : setError(e.message === ALREADY_SAVED ? ALREADY_SAVED : LINK_FAILED),
     });
   };
 

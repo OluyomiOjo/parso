@@ -1,10 +1,11 @@
 import { router, useFocusEffect } from 'expo-router';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/IconButton';
 import { ListPanel } from '@/components/ListPanel';
 import { SaveRow } from '@/components/SaveRow';
+import { Loading } from '@/components/Offline';
 import { Text } from '@/components/Text';
 import { ChevronLeftIcon } from '@/icons/ChevronLeftIcon';
 import { type ReminderSave, useDueReminders, useUpcomingReminders } from '@/lib/reminders';
@@ -50,7 +51,7 @@ export default function RemindersScreen() {
         Reminders
       </Text>
       {due.isPending || upcoming.isPending ? (
-        <ActivityIndicator style={styles.list} color={colors.secondary} />
+        <Loading style={styles.list} />
       ) : dueList.length || coming.length ? (
         <>
           {dueList.length ? (

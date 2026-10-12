@@ -6,7 +6,7 @@ import { AppState } from 'react-native';
 
 import { useSession } from './auth';
 import { openUpgrade } from './pro';
-import { saveImage } from './share';
+import { PHOTO_OFFLINE, saveImage } from './share';
 import { track } from './track';
 
 // iOS gives apps no event when a screenshot is taken, so Parso looks in the Screenshots album each time it
@@ -100,7 +100,8 @@ export function useNewScreenshots() {
     let failed = 0;
     let limitReached = false;
     let lastSaved = 0;
-    for (const s of [...state.screenshots].reverse()) {
+    const inOrder = [...state.screenshots].reverse();
+    for (const [index, s] of inOrder.entries()) {
       const result = await saveImage(
         { uri: s.uri, width: s.width, height: s.height, isScreenshot: true },
         session.user.id,
@@ -108,6 +109,16 @@ export function useNewScreenshots() {
       if ('limit' in result) {
         limitReached = true; // the rest stay offered, for after an upgrade
         break;
+      }
+      // No internet: nothing more can be saved now. The rest stay offered, to save again once back online.
+      if ('error' in result && result.error === PHOTO_OFFLINE) {
+        if (lastSaved) {
+          await markChecked(lastSaved);
+          queryClient.invalidateQueries({ queryKey: ['saves', session.user.id] });
+          refresh();
+        }
+        setSaving(false);
+        return inOrder.length - index;
       }
       if ('error' in result) failed++;
       else {

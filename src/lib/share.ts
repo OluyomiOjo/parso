@@ -2,7 +2,10 @@ import { SaveFormat, ImageManipulator } from 'expo-image-manipulator';
 import * as Crypto from 'expo-crypto';
 import type { ShareIntent } from 'expo-share-intent';
 
+import { isOnline } from './connection';
 import { detectSource, normalizeUrl } from './links';
+import { ALREADY_SAVED, queueNewSave } from './outbox';
+import type { QueuedRow } from './outboxQueue';
 import { isLimitError, LIMIT_MESSAGE } from './plan';
 import { addPreviewImage } from './previewImage';
 import { canSave } from './pro';
@@ -14,8 +17,9 @@ const SCREENSHOT_RATIO = 1.9; // phone screens are about 2.17:1; photos are 4:3 
 const MAX_TEXT = 20_000; // the database's limit (migration 0018)
 
 // kind and source come back for the usage numbers (src/lib/track.ts).
+// queued: no internet, so the save waits on the phone and is sent when the connection is back (src/lib/outbox.ts).
 export type ShareResult =
-  | { saveId: string; kind: string; source: string; existing?: true }
+  | { saveId: string; kind: string; source: string; existing?: true; queued?: true }
   | { error: string; limit?: true };
 
 // A free account has used its 50 saves (CLAUDE.md scope 15): the caller opens Parso Pro instead of an error.
@@ -43,7 +47,11 @@ export type LocalImage = {
   isScreenshot?: boolean; // known for the Screenshots album; otherwise guessed from shape
 };
 
+// Photos aren't kept for later offline (only links, text and notes are): they say so instead.
+export const PHOTO_OFFLINE = "No internet, so the photo wasn't saved. Try again when you're back online.";
+
 export async function saveImage(image: LocalImage, userId: string): Promise<ShareResult> {
+  if (!isOnline()) return { error: PHOTO_OFFLINE };
   if (!(await canSave())) return LIMIT_REACHED; // checked before uploading, so no file is left behind
   const width = image.width ?? 0;
   const height = image.height ?? 0;
@@ -70,7 +78,7 @@ export async function saveImage(image: LocalImage, userId: string): Promise<Shar
     .upload(`${userId}/${id}.jpg`, base64ToBytes(result.base64).buffer as ArrayBuffer, { contentType: 'image/jpeg' });
   if (uploadError)
     return {
-      error: "Couldn't upload the image. Check your connection and share it again.",
+      error: isOnline() ? "Couldn't upload the image. Check your connection and share it again." : PHOTO_OFFLINE,
     };
 
   const kind = isScreenshot ? 'screenshot' : 'image';
@@ -86,42 +94,51 @@ function sharedPreviewImage(intent: ShareIntent): string | null {
   return image && /^https:\/\//i.test(image) && image.length <= 2048 ? image : null;
 }
 
-async function saveLinkOrText(intent: ShareIntent): Promise<ShareResult> {
+// No internet: the link or text waits on the phone, and the save sheet says so.
+async function queueLinkOrText(userId: string, row: QueuedRow): Promise<ShareResult> {
+  const queued = await queueNewSave(userId, row, 'share');
+  if ('alreadySaved' in queued) return { error: ALREADY_SAVED };
+  return { saveId: queued.id, kind: row.kind ?? 'text', source: row.source ?? 'other', queued: true };
+}
+
+async function saveLinkOrText(intent: ShareIntent, userId: string): Promise<ShareResult> {
   const text = intent.text?.trim() ?? '';
   const url = (intent.webUrl && normalizeUrl(intent.webUrl)) || (text ? firstUrlIn(text) : null);
   // Keep any words shared alongside the link (a caption, a WhatsApp message) for the AI.
   const extra = [intent.meta?.title, text && text !== intent.webUrl ? text : null].filter(Boolean).join('\n');
 
   if (!url && !text) return { error: 'Nothing to save in what was shared.' };
+  const previewImage = sharedPreviewImage(intent);
+  const row: QueuedRow = url
+    ? {
+        kind: 'link',
+        source: detectSource(url),
+        url,
+        raw_text: extra ? extra.slice(0, MAX_TEXT) : null,
+        preview_image_url: previewImage,
+      }
+    : { kind: 'text', source: 'other', raw_text: text.slice(0, MAX_TEXT) };
+  if (!isOnline()) return queueLinkOrText(userId, row);
   // Already saved: its sheet opens as "Already in …" instead of saving it again (owner report on Android: the
   // same link shared twice made two saves). Same check as a pasted link (useCreateLinkSave).
   if (url) {
-    const { data: found } = await supabase
+    const { data: found, error: findError } = await supabase
       .from('saves')
       .select('id, kind, source')
       .eq('url', url)
       .order('created_at', { ascending: false })
       .limit(1);
+    if (findError && !isOnline()) return queueLinkOrText(userId, row);
     if (found?.[0]) return { saveId: found[0].id, kind: found[0].kind, source: found[0].source, existing: true };
   }
   if (!(await canSave())) return LIMIT_REACHED;
-  const previewImage = sharedPreviewImage(intent);
   const { data, error } = await supabase
     .from('saves')
-    .insert(
-      url
-        ? {
-            kind: 'link',
-            source: detectSource(url),
-            url,
-            raw_text: extra ? extra.slice(0, MAX_TEXT) : null,
-            preview_image_url: previewImage,
-          }
-        : { kind: 'text', source: 'other', raw_text: text.slice(0, MAX_TEXT) },
-    )
+    .insert(row as { kind: string; source: string })
     .select('id')
     .single();
   if (isLimitError(error)) return LIMIT_REACHED;
+  if (error && !isOnline()) return queueLinkOrText(userId, row);
   if (error || !data)
     return {
       error: "Couldn't save that. Check your connection and share it again.",
@@ -152,7 +169,7 @@ export async function saveShare(intent: ShareIntent, userId: string): Promise<Sh
           },
           userId,
         )
-      : await saveLinkOrText(intent);
+      : await saveLinkOrText(intent, userId);
   } catch {
     return { error: "Couldn't save that. Share it again." };
   }

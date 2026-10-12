@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/IconButton';
 import { ListPanel } from '@/components/ListPanel';
 import { SaveRow } from '@/components/SaveRow';
+import { Loading } from '@/components/Offline';
 import { Text } from '@/components/Text';
 import { WeekAskRow } from '@/components/WeekAskRow';
 import { ChevronLeftIcon } from '@/icons/ChevronLeftIcon';
@@ -60,7 +61,7 @@ export default function WeekScreen() {
       </Text>
 
       {isPending ? (
-        <ActivityIndicator style={styles.section} color={colors.secondary} />
+        <Loading style={styles.section} />
       ) : isError || !data ? (
         <Text variant="secondary" color={colors.secondary} style={[styles.section, styles.inset]}>
           Couldn't load your week. Check your connection and pull down to try again.

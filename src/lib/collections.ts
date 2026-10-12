@@ -51,7 +51,7 @@ export function useCreateCollection() {
       if (error) throw error;
       return data;
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: collectionsKey(session?.user.id) }),
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: collectionsKey(session?.user.id) }),
   });
 }
 
@@ -102,7 +102,7 @@ export function useRenameCollection(id: string) {
       if (error?.code === '23505') throw new Error(DUPLICATE_NAME(trimmed));
       if (error) throw new Error("Couldn't rename the collection. Check your connection and tap Save again.");
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: collectionsKey(session?.user.id) }),
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: collectionsKey(session?.user.id) }),
   });
 }
 
@@ -132,6 +132,6 @@ export function useReorderCollections() {
       return { previous };
     },
     onError: (_error, _ids, context) => queryClient.setQueryData(key, context?.previous),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: key }),
   });
 }

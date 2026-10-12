@@ -1,12 +1,13 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Image, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { CollectionCircle } from '@/components/CollectionCircle';
 import { FirstSaveCard } from '@/components/FirstSaveCard';
 import { NewScreenshotsCard } from '@/components/NewScreenshotsCard';
 import { ListPanel } from '@/components/ListPanel';
 import { NoteRow } from '@/components/NoteRow';
+import { Loading, OfflineLine } from '@/components/Offline';
 import { PasteLinkButton } from '@/components/PasteLinkButton';
 import { Pill } from '@/components/Pill';
 import { RemindersBell } from '@/components/RemindersBell';
@@ -19,6 +20,7 @@ import { ViewSwitch } from '@/components/ViewSwitch';
 import { WeekCard } from '@/components/WeekCard';
 import { REORDER_FAILED, useCollectionOverview, useReorderCollections } from '@/lib/collections';
 import { useNotes } from '@/lib/notes';
+import { useWaitingSaves, waitingItem } from '@/lib/outbox';
 import { canSave, openUpgrade } from '@/lib/pro';
 import { usePullToRefresh } from '@/lib/pullToRefresh';
 import { useViewMode } from '@/lib/viewMode';
@@ -36,7 +38,8 @@ const CIRCLE_ROW_HEIGHT = circle.size + circle.nameTop + type.meta.lineHeight;
 const openCollections = () => router.navigate('/collections');
 
 export default function HomeScreen() {
-  const { data: saves, isPending, isError, refetch } = useSaves();
+  const { data: saves, isPending, isError, refetch, dataUpdatedAt } = useSaves();
+  const waiting = useWaitingSaves();
   const { data: collections, refetch: refetchCollections } = useCollectionOverview();
   const { mode: viewMode } = useViewMode();
   const [filter, setFilter] = useState<Filter>('all');
@@ -81,6 +84,22 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {saves ? <OfflineLine updatedAt={dataUpdatedAt} /> : null}
+
+        {/* Saved with no internet: shown here until they're sent (src/lib/outbox.ts). Notes can still be edited. */}
+        {waiting.length ? (
+          <View style={styles.section}>
+            <Text variant="sectionHeading" accessibilityRole="header" style={styles.heading}>
+              Waiting to save
+            </Text>
+            <ListPanel>
+              {waiting.map((entry) => (
+                <SaveRow key={entry.id} save={waitingItem(entry)} disabled={entry.row.kind !== 'text'} />
+              ))}
+            </ListPanel>
+          </View>
+        ) : null}
+
         {weekReady && hasSaves ? (
           <View style={styles.section}>
             <WeekCard />
@@ -102,7 +121,7 @@ export default function HomeScreen() {
         ) : null}
 
         {isPending ? (
-          <ActivityIndicator style={styles.section} color={colors.secondary} />
+          <Loading style={styles.section} />
         ) : isError && !saves ? (
           <Text variant="secondary" color={colors.secondary} style={styles.section}>
             Couldn't load your saves. Pull down to try again.
@@ -161,7 +180,7 @@ export default function HomeScreen() {
               </View>
               {filter === 'notes' ? (
                 notes.isPending ? (
-                  <ActivityIndicator color={colors.secondary} />
+                  <Loading />
                 ) : notes.data?.length ? (
                   <ListPanel>
                     {notes.data.map((save) => (

@@ -4,19 +4,28 @@ import { colors, radius, sheet, type } from '@/theme';
 
 import { Text } from './Text';
 
+const WAITING = 'Saved on your phone';
+
 // "Saved to [Collection]" with the collection on the highlighter; "Saving…" until the AI has filed it.
-// "Already in [Collection]" when the link was saved before and nothing new was saved.
-export function SavedTo({ collection, existing = false }: { collection: string | null; existing?: boolean }) {
+// "Already in [Collection]" when the link was saved before and nothing new was saved. "Saved on your phone" when
+// there's no internet and the save waits to be sent (src/lib/outbox.ts).
+type Props = { collection: string | null; existing?: boolean; waiting?: boolean };
+
+export function SavedTo({ collection, existing = false, waiting = false }: Props) {
   const lead = existing ? 'Already in' : 'Saved to';
   return (
     <View
       style={styles.row}
       accessible
       accessibilityRole="header"
-      accessibilityLabel={collection ? `${lead} ${collection}` : 'Saving'}
+      accessibilityLabel={waiting ? WAITING : collection ? `${lead} ${collection}` : 'Saving'}
     >
       <Image source={require('../../assets/brand/icon.png')} style={styles.icon} resizeMode="contain" />
-      {collection ? (
+      {waiting ? (
+        <Text variant="sheetTitle" style={styles.text}>
+          {WAITING}
+        </Text>
+      ) : collection ? (
         <Text variant="sheetTitle" numberOfLines={2} style={styles.text}>
           {lead} <Text style={[type.sheetTitle, styles.mark]}>{` ${collection} `}</Text>
         </Text>

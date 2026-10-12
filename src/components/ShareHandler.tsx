@@ -23,10 +23,17 @@ export function ShareHandler() {
     const save = () =>
       saveShare(intent, userId).then((result) => {
         if ('saveId' in result) {
-          if (!result.existing) track('save_created', { kind: result.kind, source: result.source, via: 'share' });
+          // A queued save (no internet) is counted when it's sent (src/lib/outbox.ts).
+          if (!result.existing && !result.queued)
+            track('save_created', { kind: result.kind, source: result.source, via: 'share' });
           router.push({
             pathname: '/save/[id]',
-            params: { id: result.saveId, shared: '1', ...(result.existing ? { existing: '1' } : {}) },
+            params: {
+              id: result.saveId,
+              shared: '1',
+              ...(result.existing ? { existing: '1' } : {}),
+              ...(result.queued ? { queued: '1' } : {}),
+            },
           });
         } else if (result.limit) openUpgrade(() => void save());
         else Alert.alert(result.error);

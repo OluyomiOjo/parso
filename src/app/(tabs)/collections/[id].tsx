@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { IconButton } from '@/components/IconButton';
 import { KindFilter, type KindOption } from '@/components/KindFilter';
@@ -8,6 +8,7 @@ import { ListPanel } from '@/components/ListPanel';
 import { SaveGrid } from '@/components/SaveGrid';
 import { SaveRow } from '@/components/SaveRow';
 import { Screen } from '@/components/Screen';
+import { Loading } from '@/components/Offline';
 import { Text } from '@/components/Text';
 import { ChevronLeftIcon } from '@/icons/ChevronLeftIcon';
 import { GridIcon } from '@/icons/GridIcon';
@@ -99,7 +100,7 @@ export default function CollectionScreen() {
         ) : null}
 
         {isPending ? (
-          <ActivityIndicator style={styles.list} color={colors.secondary} />
+          <Loading style={styles.list} />
         ) : isError && !saves ? (
           <Text variant="secondary" color={colors.secondary} style={styles.message}>
             Couldn't load this collection. Pull down to try again.

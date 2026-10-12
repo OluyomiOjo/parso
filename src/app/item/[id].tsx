@@ -1,7 +1,7 @@
 import * as Linking from 'expo-linking';
 import { useEffect } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DetailActions } from '@/components/DetailActions';
@@ -10,6 +10,7 @@ import { IconButton } from '@/components/IconButton';
 import { ListPanel } from '@/components/ListPanel';
 import { Pill } from '@/components/Pill';
 import { SourceLine } from '@/components/SourceLine';
+import { Loading } from '@/components/Offline';
 import { Text } from '@/components/Text';
 import { ChevronLeftIcon } from '@/icons/ChevronLeftIcon';
 import { TrashIcon } from '@/icons/TrashIcon';
@@ -75,7 +76,7 @@ export default function SaveDetailScreen() {
             Couldn't load this save. It may have been deleted. Go back and pull down to refresh.
           </Text>
         ) : (
-          <ActivityIndicator style={styles.message} color={colors.secondary} />
+          <Loading style={styles.message} />
         )}
       </View>
     );

@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Image,
   Pressable,
@@ -16,6 +15,7 @@ import { CollectionCard } from '@/components/CollectionCard';
 import { ReorderList } from '@/components/ReorderList';
 import { Screen } from '@/components/Screen';
 import { ScreenTitle } from '@/components/ScreenTitle';
+import { Loading, OfflineLine } from '@/components/Offline';
 import { Text } from '@/components/Text';
 import { CollectionsIcon } from '@/icons/CollectionsIcon';
 import { DragHandleIcon } from '@/icons/DragHandleIcon';
@@ -31,7 +31,7 @@ import { useThumbnailUrls } from '@/lib/saves';
 import { card, colors, radius, reorder, size, spacing, tabularNums } from '@/theme';
 
 export default function CollectionsScreen() {
-  const { data: collections, isPending, isError, refetch } = useCollectionOverview();
+  const { data: collections, isPending, isError, refetch, dataUpdatedAt } = useCollectionOverview();
   const pull = usePullToRefresh(refetch);
   const { data: thumbnails } = useThumbnailUrls(
     (collections ?? []).flatMap((c) => [
@@ -71,8 +71,9 @@ export default function CollectionsScreen() {
             </Pressable>
           ) : null}
         </View>
+        {collections ? <OfflineLine updatedAt={dataUpdatedAt} /> : null}
         {isPending ? (
-          <ActivityIndicator style={styles.section} color={colors.secondary} />
+          <Loading style={styles.section} />
         ) : isError && !collections ? (
           <Text variant="secondary" color={colors.secondary} style={styles.message}>
             Couldn't load your collections. Pull down to try again.

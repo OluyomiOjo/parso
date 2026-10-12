@@ -27,6 +27,7 @@ import { HideKeyboardIcon } from '@/icons/HideKeyboardIcon';
 import { MoreIcon } from '@/icons/MoreIcon';
 import { PinIcon } from '@/icons/PinIcon';
 import { useSession } from '@/lib/auth';
+import { useOnline } from '@/lib/connection';
 import { relativeTime } from '@/lib/format';
 import {
   backspaceAtStart,
@@ -37,7 +38,7 @@ import {
   type Edit,
   type NoteLine,
 } from '@/lib/noteFormat';
-import { useNoteEditor, useTogglePin } from '@/lib/notes';
+import { NOTE_WAITING, useNoteEditor, useTogglePin } from '@/lib/notes';
 import { shortReminder } from '@/lib/reminderTime';
 import { DELETE_FAILED, useDeleteSave, useMarkDone } from '@/lib/saves';
 import { SHARE_FAILED, shareSave } from '@/lib/shareOut';
@@ -59,6 +60,7 @@ export default function NoteScreen() {
   const insets = useSafeAreaInsets();
   const { session } = useSession();
   const editor = useNoteEditor(id);
+  const online = useOnline();
   const { lines, setLines, noteId, save } = editor;
   const togglePin = useTogglePin(noteId);
   const deleteSave = useDeleteSave(noteId ? { id: noteId, kind: 'text', thumbnail_path: null } : undefined);
@@ -110,9 +112,11 @@ export default function NoteScreen() {
             <ChevronLeftIcon color={colors.ink} size={size.iconButtonIcon} strokeWidth={size.iconStroke} />
           </IconButton>
         </View>
-        {editor.loadFailed ? (
+        {editor.loadFailed || !online ? (
           <Text variant="secondary" color={colors.secondary} style={styles.message}>
-            Couldn't load this note. It may have been deleted. Go back and pull down to refresh.
+            {online
+              ? "Couldn't load this note. It may have been deleted. Go back and pull down to refresh."
+              : "You're offline. This note opens once you're back online."}
           </Text>
         ) : (
           <ActivityIndicator style={styles.message} color={colors.secondary} />
@@ -255,7 +259,7 @@ export default function NoteScreen() {
       >
         <View style={styles.metaRow}>
           <Text variant="meta" color={colors.secondary}>
-            {edited && noteId ? `Edited ${relativeTime(edited)}` : 'New note'}
+            {editor.waiting ? NOTE_WAITING : edited && noteId ? `Edited ${relativeTime(edited)}` : 'New note'}
           </Text>
           {reminder ? (
             <Pressable onPress={remind} accessibilityRole="button" hitSlop={spacing.sm} style={styles.reminder}>

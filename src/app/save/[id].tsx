@@ -11,16 +11,26 @@ import { SheetPreview } from '@/components/SheetPreview';
 import { Text } from '@/components/Text';
 import { useCollections, useCreateCollection } from '@/lib/collections';
 import { success } from '@/lib/haptics';
+import { queuedEntry, waitingItem } from '@/lib/outbox';
+import type { OutboxEntry } from '@/lib/outboxQueue';
 import { freeSavesLeft } from '@/lib/plan';
 import { usePlan } from '@/lib/pro';
-import { useSave, useThumbnailUrls, useUpdateSave } from '@/lib/saves';
+import { type SaveDetail, useSave, useThumbnailUrls, useUpdateSave } from '@/lib/saves';
 import { colors, radius, sheet, size, type } from '@/theme';
 
 // The save sheet: opened after sharing into Parso or pasting a copied link. existing=1 when the link was
-// already saved, so the header says "Already in …" and nothing was saved twice.
+// already saved, so the header says "Already in …" and nothing was saved twice. queued=1 when there was no
+// internet: the save waits on the phone (src/lib/outbox.ts), so the sheet says so and offers only Done.
 export default function SaveSheet() {
-  const { id, shared, existing } = useLocalSearchParams<{ id: string; shared?: string; existing?: string }>();
-  const { data: save } = useSave(id);
+  const { id, shared, existing, queued } = useLocalSearchParams<{
+    id: string;
+    shared?: string;
+    existing?: string;
+    queued?: string;
+  }>();
+  const waiting = queued === '1' ? queuedEntry(id) : undefined;
+  const { data: loaded } = useSave(id, !waiting);
+  const save = waiting ? waitingDetail(waiting) : loaded;
   const { data: collections = [] } = useCollections();
   const { data: thumbnails } = useThumbnailUrls(save?.thumbnail_path ? [save.thumbnail_path] : []);
   const updateSave = useUpdateSave(id);
@@ -55,14 +65,23 @@ export default function SaveSheet() {
             thumbnailUrl={save.thumbnail_path ? thumbnails?.[save.thumbnail_path] : undefined}
           />
           <View style={styles.savedTo}>
-            <SavedTo collection={filed ? collection!.name : null} existing={existing === '1'} />
+            <SavedTo
+              collection={filed ? collection!.name : null}
+              existing={existing === '1'}
+              waiting={Boolean(waiting)}
+            />
           </View>
-          {left && existing !== '1' ? (
+          {waiting ? (
+            <Text variant="secondary" color={colors.secondary} style={styles.left}>
+              No internet right now. Parso saves it and files it as soon as you're back online.
+            </Text>
+          ) : null}
+          {left && existing !== '1' && !waiting ? (
             <Text variant="secondary" color={colors.secondary} style={styles.left}>
               {left}
             </Text>
           ) : null}
-          {filed ? (
+          {filed && !waiting ? (
             <>
               <View style={styles.pills}>
                 <CollectionPills
@@ -82,23 +101,27 @@ export default function SaveSheet() {
               ) : null}
             </>
           ) : null}
-          <View style={styles.remind}>
-            <RemindMe save={save} track />
-          </View>
-          <View style={styles.noteBlock}>
-            <Text variant="sheetLabel" accessibilityRole="header">
-              Note
-            </Text>
-            <TextInput
-              value={note ?? save.note ?? ''}
-              onChangeText={setNote}
-              placeholder="Why you saved it (optional)"
-              placeholderTextColor={colors.secondary}
-              accessibilityLabel="Note"
-              returnKeyType="done"
-              style={styles.note}
-            />
-          </View>
+          {waiting ? null : (
+            <>
+              <View style={styles.remind}>
+                <RemindMe save={save} track />
+              </View>
+              <View style={styles.noteBlock}>
+                <Text variant="sheetLabel" accessibilityRole="header">
+                  Note
+                </Text>
+                <TextInput
+                  value={note ?? save.note ?? ''}
+                  onChangeText={setNote}
+                  placeholder="Why you saved it (optional)"
+                  placeholderTextColor={colors.secondary}
+                  accessibilityLabel="Note"
+                  returnKeyType="done"
+                  style={styles.note}
+                />
+              </View>
+            </>
+          )}
         </ScrollView>
       ) : (
         <ActivityIndicator style={styles.loading} color={colors.secondary} />
@@ -109,6 +132,18 @@ export default function SaveSheet() {
     </SafeAreaView>
   );
 }
+
+// A waiting save in the shape the preview card reads.
+const waitingDetail = (entry: OutboxEntry): SaveDetail => ({
+  ...waitingItem(entry),
+  summary: null,
+  raw_text: entry.row.raw_text ?? null,
+  tags: [],
+  note: null,
+  collection_id: null,
+  reminder_at: null,
+  preview_image_url: null,
+});
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.surface },

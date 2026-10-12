@@ -11,6 +11,7 @@ import { SearchStart } from '@/components/SearchStart';
 import { SearchField } from '@/components/SearchField';
 import { Text } from '@/components/Text';
 import { useCollectionOverview } from '@/lib/collections';
+import { useOnline } from '@/lib/connection';
 import { useRecentSearches } from '@/lib/recentSearches';
 import { useThumbnailUrls } from '@/lib/saves';
 import { SEARCH_FAILED, useSearch, useSearchSuggestions } from '@/lib/search';
@@ -23,6 +24,9 @@ const KIND_PILLS = [
   { kind: 'screenshot', label: 'Screenshots' },
   { kind: 'text', label: 'Notes' },
 ] as const;
+
+// Search runs on Parso's server (the AI reads the question), so it needs the internet.
+const SEARCH_OFFLINE = 'Search needs the internet. Your saves are still on Parsos.';
 
 const resultCount = (n: number) => `${n} ${n === 1 ? 'result' : 'results'}`;
 
@@ -52,6 +56,7 @@ export default function SearchScreen() {
   const suggestions = useSearchSuggestions((collections ?? []).map((c) => c.name));
   const rememberQuery = () => remember(query);
 
+  const online = useOnline();
   const typed = query.trim() !== '';
   const [best, ...rest] = typed ? (results ?? []) : [];
 
@@ -81,6 +86,10 @@ export default function SearchScreen() {
       >
         {!typed ? (
           <SearchStart recent={recent} suggestions={suggestions} onPick={setQuery} onClearRecent={clearRecent} />
+        ) : !online && (!results || isPlaceholderData) ? (
+          <Text variant="secondary" color={colors.secondary} style={styles.message}>
+            {SEARCH_OFFLINE}
+          </Text>
         ) : isError && !results ? (
           <Text variant="secondary" color={colors.secondary} style={styles.message}>
             {SEARCH_FAILED}

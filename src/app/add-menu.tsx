@@ -14,7 +14,7 @@ import { PhotoIcon } from '@/icons/PhotoIcon';
 import type { IconProps } from '@/icons/types';
 import { useSession } from '@/lib/auth';
 import { canSave, openUpgrade } from '@/lib/pro';
-import { saveImage } from '@/lib/share';
+import { PHOTO_OFFLINE, saveImage } from '@/lib/share';
 import { track } from '@/lib/track';
 import { addMenu, colors, size, spacing } from '@/theme';
 
@@ -50,7 +50,7 @@ export default function AddMenu() {
         track('save_created', { kind: result.kind, source: result.source, via: 'add' });
         queryClient.invalidateQueries({ queryKey: ['saves', userId] });
         router.back();
-      } else if (!('limit' in result)) setError(PHOTO_FAILED);
+      } else if (!('limit' in result)) setError(result.error === PHOTO_OFFLINE ? PHOTO_OFFLINE : PHOTO_FAILED);
       return result;
     };
     const result = await save();

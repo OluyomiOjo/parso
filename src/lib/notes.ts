@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as Crypto from 'expo-crypto';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
@@ -15,6 +16,8 @@ import {
   serializeNote,
   type NoteLine,
 } from './noteFormat';
+import { isOnline } from './connection';
+import { queuedEntry, queueSave, unqueue } from './outbox';
 import { isLimitError } from './plan';
 import { openUpgrade } from './pro';
 import { LIST_COLUMNS, saveKey, savesKey, useSave, type SaveDetail, type SaveListItem } from './saves';
@@ -82,21 +85,35 @@ const fieldsFor = (lines: NoteLine[]): Fields => {
 export const NOTE_LIMIT = "You've used your 50 free saves. Upgrade to Parso Pro to keep this note.";
 export const NOTE_SAVE_FAILED = "Couldn't save this note. Check your connection; Parso tries again as you type.";
 
+// A note written or changed with no internet waits on the phone (src/lib/outbox.ts) and is sent once back online.
+export const NOTE_WAITING = "Saved on your phone until you're back online";
+
 // The editor's state and saving. A new note (id "new") is created on the first character typed, so empty notes
 // are never kept; after that it saves itself shortly after typing stops, and again on leaving or when the app
-// goes to the background. Leaving a note with nothing in it deletes it, as in Apple Notes.
+// goes to the background. Leaving a note with nothing in it deletes it, as in Apple Notes. With no internet,
+// the note is kept on the phone and sent later; a new note still waiting opens from there.
 export function useNoteEditor(routeId: string) {
   const queryClient = useQueryClient();
   const { session } = useSession();
   const userId = session?.user.id;
   const isNew = routeId === 'new';
-  const [lines, setLinesState] = useState<NoteLine[] | null>(isNew ? [makeLine()] : null);
-  const [noteId, setNoteId] = useState<string | null>(isNew ? null : routeId);
+  const [queuedAtOpen] = useState(() => (isNew ? undefined : queuedEntry(routeId)));
+  const waitingNew = queuedAtOpen?.op === 'insert'; // not on the server yet, so it isn't loaded from there
+  const [lines, setLinesState] = useState<NoteLine[] | null>(() =>
+    isNew
+      ? [makeLine()]
+      : waitingNew
+        ? parseNote(editorText(queuedAtOpen.row.title ?? null, queuedAtOpen.row.raw_text ?? null))
+        : null,
+  );
+  const [noteId, setNoteId] = useState<string | null>(isNew || waitingNew ? null : routeId);
   const { data: save, isError } = useSave(noteId ?? '', Boolean(noteId));
   const [error, setError] = useState<string | null>(null);
+  const [waiting, setWaiting] = useState(Boolean(queuedAtOpen));
   const linesRef = useRef(lines);
-  const idRef = useRef(noteId);
-  const savedText = useRef<string | null>(null); // what the database has
+  const idRef = useRef(isNew ? null : routeId);
+  const queued = useRef(Boolean(queuedAtOpen)); // this note has a version waiting on the phone
+  const savedText = useRef<string | null>(lines ? fieldsFor(lines).raw_text : null); // what's saved
   const queue = useRef<Promise<void>>(Promise.resolve()); // one write at a time, in order
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closed = useRef(false); // deleted, or left empty: nothing more is written
@@ -120,27 +137,53 @@ export function useNoteEditor(routeId: string) {
       const fields = fieldsFor(current);
       if (fields.raw_text === savedText.current) return;
       const edited_at = new Date().toISOString(); // the database stamps its own time (migration 0018)
+      // No internet: this version waits on the phone; a note not yet on the server stays a new one.
+      const keep = async (id: string, op: 'insert' | 'update') => {
+        const row =
+          op === 'insert' ? { kind: 'text' as const, source: 'other', ...fields, edited_at } : { ...fields, edited_at };
+        await queueSave(userId, { id, op, row, via: 'add', queuedAt: edited_at });
+        queued.current = true;
+        savedText.current = fields.raw_text;
+        setWaiting(true);
+        setError(null);
+      };
+      // Sent since: from now on it saves straight to the server again.
+      if (queued.current && idRef.current && !queuedEntry(idRef.current)) {
+        queued.current = false;
+        setWaiting(false);
+        setNoteId(idRef.current);
+      }
       if (!idRef.current) {
         if (isEmptyNote(current)) return;
-        const { data, error: insertError } = await supabase
+        const id = Crypto.randomUUID(); // made here, so a note kept offline keeps the same id once sent
+        if (!isOnline()) {
+          idRef.current = id;
+          return keep(id, 'insert');
+        }
+        const { error: insertError } = await supabase
           .from('saves')
-          .insert({ kind: 'text', source: 'other', ...fields, edited_at })
-          .select('id')
-          .single();
+          .insert({ id, kind: 'text', source: 'other', ...fields, edited_at });
         if (isLimitError(insertError)) {
           if (!limitShown.current) openUpgrade(); // once; the note stays on screen and saves after upgrading
           limitShown.current = true;
           return setError(NOTE_LIMIT);
         }
-        if (insertError || !data) return setError(NOTE_SAVE_FAILED);
-        idRef.current = data.id;
-        setNoteId(data.id);
+        if (insertError && !isOnline()) {
+          idRef.current = id;
+          return keep(id, 'insert');
+        }
+        if (insertError) return setError(NOTE_SAVE_FAILED);
+        idRef.current = id;
+        setNoteId(id);
         track('save_created', { kind: 'text', source: 'other', via: 'add' });
+      } else if (queued.current) {
+        return keep(idRef.current, 'update'); // joins the version already waiting
       } else {
         const { error: updateError } = await supabase
           .from('saves')
           .update({ ...fields, edited_at })
           .eq('id', idRef.current);
+        if (updateError && !isOnline()) return keep(idRef.current, 'update');
         if (updateError) return setError(NOTE_SAVE_FAILED);
         queryClient.setQueryData<SaveDetail>(saveKey(idRef.current), (previous) =>
           previous ? { ...previous, ...fields, edited_at } : previous,
@@ -170,7 +213,9 @@ export function useNoteEditor(routeId: string) {
     if (current && isEmptyNote(current) && idRef.current) {
       closed.current = true;
       await queue.current;
-      await supabase.from('saves').delete().eq('id', idRef.current);
+      // Still waiting and never sent: it only has to leave the phone's queue.
+      if (userId && queuedEntry(idRef.current)?.op === 'insert') await unqueue(userId, idRef.current);
+      else await supabase.from('saves').delete().eq('id', idRef.current);
       queryClient.removeQueries({ queryKey: saveKey(idRef.current) });
     } else {
       await write();
@@ -203,6 +248,7 @@ export function useNoteEditor(routeId: string) {
     setLines,
     noteId,
     error,
+    waiting,
     text: () => (linesRef.current ? serializeNote(linesRef.current) : ''),
     flush: write,
     markDeleted,

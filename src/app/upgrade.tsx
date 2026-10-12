@@ -8,6 +8,7 @@ import type { PurchasesPackage } from 'react-native-purchases';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { CheckIcon } from '@/icons/CheckIcon';
+import { useOnline } from '@/lib/connection';
 import { percentSaved, proLine } from '@/lib/plan';
 import {
   cancelledPurchase,
@@ -41,6 +42,7 @@ function yearlyDetail(offer: Offer): string | null {
 // Parso Pro: opened when a free account reaches its 50th save, and from the You tab. Prices come from Apple in the
 // viewer's own currency. Apple's required wording and links sit under the button.
 export default function UpgradeSheet() {
+  const online = useOnline();
   const { data: plan } = usePlan();
   const { data: numbers } = useMyNumbers();
   const { data: offer, isPending, isError } = useOffer();
@@ -104,7 +106,9 @@ export default function UpgradeSheet() {
           <ActivityIndicator color={colors.secondary} style={styles.loading} />
         ) : unavailable ? (
           <Text variant="secondary" color={colors.secondary}>
-            Prices aren't available yet. Try again later.
+            {online
+              ? "Prices aren't available yet. Try again later."
+              : "Prices need the internet. Try again when you're back online."}
           </Text>
         ) : (
           <View style={styles.options}>

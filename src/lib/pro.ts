@@ -95,6 +95,7 @@ export function useOffer() {
   return useQuery({
     queryKey: ['pro-offer'],
     enabled: configured,
+    networkMode: 'always', // RevenueCat answers from its own copy when offline, or says it can't
     staleTime: 10 * 60 * 1000,
     queryFn: async (): Promise<Offer> => {
       const offerings = await Purchases.getOfferings();
