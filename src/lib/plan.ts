@@ -39,15 +39,26 @@ function built(numbers: MyNumbers): { built: string; back: string | null } {
 
 const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
-// The Pro page's headline: about what the person has built when they reach the limit, about Pro before it
-// (owner decision after build 20).
-export const proHeadline = (plan: Plan | undefined) =>
-  needsUpgrade(plan) ? "You've built something worth keeping" : 'Save as much as you like with Pro';
+// The Pro page in three moments (owner decisions after builds 20 and 21): a save was just stopped by the limit
+// (say what happened and what to do, so they can finish saving); at the limit, opened from the You tab (what
+// they've built); before the limit (what Pro gives).
+export type ProMoment = 'stopped' | 'limit' | 'before';
+
+export const proMoment = (plan: Plan | undefined, stopped: boolean): ProMoment =>
+  stopped ? 'stopped' : needsUpgrade(plan) ? 'limit' : 'before';
+
+export const proHeadline = (moment: ProMoment) =>
+  moment === 'stopped'
+    ? `You've used your ${FREE_SAVES} free saves`
+    : moment === 'limit'
+      ? "You've built something worth keeping"
+      : 'Save as much as you like with Pro';
 
 // The Pro page's numbers line: at the limit, the person's own numbers (my_numbers, migration 0028); before it,
 // how much of the free allowance is used.
-export function proNumbers(plan: Plan | undefined, numbers: MyNumbers | undefined): string | null {
-  if (needsUpgrade(plan)) {
+export function proNumbers(moment: ProMoment, plan: Plan | undefined, numbers: MyNumbers | undefined): string | null {
+  if (moment === 'stopped') return 'Subscribe to Parso Pro and this saves straight away.';
+  if (moment === 'limit') {
     if (!numbers) return `You've used your ${FREE_SAVES} free saves.`;
     const { built: what, back } = built(numbers);
     return back ? `${sentence(what)}. ${sentence(back)}.` : `${sentence(what)}.`;

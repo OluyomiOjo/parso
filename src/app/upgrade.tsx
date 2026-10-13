@@ -14,7 +14,7 @@ import { CheckIcon } from '@/icons/CheckIcon';
 import { SourceIcon } from '@/icons/SourceIcon';
 import { useCollectionOverview } from '@/lib/collections';
 import { useOnline } from '@/lib/connection';
-import { FREE_SAVES, percentSaved, proHeadline, proNumbers } from '@/lib/plan';
+import { FREE_SAVES, percentSaved, proHeadline, proMoment, proNumbers } from '@/lib/plan';
 import {
   cancelledPurchase,
   type Offer,
@@ -53,9 +53,10 @@ function yearlyDetail(offer: Offer): string | null {
   return parts.length ? parts.join(' ') : null;
 }
 
-// Parso Pro: opened when a free account reaches its 50th save, and from the You tab. It's about the person: their
-// own collections at the top, their numbers, and the save that was stopped, waiting (owner decision after build
-// 20). Prices come from Apple in the viewer's own currency; the button names the price. Apple's required wording
+// Parso Pro: opened when a free account reaches its 50th save, and from the You tab. It's about the person and the
+// moment (owner decisions after builds 20 and 21): when a save was just stopped, what happened, that save waiting,
+// and the plans first so they can finish saving; at the limit from the You tab, their own collections and numbers;
+// before the limit, what Pro gives. Prices come from Apple in the viewer's own currency; the button names the price. Apple's required wording
 // and links sit at the bottom.
 export default function UpgradeSheet() {
   const online = useOnline();
@@ -64,9 +65,11 @@ export default function UpgradeSheet() {
   const { data: offer, isPending, isError } = useOffer();
   const [waiting] = useState<WaitingSave | null>(waitingSave);
   const { data: collections } = useCollectionOverview();
-  const circles = (collections ?? []).slice(0, MAX_CIRCLES);
+  const moment = proMoment(plan, Boolean(waiting));
+  // Their collections only where the page is about what they've built, not mid-save or before the limit.
+  const circles = moment === 'limit' ? (collections ?? []).slice(0, MAX_CIRCLES) : [];
   const { data: covers } = useThumbnailUrls(circles.flatMap((c) => (c.cover ? [c.cover] : [])));
-  const numbersLine = proNumbers(plan, numbers);
+  const numbersLine = proNumbers(moment, plan, numbers);
   const { buy, restore } = usePurchase();
   const [choice, setChoice] = useState<Choice>('yearly');
   const [busy, setBusy] = useState<'buy' | 'restore' | null>(null);
@@ -108,6 +111,68 @@ export default function UpgradeSheet() {
     }
   };
 
+  // What Pro gives, and the plans with the button; their order depends on the moment.
+  const promises = (
+    <View style={styles.benefits}>
+      {/* The subscription's name, as Apple asks, heading what it gives. */}
+      <Text variant="sectionHeading" accessibilityRole="header">
+        Parso Pro
+      </Text>
+      {BENEFITS.map((benefit) => (
+        <View key={benefit} style={styles.benefit}>
+          <CheckIcon color={colors.ink} size={upgrade.checkIcon} strokeWidth={size.iconStroke} />
+          <Text style={styles.benefitText}>{benefit}</Text>
+        </View>
+      ))}
+    </View>
+  );
+  const pricing = (
+    <>
+      {loading ? (
+        <ActivityIndicator color={colors.secondary} style={styles.loading} />
+      ) : unavailable ? (
+        <Text variant="secondary" color={colors.secondary}>
+          {online
+            ? "Prices aren't available yet. Try again later."
+            : "Prices need the internet. Try again when you're back online."}
+        </Text>
+      ) : (
+        <View style={styles.options}>
+          {offer?.yearly ? (
+            <Option
+              selected={choice === 'yearly'}
+              onPress={() => setChoice('yearly')}
+              title={`${offer.yearly.product.priceString} a year`}
+              detail={yearlyDetail(offer)}
+              label="Yearly"
+            />
+          ) : null}
+          {offer?.monthly ? (
+            <Option
+              selected={choice === 'monthly'}
+              onPress={() => setChoice('monthly')}
+              title={`${offer.monthly.product.priceString} a month`}
+              detail={null}
+              label="Monthly"
+            />
+          ) : null}
+        </View>
+      )}
+
+      <View style={styles.buy}>
+        <Button
+          label={price ? `Subscribe for ${price}` : 'Subscribe'}
+          onPress={subscribe}
+          busy={busy === 'buy'}
+          disabled={!chosen || busy !== null}
+        />
+        <Text variant="secondary" color={colors.secondary} style={styles.center}>
+          Cancel anytime in Settings.
+        </Text>
+      </View>
+    </>
+  );
+
   return (
     <SafeAreaView edges={['bottom']} style={styles.sheet}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -130,67 +195,23 @@ export default function UpgradeSheet() {
         ) : null}
         <View style={styles.intro}>
           <Text variant="sheetTitle" accessibilityRole="header">
-            {proHeadline(plan)}
+            {proHeadline(moment)}
           </Text>
           {numbersLine ? <Text color={colors.secondary}>{numbersLine}</Text> : null}
         </View>
         {waiting ? <WaitingCard save={waiting} /> : null}
 
-        <View style={styles.benefits}>
-          {/* The subscription's name, as Apple asks, heading what it gives. */}
-          <Text variant="sectionHeading" accessibilityRole="header">
-            Parso Pro
-          </Text>
-          {BENEFITS.map((benefit) => (
-            <View key={benefit} style={styles.benefit}>
-              <CheckIcon color={colors.ink} size={upgrade.checkIcon} strokeWidth={size.iconStroke} />
-              <Text style={styles.benefitText}>{benefit}</Text>
-            </View>
-          ))}
-        </View>
-
-        {loading ? (
-          <ActivityIndicator color={colors.secondary} style={styles.loading} />
-        ) : unavailable ? (
-          <Text variant="secondary" color={colors.secondary}>
-            {online
-              ? "Prices aren't available yet. Try again later."
-              : "Prices need the internet. Try again when you're back online."}
-          </Text>
+        {moment === 'stopped' ? (
+          <>
+            {pricing}
+            {promises}
+          </>
         ) : (
-          <View style={styles.options}>
-            {offer?.yearly ? (
-              <Option
-                selected={choice === 'yearly'}
-                onPress={() => setChoice('yearly')}
-                title={`${offer.yearly.product.priceString} a year`}
-                detail={yearlyDetail(offer)}
-                label="Yearly"
-              />
-            ) : null}
-            {offer?.monthly ? (
-              <Option
-                selected={choice === 'monthly'}
-                onPress={() => setChoice('monthly')}
-                title={`${offer.monthly.product.priceString} a month`}
-                detail={null}
-                label="Monthly"
-              />
-            ) : null}
-          </View>
+          <>
+            {promises}
+            {pricing}
+          </>
         )}
-
-        <View style={styles.buy}>
-          <Button
-            label={price ? `Subscribe for ${price}` : 'Subscribe'}
-            onPress={subscribe}
-            busy={busy === 'buy'}
-            disabled={!chosen || busy !== null}
-          />
-          <Text variant="secondary" color={colors.secondary} style={styles.center}>
-            Cancel anytime in Settings.
-          </Text>
-        </View>
         <View style={styles.choices}>
           <Pressable onPress={() => router.back()} accessibilityRole="button" style={styles.choice}>
             <Text variant="secondary" color={colors.ink}>

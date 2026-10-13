@@ -6,6 +6,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-na
 
 import { Button } from '@/components/Button';
 import { ListPanel } from '@/components/ListPanel';
+import { Pill } from '@/components/Pill';
 import { Screen } from '@/components/Screen';
 import { SettingRow } from '@/components/SettingRow';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -73,9 +74,8 @@ export default function YouScreen() {
   const name = (session?.user.user_metadata?.full_name ?? session?.user.user_metadata?.name) as string | undefined;
   const initial = (name || email || 'P').trim().charAt(0).toUpperCase();
   const proAction = !plan ? null : !plan.pro ? (
-    <Pressable onPress={() => openUpgrade()} accessibilityRole="button" hitSlop={spacing.sm}>
-      <Text variant="button">Upgrade</Text>
-    </Pressable>
+    // A small black pill, so the way into Pro looks like a button (owner request after build 21).
+    <Pill label="Upgrade" selected onPress={() => openUpgrade()} />
   ) : !plan.adminPro ? (
     <Pressable onPress={() => Linking.openURL(MANAGE_URL)} accessibilityRole="button" hitSlop={spacing.sm}>
       <Text variant="button">Manage</Text>

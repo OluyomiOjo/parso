@@ -9,6 +9,7 @@ import {
   milestoneLine,
   planLine,
   proHeadline,
+  proMoment,
   proNumbers,
   type Plan,
 } from '../src/lib/plan.ts';
@@ -55,17 +56,25 @@ Deno.test('Yearly shows the saving against twelve months, rounded down', () => {
   assertEquals(percentSaved(4.99, undefined), null);
 });
 
+Deno.test('the Pro page speaks to the moment it opened in', () => {
+  assertEquals(proMoment(free(50), true), 'stopped');
+  assertEquals(proMoment(free(50), false), 'limit');
+  assertEquals(proMoment(free(32), false), 'before');
+  assertEquals(proHeadline('stopped'), "You've used your 50 free saves");
+  assertEquals(proNumbers('stopped', free(50), undefined), 'Subscribe to Parso Pro and this saves straight away.');
+  assertEquals(proHeadline('limit'), "You've built something worth keeping");
+  assertEquals(proHeadline('before'), 'Save as much as you like with Pro');
+});
+
 Deno.test('the Pro page shows the person their own numbers at the limit', () => {
-  assertEquals(proHeadline(free(50)), "You've built something worth keeping");
-  assertEquals(proHeadline(free(32)), 'Save as much as you like with Pro');
   assertEquals(
-    proNumbers(free(50), { saves: 50, collections: 11, opened: 55 }),
+    proNumbers('limit', free(50), { saves: 50, collections: 11, opened: 55 }),
     "50 saves in 11 collections. You've gone back to them 55 times.",
   );
-  assertEquals(proNumbers(free(50), { saves: 50, collections: 1, opened: 0 }), '50 saves in 1 collection.');
-  assertEquals(proNumbers(free(50), undefined), "You've used your 50 free saves.");
-  assertEquals(proNumbers(free(32), undefined), '32 of your 50 free saves used.');
-  assertEquals(proNumbers(undefined, undefined), null);
+  assertEquals(proNumbers('limit', free(50), { saves: 50, collections: 1, opened: 0 }), '50 saves in 1 collection.');
+  assertEquals(proNumbers('limit', free(50), undefined), "You've used your 50 free saves.");
+  assertEquals(proNumbers('before', free(32), undefined), '32 of your 50 free saves used.');
+  assertEquals(proNumbers('before', undefined, undefined), null);
 });
 
 Deno.test('save 30, and only save 30, gets the friendly heads-up', () => {
