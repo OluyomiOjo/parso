@@ -1,11 +1,23 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
-import { useEffect } from 'react';
+import * as Notifications from 'expo-notifications';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect } from 'react';
 import { Platform } from 'react-native';
-import Purchases, { type PurchasesPackage } from 'react-native-purchases';
+import Purchases, { type CustomerInfo, INTRO_ELIGIBILITY_STATUS, type PurchasesPackage } from 'react-native-purchases';
 
 import { useSession } from './auth';
-import { type MyNumbers, needsUpgrade, type Plan } from './plan';
+import { MONTHS } from './format';
+import {
+  type MyNumbers,
+  needsUpgrade,
+  offerAfterFirstSave,
+  type Plan,
+  trialDays,
+  trialReminderAt,
+  trialReminderText,
+} from './plan';
+import { ensureNotificationPermission, REMINDER_CHANNEL } from './reminders';
 import { supabase } from './supabase';
 import { track } from './track';
 
@@ -26,6 +38,11 @@ export function usePurchasesAccount() {
     if (!configured) {
       Purchases.configure({ apiKey: KEY, appUserID: userId });
       configured = true;
+      // Keeps the trial's reminder in step with the subscription: set during a trial, gone once it's paid or cancelled.
+      Purchases.addCustomerInfoUpdateListener((info) => void syncTrialReminder(info));
+      Purchases.getCustomerInfo()
+        .then((info) => syncTrialReminder(info))
+        .catch(() => undefined);
       return;
     }
     if (userId) Purchases.logIn(userId).catch(() => undefined);
@@ -81,24 +98,29 @@ export type WaitingSave = { title: string; kind: string; source: string; imageUr
 // The save that was waiting when the upgrade screen opened; it runs once the person is on Pro.
 let pending: (() => void) | null = null;
 let pendingPreview: WaitingSave | null = null;
+let pendingFirst = false; // opened once after the first save, to offer the free trial
 
-export function openUpgrade(retry?: () => void, preview?: WaitingSave) {
+export function openUpgrade(retry?: () => void, preview?: WaitingSave, afterFirstSave = false) {
   pending = retry ?? null;
   pendingPreview = preview ?? null;
+  pendingFirst = afterFirstSave;
   track('upgrade_shown');
   router.push('/upgrade');
 }
 
 export const waitingSave = () => pendingPreview;
+export const openedAfterFirstSave = () => pendingFirst;
 
 export function takePendingSave() {
   const run = pending;
   pending = null;
   pendingPreview = null;
+  pendingFirst = false;
   return run;
 }
 
-export type Offer = { yearly: PurchasesPackage | null; monthly: PurchasesPackage | null };
+// trial: the free trial's length in days on Yearly, when this person can still start one (Apple gives one per person).
+export type Offer = { yearly: PurchasesPackage | null; monthly: PurchasesPackage | null; trial: number | null };
 
 export function useOffer() {
   return useQuery({
@@ -109,7 +131,14 @@ export function useOffer() {
     queryFn: async (): Promise<Offer> => {
       const offerings = await Purchases.getOfferings();
       const current = offerings.current;
-      return { yearly: current?.annual ?? null, monthly: current?.monthly ?? null };
+      const yearly = current?.annual ?? null;
+      let trial = trialDays(yearly?.product.introPrice);
+      if (yearly && trial) {
+        const id = yearly.product.identifier;
+        const eligibility = await Purchases.checkTrialOrIntroductoryPriceEligibility([id]).catch(() => null);
+        if (eligibility?.[id]?.status !== INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE) trial = null;
+      }
+      return { yearly, monthly: current?.monthly ?? null, trial };
     },
   });
 }
@@ -132,6 +161,11 @@ export function usePurchase() {
     const { customerInfo } = await Purchases.purchasePackage(pkg);
     const active = Boolean(customerInfo.entitlements.active[ENTITLEMENT]);
     if (active) track('purchase_made');
+    // A trial was started: ask to send the promised reminder (iOS shows its own prompt once), then set it.
+    if (customerInfo.entitlements.active[ENTITLEMENT]?.periodType === 'TRIAL') {
+      await ensureNotificationPermission().catch(() => undefined);
+      await syncTrialReminder(customerInfo);
+    }
     return afterPurchase(active, refresh);
   };
   const restore = async () => {
@@ -145,3 +179,51 @@ export function usePurchase() {
 // Purchases.purchasePackage throws when the person closes Apple's sheet; that's not an error to show.
 export const cancelledPurchase = (error: unknown) =>
   Boolean(error && typeof error === 'object' && 'userCancelled' in error && error.userCancelled);
+
+const TRIAL_REMINDER = 'parso-trial-ends';
+
+// "Your Parso Pro trial ends in 2 days", on the phone, 2 days before a trial that will renew ends (the Pro page
+// promises it; Apple sends no such warning). Cancelled when there's no such trial.
+async function syncTrialReminder(info: CustomerInfo) {
+  try {
+    await Notifications.cancelScheduledNotificationAsync(TRIAL_REMINDER);
+    const pro = info.entitlements.active[ENTITLEMENT];
+    if (!pro || pro.periodType !== 'TRIAL' || !pro.willRenew || !pro.expirationDate) return;
+    const ends = new Date(pro.expirationDate);
+    const at = trialReminderAt(ends);
+    if (!at || !(await Notifications.getPermissionsAsync()).granted) return;
+    await Notifications.scheduleNotificationAsync({
+      identifier: TRIAL_REMINDER,
+      content: trialReminderText(ends, MONTHS),
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at, channelId: REMINDER_CHANNEL },
+    });
+  } catch {
+    // a missed reminder is never worth an error; Apple's receipt email still says when it renews
+  }
+}
+
+const FIRST_OFFER_KEY = 'parso.pro.offeredAfterFirstSave';
+const FIRST_OFFER_DELAY_MS = 900; // the save sheet closes first
+
+// On Parsos: once, after the first save, the Pro page offering the free trial (owner decision after build 22). Only
+// when the trial can actually be started (prices loaded, this person eligible), so it's never an empty page.
+export function useOfferAfterFirstSave() {
+  const { data: plan } = usePlan();
+  const { data: offer } = useOffer();
+  useFocusEffect(
+    useCallback(() => {
+      if (!offer?.trial || !offerAfterFirstSave(plan, false)) return;
+      let cancelled = false;
+      const timer = setTimeout(async () => {
+        const offered = await AsyncStorage.getItem(FIRST_OFFER_KEY).catch(() => '1');
+        if (cancelled || offered) return;
+        await AsyncStorage.setItem(FIRST_OFFER_KEY, '1').catch(() => undefined);
+        openUpgrade(undefined, undefined, true);
+      }, FIRST_OFFER_DELAY_MS);
+      return () => {
+        cancelled = true;
+        clearTimeout(timer);
+      };
+    }, [offer?.trial, plan]),
+  );
+}

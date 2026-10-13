@@ -14,10 +14,19 @@ import { CheckIcon } from '@/icons/CheckIcon';
 import { SourceIcon } from '@/icons/SourceIcon';
 import { useCollectionOverview } from '@/lib/collections';
 import { useOnline } from '@/lib/connection';
-import { FREE_SAVES, percentSaved, proHeadline, proMoment, proNumbers } from '@/lib/plan';
+import {
+  percentSaved,
+  proHeadline,
+  proMoment,
+  proNumbers,
+  TRIAL_REMINDER_LINE,
+  trialButton,
+  trialTerms,
+} from '@/lib/plan';
 import {
   cancelledPurchase,
   type Offer,
+  openedAfterFirstSave,
   purchasesAvailable,
   takePendingSave,
   useMyNumbers,
@@ -35,21 +44,21 @@ const PRIVACY_URL = 'https://parso.ai/privacy';
 const BUY_FAILED = "Couldn't complete the purchase. You weren't charged. Check your connection and try again.";
 const RESTORE_NONE = 'No Parso Pro subscription was found for this Apple Account.';
 const RESTORE_FAILED = "Couldn't restore purchases. Check your connection and try again.";
-// One real gain, one about the AI, and one reassurance (owner decision after build 20).
-const BENEFITS = [
-  'Save as much as you like',
-  'The AI files and finds every new save',
-  `Your ${FREE_SAVES} saves stay yours, free, always`,
-];
+// Outcomes, not features, and only what Pro adds or keeps going (owner decision after build 22).
+const BENEFITS = ['Save everything, with no limit', 'Find anything you saved, by asking', 'Everything sorted for you'];
 const MAX_CIRCLES = 8;
 
 type Choice = 'yearly' | 'monthly';
 
-// "$3.33 a month. Save 33%.", from Apple's own prices (owner request after build 18).
+// "14 days free. $3.33 a month. Save 33%.", from Apple's own prices (owner requests after builds 18 and 22).
 function yearlyDetail(offer: Offer): string | null {
   const perMonth = offer.yearly?.product.pricePerMonthString;
   const saved = percentSaved(offer.monthly?.product.price, offer.yearly?.product.price);
-  const parts = [perMonth ? `${perMonth} a month.` : null, saved ? `Save ${saved}%.` : null].filter(Boolean);
+  const parts = [
+    offer.trial ? `${offer.trial} days free.` : null,
+    perMonth ? `${perMonth} a month.` : null,
+    saved ? `Save ${saved}%.` : null,
+  ].filter(Boolean);
   return parts.length ? parts.join(' ') : null;
 }
 
@@ -64,26 +73,32 @@ export default function UpgradeSheet() {
   const { data: numbers } = useMyNumbers();
   const { data: offer, isPending, isError } = useOffer();
   const [waiting] = useState<WaitingSave | null>(waitingSave);
+  const [first] = useState(openedAfterFirstSave);
   const { data: collections } = useCollectionOverview();
-  const moment = proMoment(plan, Boolean(waiting));
+  const moment = proMoment(plan, Boolean(waiting), first);
+  const trial = offer?.trial ?? null;
   // Their collections only where the page is about what they've built, not mid-save or before the limit.
   const circles = moment === 'limit' ? (collections ?? []).slice(0, MAX_CIRCLES) : [];
   const { data: covers } = useThumbnailUrls(circles.flatMap((c) => (c.cover ? [c.cover] : [])));
-  const numbersLine = proNumbers(moment, plan, numbers);
+  const numbersLine = proNumbers(moment, plan, numbers, trial);
   const { buy, restore } = usePurchase();
   const [choice, setChoice] = useState<Choice>('yearly');
   const [busy, setBusy] = useState<'buy' | 'restore' | null>(null);
 
   const chosen: PurchasesPackage | null = offer?.[choice] ?? null;
   const loading = purchasesAvailable() && isPending;
-  // "Subscribe for $39.99 a year": exactly what happens, price included.
+  // "Subscribe for $39.99 a year", or "Start free for 14 days" on Yearly with the trial: exactly what happens, with
+  // the price after the trial right under it, as Apple asks.
   const price = chosen ? `${chosen.product.priceString} a ${choice === 'yearly' ? 'year' : 'month'}` : null;
+  const trialChosen = Boolean(trial && choice === 'yearly' && chosen);
+  const buttonLabel = trialChosen && trial ? trialButton(trial) : price ? `Subscribe for ${price}` : 'Subscribe';
   const unavailable = !purchasesAvailable() || isError || (!isPending && !offer?.yearly && !offer?.monthly);
 
-  const finish = () => {
+  const finish = (bought: boolean) => {
     router.back();
     const retry = takePendingSave();
-    Alert.alert("You're on Parso Pro", retry ? 'Saving what you shared now.' : undefined);
+    const title = bought && trialChosen && trial ? `Your ${trial}-day free trial has started` : "You're on Parso Pro";
+    Alert.alert(title, retry ? 'Saving what you shared now.' : undefined);
     retry?.();
   };
 
@@ -91,7 +106,7 @@ export default function UpgradeSheet() {
     if (!chosen) return;
     setBusy('buy');
     try {
-      if (await buy(chosen)) finish();
+      if (await buy(chosen)) finish(true);
     } catch (error) {
       if (!cancelledPurchase(error)) Alert.alert(BUY_FAILED);
     } finally {
@@ -102,7 +117,7 @@ export default function UpgradeSheet() {
   const restorePurchases = async () => {
     setBusy('restore');
     try {
-      if (await restore()) finish();
+      if (await restore()) finish(false);
       else Alert.alert(RESTORE_NONE);
     } catch {
       Alert.alert(RESTORE_FAILED);
@@ -160,15 +175,16 @@ export default function UpgradeSheet() {
       )}
 
       <View style={styles.buy}>
-        <Button
-          label={price ? `Subscribe for ${price}` : 'Subscribe'}
-          onPress={subscribe}
-          busy={busy === 'buy'}
-          disabled={!chosen || busy !== null}
-        />
-        <Text variant="secondary" color={colors.secondary} style={styles.center}>
-          Cancel anytime in Settings.
-        </Text>
+        <Button label={buttonLabel} onPress={subscribe} busy={busy === 'buy'} disabled={!chosen || busy !== null} />
+        {trialChosen && chosen ? (
+          <Text variant="secondary" color={colors.secondary} style={styles.center}>
+            {`${trialTerms(chosen.product.priceString)}\n${TRIAL_REMINDER_LINE}`}
+          </Text>
+        ) : (
+          <Text variant="secondary" color={colors.secondary} style={styles.center}>
+            Cancel anytime in Settings.
+          </Text>
+        )}
       </View>
     </>
   );
@@ -195,7 +211,7 @@ export default function UpgradeSheet() {
         ) : null}
         <View style={styles.intro}>
           <Text variant="sheetTitle" accessibilityRole="header">
-            {proHeadline(moment)}
+            {proHeadline(moment, trial)}
           </Text>
           {numbersLine ? <Text color={colors.secondary}>{numbersLine}</Text> : null}
         </View>
@@ -231,8 +247,9 @@ export default function UpgradeSheet() {
         </View>
 
         <Text variant="legal" color={colors.secondary}>
-          Parso Pro renews automatically at the price shown until you cancel. Cancel any time in Settings at least 24
-          hours before it renews. Payment is charged to your Apple Account.
+          Parso Pro renews automatically at the price shown until you cancel. With the free trial, the first payment is
+          taken when the trial ends. Cancel any time in Settings at least 24 hours before it renews or the trial ends.
+          Payment is charged to your Apple Account.
         </Text>
         <View style={styles.links}>
           <Text variant="legal" color={colors.ink} onPress={() => Linking.openURL(TERMS_URL)} accessibilityRole="link">

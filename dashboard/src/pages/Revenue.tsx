@@ -42,6 +42,25 @@ export function Revenue() {
               note={`${data.funnel.subscribed} of ${data.funnel.shown} people`}
             />
           </div>
+          {/* The three launch numbers (owner decision after build 22). */}
+          <h2 className="section-heading">The three numbers to watch</h2>
+          <div className="grid">
+            <Stat
+              label="New accounts to trial"
+              value={percent(data.trials.started, data.trials.new_accounts)}
+              note={`${data.trials.started} of ${data.trials.new_accounts} new accounts started the free trial`}
+            />
+            <Stat
+              label="Trial to paid"
+              value={percent(data.trials.converted, data.trials.started)}
+              note={`${data.trials.converted} of ${data.trials.started} trials became paying`}
+            />
+            <Stat
+              label="Searched in week two"
+              value={percent(data.week_two.searched, data.week_two.eligible)}
+              note={`${data.week_two.searched} of ${data.week_two.eligible} people searched their saves in their second week`}
+            />
+          </div>
           <div className="panel" style={{ marginTop: 12 }}>
             <h2 className="section-heading" style={{ marginTop: 0 }}>
               Sign-up funnel

@@ -21,7 +21,7 @@ import { WeekCard } from '@/components/WeekCard';
 import { REORDER_FAILED, useCollectionOverview, useReorderCollections } from '@/lib/collections';
 import { useNotes } from '@/lib/notes';
 import { useWaitingSaves, waitingItem } from '@/lib/outbox';
-import { canSave, openUpgrade } from '@/lib/pro';
+import { canSave, openUpgrade, useOfferAfterFirstSave } from '@/lib/pro';
 import { usePullToRefresh } from '@/lib/pullToRefresh';
 import { useViewMode } from '@/lib/viewMode';
 import { useSaves, useSavesLiveUpdates, useThumbnailUrls } from '@/lib/saves';
@@ -51,6 +51,7 @@ export default function HomeScreen() {
   // Picks up a change made on the You tab (screenshot check turned on or off).
   useFocusEffect(useCallback(() => shots.refresh(), [shots.refresh]));
   useSavesLiveUpdates();
+  useOfferAfterFirstSave(); // the free trial, once, after the first save
   // One signing request for the list and the collection tiles together.
   const { data: thumbnails } = useThumbnailUrls([
     ...(saves ?? []).flatMap((save) => (save.thumbnail_path ? [save.thumbnail_path] : [])),

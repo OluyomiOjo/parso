@@ -32,6 +32,8 @@ export type Revenue = {
   funnel: { shown: number; tapped: number; subscribed: number };
   subscribers: { paying: number; monthly: number; yearly: number; given: number };
   revenue_usd: number;
+  trials: { new_accounts: number; started: number; converted: number };
+  week_two: { eligible: number; searched: number };
   daily: { day: string; new_subscribers: number; usd: number }[];
 };
 
