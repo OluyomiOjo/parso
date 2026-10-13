@@ -3,10 +3,11 @@ import { Stack } from 'expo-router';
 import { ShareIntentProvider } from 'expo-share-intent';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { OpeningAnimation, openingPlayed } from '@/components/OpeningAnimation';
 import { ShareHandler } from '@/components/ShareHandler';
 import { AuthProvider, useSession } from '@/lib/auth';
 import { useCopiedLinkOffer } from '@/lib/clipboard';
@@ -36,16 +37,24 @@ function RootStack() {
   const { session, loading: sessionLoading } = useSession();
   const { seen: introSeen } = useIntro();
   const loading = sessionLoading || introSeen === null;
+  const [opened, setOpened] = useState(openingPlayed);
   useOpenTracking(session !== null);
-  useCopiedLinkOffer(session !== null && !loading);
+  useCopiedLinkOffer(session !== null && !loading && opened); // never over the opening animation
   usePurchasesAccount();
 
   useEffect(() => {
     if (!loading) SplashScreen.hideAsync();
   }, [loading]);
 
-  if (loading) return null;
+  return (
+    <>
+      {loading ? null : <Screens session={session !== null} introSeen={introSeen === true} />}
+      <OpeningAnimation ready={!loading} onDone={() => setOpened(true)} />
+    </>
+  );
+}
 
+function Screens({ session: signedIn, introSeen }: { session: boolean; introSeen: boolean }) {
   return (
     // Pages slide in from the right and go back with a swipe from anywhere on the page (owner decision, step 11).
     <Stack
@@ -56,7 +65,7 @@ function RootStack() {
         fullScreenGestureEnabled: true,
       }}
     >
-      <Stack.Protected guard={session !== null}>
+      <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="add" options={{ presentation: 'modal' }} />
         <Stack.Screen
@@ -108,10 +117,10 @@ function RootStack() {
           }}
         />
       </Stack.Protected>
-      <Stack.Protected guard={session === null && !introSeen}>
+      <Stack.Protected guard={!signedIn && !introSeen}>
         <Stack.Screen name="intro" />
       </Stack.Protected>
-      <Stack.Protected guard={session === null && introSeen === true}>
+      <Stack.Protected guard={!signedIn && introSeen}>
         <Stack.Screen name="welcome" />
       </Stack.Protected>
     </Stack>

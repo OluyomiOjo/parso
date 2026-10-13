@@ -559,3 +559,19 @@ export const theme = {
   addMenu,
 } as const;
 export default theme;
+
+// The opening animation (owner request after build 21): starts exactly where the launch screen leaves off (same
+// background and logo size as expo-splash-screen in app.json), then save-able things pop out of the logo and back in.
+export const opening = {
+  background: '#F2F3F5', // keep equal to the splash backgroundColor in app.json
+  logo: 117, // the splash imageWidth in app.json
+  logoAspect: 351 / 284, // icon-black.png is 284 by 351
+  ring: 124, // how far the icons travel from the logo's centre
+  bubble: 52, // the white circle behind each icon
+  icon: 26,
+  stagger: 35, // ms between icons
+  outMs: 420,
+  holdMs: 380,
+  inMs: 300,
+  fadeMs: 260,
+} as const;
