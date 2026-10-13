@@ -44,12 +44,12 @@ async function fetchPlan(): Promise<Plan> {
 }
 
 // The person's own counts for the Pro page (my_numbers, migration 0028): saves, collections, saves opened.
-export function useMyNumbers() {
+export function useMyNumbers(enabled = true) {
   const { session } = useSession();
   const userId = session?.user.id;
   return useQuery({
     queryKey: ['saves', userId, 'my-numbers'],
-    enabled: Boolean(userId),
+    enabled: enabled && Boolean(userId),
     queryFn: async (): Promise<MyNumbers> => {
       const { data, error } = await supabase.rpc('my_numbers');
       if (error) throw error;
@@ -74,18 +74,27 @@ export async function canSave(): Promise<boolean> {
   }
 }
 
+// What the person was saving when the free limit stopped it, shown on the Pro page as "Waiting to save" (owner
+// decision after build 20). Only given when that save really goes through after subscribing.
+export type WaitingSave = { title: string; kind: string; source: string; imageUri?: string | null };
+
 // The save that was waiting when the upgrade screen opened; it runs once the person is on Pro.
 let pending: (() => void) | null = null;
+let pendingPreview: WaitingSave | null = null;
 
-export function openUpgrade(retry?: () => void) {
+export function openUpgrade(retry?: () => void, preview?: WaitingSave) {
   pending = retry ?? null;
+  pendingPreview = preview ?? null;
   track('upgrade_shown');
   router.push('/upgrade');
 }
 
+export const waitingSave = () => pendingPreview;
+
 export function takePendingSave() {
   const run = pending;
   pending = null;
+  pendingPreview = null;
   return run;
 }
 

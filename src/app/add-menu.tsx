@@ -54,7 +54,9 @@ export default function AddMenu() {
       return result;
     };
     const result = await save();
-    if ('limit' in result) openUpgrade(() => void save()); // after upgrading, the same photo is saved
+    // After upgrading, the same photo is saved.
+    if ('limit' in result)
+      openUpgrade(() => void save(), { title: 'Photo', kind: 'image', source: 'other', imageUri: asset.uri });
   };
 
   return (

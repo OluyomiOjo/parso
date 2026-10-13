@@ -5,11 +5,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/Text';
 import { LinkIcon } from '@/icons/LinkIcon';
+import { useSession } from '@/lib/auth';
+import { detectSource, displayUrl } from '@/lib/links';
 import { ALREADY_SAVED } from '@/lib/outbox';
 import { isLimitError } from '@/lib/plan';
 import { openUpgrade } from '@/lib/pro';
 import { useCreateLinkSave } from '@/lib/saves';
-import { firstUrlIn } from '@/lib/share';
+import { firstUrlIn, linkIntent, saveShare } from '@/lib/share';
+import { track } from '@/lib/track';
 import { colors, copiedLinkSheet as s, radius, size, spacing } from '@/theme';
 
 const LINK_FAILED = "Couldn't save the link. Check your connection and try again.";
@@ -19,6 +22,7 @@ const LINK_FAILED = "Couldn't save the link. Check your connection and try again
 // down or tap Not now to leave it.
 export default function CopiedLinkSheet() {
   const createLink = useCreateLinkSave('clipboard');
+  const userId = useSession().session?.user.id;
 
   const paste = (data: PasteEventPayload) => {
     const url = data.type === 'text' ? firstUrlIn(data.text) : null;
@@ -26,7 +30,19 @@ export default function CopiedLinkSheet() {
     createLink.mutate(url, {
       onError: (e) => {
         router.back();
-        if (isLimitError(e)) openUpgrade();
+        // After subscribing, the link is saved and its sheet opens, as if just pasted.
+        if (isLimitError(e) && userId)
+          openUpgrade(
+            () =>
+              void saveShare(linkIntent(url), userId).then((result) => {
+                if ('saveId' in result) {
+                  if (!result.existing)
+                    track('save_created', { kind: 'link', source: result.source, via: 'clipboard' });
+                  router.push({ pathname: '/save/[id]', params: { id: result.saveId } });
+                } else Alert.alert(result.error);
+              }),
+            { title: displayUrl(url), kind: 'link', source: detectSource(url) },
+          );
         else Alert.alert(e.message === ALREADY_SAVED ? ALREADY_SAVED : LINK_FAILED);
       },
       onSuccess: (save) =>

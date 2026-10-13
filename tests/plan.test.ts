@@ -6,8 +6,10 @@ import {
   isLimitError,
   needsUpgrade,
   percentSaved,
+  milestoneLine,
   planLine,
-  proLine,
+  proHeadline,
+  proNumbers,
   type Plan,
 } from '../src/lib/plan.ts';
 
@@ -53,15 +55,30 @@ Deno.test('Yearly shows the saving against twelve months, rounded down', () => {
   assertEquals(percentSaved(4.99, undefined), null);
 });
 
-Deno.test('the Pro page line shows the person their own numbers at the limit', () => {
+Deno.test('the Pro page shows the person their own numbers at the limit', () => {
+  assertEquals(proHeadline(free(50)), "You've built something worth keeping");
+  assertEquals(proHeadline(free(32)), 'Save as much as you like with Pro');
   assertEquals(
-    proLine(free(50), { saves: 50, collections: 9, opened: 14 }),
-    "You've saved 50 things into 9 collections, and went back to them 14 times. Everything you saved stays yours.",
+    proNumbers(free(50), { saves: 50, collections: 11, opened: 55 }),
+    "50 saves in 11 collections. You've gone back to them 55 times.",
+  );
+  assertEquals(proNumbers(free(50), { saves: 50, collections: 1, opened: 0 }), '50 saves in 1 collection.');
+  assertEquals(proNumbers(free(50), undefined), "You've used your 50 free saves.");
+  assertEquals(proNumbers(free(32), undefined), '32 of your 50 free saves used.');
+  assertEquals(proNumbers(undefined, undefined), null);
+});
+
+Deno.test('save 30, and only save 30, gets the friendly heads-up', () => {
+  assertEquals(
+    milestoneLine(free(30), { saves: 30, collections: 7, opened: 12 }),
+    "That's 30 saves in 7 collections, and you've gone back to them 12 times. 20 free saves left.",
   );
   assertEquals(
-    proLine(free(50), { saves: 50, collections: 1, opened: 0 }),
-    "You've saved 50 things into 1 collection. Everything you saved stays yours.",
+    milestoneLine(free(30), { saves: 30, collections: 7, opened: 0 }),
+    "That's 30 saves in 7 collections. 20 free saves left.",
   );
-  assertEquals(proLine(free(50), undefined), "You've used your 50 free saves. Everything you saved stays yours.");
-  assertEquals(proLine(free(32), undefined), "You've used 32 of your 50 free saves. Pro has no limit.");
+  assertEquals(milestoneLine(free(30), undefined), "That's 30 saves. 20 free saves left.");
+  assertEquals(milestoneLine(free(29), { saves: 29, collections: 7, opened: 12 }), null);
+  assertEquals(milestoneLine(free(31), { saves: 31, collections: 7, opened: 12 }), null);
+  assertEquals(milestoneLine({ ...free(30), pro: true }, undefined), null);
 });

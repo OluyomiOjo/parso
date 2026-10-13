@@ -3,12 +3,13 @@ import * as Crypto from 'expo-crypto';
 import type { ShareIntent } from 'expo-share-intent';
 
 import { isOnline } from './connection';
-import { detectSource, normalizeUrl } from './links';
+import { detectSource, displayUrl, normalizeUrl } from './links';
+import { noteTitle } from './noteFormat';
 import { ALREADY_SAVED, queueNewSave } from './outbox';
 import type { QueuedRow } from './outboxQueue';
 import { isLimitError, LIMIT_MESSAGE } from './plan';
 import { addPreviewImage } from './previewImage';
-import { canSave } from './pro';
+import { canSave, type WaitingSave } from './pro';
 import { supabase } from './supabase';
 
 const MAX_IMAGE_SIDE = 1600; // keeps uploads small and within the AI's image limit
@@ -155,6 +156,25 @@ async function saveLinkOrText(intent: ShareIntent, userId: string): Promise<Shar
     ? { saveId: data.id, kind: 'link', source: detectSource(url) }
     : { saveId: data.id, kind: 'text', source: 'other' };
 }
+
+// What was shared, for the Pro page's "Waiting to save" card when the free limit stops it.
+export function sharePreview(intent: ShareIntent): WaitingSave {
+  const image = intent.files?.find((f) => f.mimeType.startsWith('image/'));
+  if (image) return { title: 'Photo', kind: 'image', source: 'other', imageUri: image.path };
+  const text = intent.text?.trim() ?? '';
+  const url = (intent.webUrl && normalizeUrl(intent.webUrl)) || (text ? firstUrlIn(text) : null);
+  if (url) return { title: intent.meta?.title?.trim() || displayUrl(url), kind: 'link', source: detectSource(url) };
+  return { title: noteTitle(text) ?? 'Note', kind: 'text', source: 'other' };
+}
+
+// A link on its own (the copied-link sheet), saved the same way as a shared one.
+export const linkIntent = (url: string): ShareIntent => ({
+  files: null,
+  type: 'weburl',
+  webUrl: url,
+  text: null,
+  meta: null,
+});
 
 export async function saveShare(intent: ShareIntent, userId: string): Promise<ShareResult> {
   const image = intent.files?.find((f) => f.mimeType.startsWith('image/'));

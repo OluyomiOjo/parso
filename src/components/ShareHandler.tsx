@@ -5,7 +5,7 @@ import { Alert } from 'react-native';
 
 import { useSession } from '@/lib/auth';
 import { openUpgrade } from '@/lib/pro';
-import { saveShare } from '@/lib/share';
+import { saveShare, sharePreview } from '@/lib/share';
 import { track } from '@/lib/track';
 
 // Turns whatever was shared into Parso into a save and opens the save sheet. A share that arrives
@@ -35,7 +35,7 @@ export function ShareHandler() {
               ...(result.queued ? { queued: '1' } : {}),
             },
           });
-        } else if (result.limit) openUpgrade(() => void save());
+        } else if (result.limit) openUpgrade(() => void save(), sharePreview(intent));
         else Alert.alert(result.error);
       });
     save().finally(() => {

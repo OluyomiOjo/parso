@@ -164,7 +164,9 @@ export function useNoteEditor(routeId: string) {
           .from('saves')
           .insert({ id, kind: 'text', source: 'other', ...fields, edited_at });
         if (isLimitError(insertError)) {
-          if (!limitShown.current) openUpgrade(); // once; the note stays on screen and saves after upgrading
+          // Once; the note stays on screen and saves after upgrading (as soon as it's typed in or left).
+          if (!limitShown.current)
+            openUpgrade(undefined, { title: fields.title ?? 'Note', kind: 'text', source: 'other' });
           limitShown.current = true;
           return setError(NOTE_LIMIT);
         }

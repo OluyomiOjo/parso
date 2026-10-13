@@ -27,20 +27,45 @@ export function percentSaved(monthly: number | undefined, yearly: number | undef
 
 export type MyNumbers = { saves: number; collections: number; opened: number };
 
-// The Pro page's first line: at the limit, what the person has built in Parso (owner request after build 18);
-// before it, how much of the free allowance is used.
-export function proLine(plan: Plan | undefined, numbers: MyNumbers | undefined): string {
-  if (plan && !plan.pro && plan.used >= FREE_SAVES) {
-    if (!numbers) return `You've used your ${FREE_SAVES} free saves. Everything you saved stays yours.`;
-    const things = `${numbers.saves} ${numbers.saves === 1 ? 'thing' : 'things'}`;
-    const into = `${numbers.collections} ${numbers.collections === 1 ? 'collection' : 'collections'}`;
-    const opened =
-      numbers.opened > 0 ? `, and went back to them ${numbers.opened} ${numbers.opened === 1 ? 'time' : 'times'}` : '';
-    return `You've saved ${things} into ${into}${opened}. Everything you saved stays yours.`;
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+// "50 saves in 11 collections", with "You went back to them 55 times." when they have (Pro page, save 30).
+function built(numbers: MyNumbers): { built: string; back: string | null } {
+  return {
+    built: `${plural(numbers.saves, 'save', 'saves')} in ${plural(numbers.collections, 'collection', 'collections')}`,
+    back: numbers.opened > 0 ? `you've gone back to them ${plural(numbers.opened, 'time', 'times')}` : null,
+  };
+}
+
+const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+// The Pro page's headline: about what the person has built when they reach the limit, about Pro before it
+// (owner decision after build 20).
+export const proHeadline = (plan: Plan | undefined) =>
+  needsUpgrade(plan) ? "You've built something worth keeping" : 'Save as much as you like with Pro';
+
+// The Pro page's numbers line: at the limit, the person's own numbers (my_numbers, migration 0028); before it,
+// how much of the free allowance is used.
+export function proNumbers(plan: Plan | undefined, numbers: MyNumbers | undefined): string | null {
+  if (needsUpgrade(plan)) {
+    if (!numbers) return `You've used your ${FREE_SAVES} free saves.`;
+    const { built: what, back } = built(numbers);
+    return back ? `${sentence(what)}. ${sentence(back)}.` : `${sentence(what)}.`;
   }
-  if (plan && !plan.pro)
-    return `You've used ${Math.min(plan.used, FREE_SAVES)} of your ${FREE_SAVES} free saves. Pro has no limit.`;
-  return `Parso is free for your first ${FREE_SAVES} saves. Pro has no limit.`;
+  if (plan && !plan.pro) return `${Math.min(plan.used, FREE_SAVES)} of your ${FREE_SAVES} free saves used.`;
+  return null;
+}
+
+const MILESTONE = 30;
+
+// A friendly heads-up on the save sheet for the 30th save only: what they've built first, the limit last
+// (owner decision after build 20). No mention of Pro.
+export function milestoneLine(plan: Plan | undefined, numbers: MyNumbers | undefined): string | null {
+  if (!plan || plan.pro || plan.used !== MILESTONE) return null;
+  const left = `${FREE_SAVES - MILESTONE} free saves left.`;
+  if (!numbers) return `That's ${MILESTONE} saves. ${left}`;
+  const { built: what, back } = built({ ...numbers, saves: MILESTONE });
+  return back ? `That's ${what}, and ${back}. ${left}` : `That's ${what}. ${left}`;
 }
 
 // The You tab's line about the plan.

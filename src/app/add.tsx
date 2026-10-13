@@ -5,7 +5,7 @@ import { StyleSheet, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
-import { normalizeUrl } from '@/lib/links';
+import { detectSource, displayUrl, normalizeUrl } from '@/lib/links';
 import { ALREADY_SAVED } from '@/lib/outbox';
 import { isLimitError } from '@/lib/plan';
 import { openUpgrade } from '@/lib/pro';
@@ -34,7 +34,9 @@ export default function AddScreen() {
           ? router.replace({ pathname: '/save/[id]', params: { id: save.id, existing: '1' } })
           : router.back(),
       onError: (e) =>
-        isLimitError(e) ? openUpgrade(saveLink) : setError(e.message === ALREADY_SAVED ? ALREADY_SAVED : LINK_FAILED),
+        isLimitError(e)
+          ? openUpgrade(saveLink, { title: displayUrl(url), kind: 'link', source: detectSource(url) })
+          : setError(e.message === ALREADY_SAVED ? ALREADY_SAVED : LINK_FAILED),
     });
   };
 

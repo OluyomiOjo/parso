@@ -13,8 +13,8 @@ import { useCollections, useCreateCollection } from '@/lib/collections';
 import { success } from '@/lib/haptics';
 import { queuedEntry, waitingItem } from '@/lib/outbox';
 import type { OutboxEntry } from '@/lib/outboxQueue';
-import { freeSavesLeft } from '@/lib/plan';
-import { usePlan } from '@/lib/pro';
+import { freeSavesLeft, milestoneLine } from '@/lib/plan';
+import { useMyNumbers, usePlan } from '@/lib/pro';
 import { type SaveDetail, useSave, useThumbnailUrls, useUpdateSave } from '@/lib/saves';
 import { colors, radius, sheet, size, type } from '@/theme';
 
@@ -36,7 +36,11 @@ export default function SaveSheet() {
   const updateSave = useUpdateSave(id);
   const createCollection = useCreateCollection();
   const [note, setNote] = useState<string | null>(null);
-  const left = freeSavesLeft(usePlan().data); // "5 free saves left", near the free limit
+  const { data: plan } = usePlan();
+  const left = freeSavesLeft(plan); // "5 free saves left", near the free limit
+  // Save 30 only: what they've built, then "20 free saves left" (owner decision after build 20).
+  const { data: numbers } = useMyNumbers(plan?.used === 30 && !plan.pro);
+  const milestone = milestoneLine(plan, numbers);
 
   // A success tap as the sheet confirms a new save (not for a link that was already saved).
   useEffect(() => {
@@ -76,9 +80,9 @@ export default function SaveSheet() {
               No internet right now. Parso saves it and files it as soon as you're back online.
             </Text>
           ) : null}
-          {left && existing !== '1' && !waiting ? (
+          {(left ?? milestone) && existing !== '1' && !waiting ? (
             <Text variant="secondary" color={colors.secondary} style={styles.left}>
-              {left}
+              {left ?? milestone}
             </Text>
           ) : null}
           {filed && !waiting ? (

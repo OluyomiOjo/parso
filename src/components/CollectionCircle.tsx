@@ -6,7 +6,8 @@ import { circle, colors, size } from '@/theme';
 
 import { Text } from './Text';
 
-type Props = { collection: CollectionSummary; coverUrl?: string; onOpen: () => void };
+// Without onOpen it's only a picture (the Pro page shows the person's own collections).
+type Props = { collection: CollectionSummary; coverUrl?: string; onOpen?: () => void };
 
 // A collection on Parsos: its newest picture in a circle with a thin grey ring, the name underneath. A collection
 // with no pictures (only notes, say) shows a grey circle with the collections icon. Presses and dragging are
@@ -16,9 +17,9 @@ export function CollectionCircle({ collection, coverUrl, onOpen }: Props) {
     <View
       style={styles.item}
       accessible
-      accessibilityRole="button"
+      accessibilityRole={onOpen ? 'button' : undefined}
       accessibilityLabel={collection.name}
-      accessibilityHint="Opens the collection. Press and hold to move it."
+      accessibilityHint={onOpen ? 'Opens the collection. Press and hold to move it.' : undefined}
       onAccessibilityTap={onOpen} // VoiceOver's double tap; finger taps come through the row's gestures
     >
       <View style={styles.ring}>

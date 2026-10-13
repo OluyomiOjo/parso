@@ -172,9 +172,16 @@ function offerUpgrade(userId: string, limited: OutboxEntry[]) {
     {
       text: 'See Parso Pro',
       onPress: () =>
-        openUpgrade(() => {
-          void Promise.all(limited.map(({ rev: _rev, ...entry }) => queueSave(userId, entry))).then(sendQueued);
-        }),
+        openUpgrade(
+          () => {
+            void Promise.all(limited.map(({ rev: _rev, ...entry }) => queueSave(userId, entry))).then(sendQueued);
+          },
+          {
+            title: waitingTitle(limited[0].row),
+            kind: limited[0].row.kind ?? 'text',
+            source: limited[0].row.source ?? 'other',
+          },
+        ),
     },
   ]);
 }
