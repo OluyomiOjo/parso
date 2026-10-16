@@ -121,3 +121,39 @@ export async function deleteAccount() {
   if (isGoogleConfigured) await GoogleSignin.signOut().catch(() => undefined);
   await supabase.auth.signOut({ scope: 'local' }); // the account no longer exists on the server
 }
+
+// Continue with email (owner decision after build 23): a 6-digit code sent by email, no passwords. New addresses get
+// an account the same way. The store reviewers' demo address gets no email: its fixed code is checked on the server
+// (review-sign-in), which hands back a one-time code for the same sign-in step.
+export const REVIEW_EMAIL = 'review@parso.ai';
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const isEmailAddress = (email: string) => EMAIL_PATTERN.test(email.trim());
+const normalEmail = (email: string) => email.trim().toLowerCase();
+
+export const EMAIL_SEND_FAILED = "Couldn't send the code. Check the email address and your connection, then try again.";
+export const EMAIL_TOO_MANY = 'Too many codes asked for. Wait a minute, then send a new code.';
+export const EMAIL_CODE_WRONG = "That code didn't work. Check the latest email from Parso, or send a new code.";
+
+export async function sendEmailCode(email: string): Promise<SignInResult> {
+  const address = normalEmail(email);
+  if (address === REVIEW_EMAIL) return null; // its code isn't emailed
+  const { error } = await supabase.auth.signInWithOtp({ email: address, options: { shouldCreateUser: true } });
+  if (!error) return null;
+  return error.status === 429 ? EMAIL_TOO_MANY : EMAIL_SEND_FAILED;
+}
+
+export async function verifyEmailCode(email: string, code: string): Promise<SignInResult> {
+  const address = normalEmail(email);
+  let token = code.trim();
+  if (address === REVIEW_EMAIL) {
+    const { data, error } = await supabase.functions.invoke<{ code: string }>('review-sign-in', {
+      body: { email: address, code: token },
+    });
+    if (error || !data?.code) return EMAIL_CODE_WRONG;
+    token = data.code;
+  }
+  const { error } = await supabase.auth.verifyOtp({ email: address, token, type: 'email' });
+  if (error) return EMAIL_CODE_WRONG;
+  track('signed_in');
+  return null;
+}

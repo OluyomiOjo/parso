@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Alert, Image, Linking, Platform, StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
+import { Alert, Image, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
@@ -60,6 +61,18 @@ export default function WelcomeScreen() {
           disabled={busy !== null}
           onPress={() => run('google', signInWithGoogle)}
         />
+        {/* For people who'd rather not use Apple or Google: a code by email, no password (owner decision after
+            build 23). Quiet, under the two main buttons. */}
+        <Pressable
+          onPress={() => router.push('/email-sign-in')}
+          disabled={busy !== null}
+          accessibilityRole="button"
+          style={styles.email}
+        >
+          <Text variant="button" color={colors.ink}>
+            Continue with email
+          </Text>
+        </Pressable>
         <Text variant="legal" color={colors.secondary} style={styles.legal}>
           By continuing you agree to the{' '}
           <Text variant="legal" style={styles.link} onPress={() => Linking.openURL(TERMS_URL)} accessibilityRole="link">
@@ -99,6 +112,7 @@ const styles = StyleSheet.create({
     gap: spacing.buttonGap,
     paddingBottom: welcome.bottom,
   },
+  email: { minHeight: size.minTouch, alignItems: 'center', justifyContent: 'center' },
   legal: {
     marginTop: welcome.legalTop - spacing.buttonGap,
     textAlign: 'center',

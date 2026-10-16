@@ -575,3 +575,10 @@ export const opening = {
   inMs: 300,
   fadeMs: 260,
 } as const;
+
+// Continue with email: the code field (Supabase sends 6 digits by default; up to 10 if that's ever changed).
+export const emailSignIn = {
+  codeMin: 6,
+  codeMax: 10,
+  codeSpacing: 4,
+} as const;

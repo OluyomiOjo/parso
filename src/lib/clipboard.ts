@@ -38,6 +38,7 @@ const BLOCKED = new Set([
   'upgrade',
   'intro',
   'welcome',
+  'email-sign-in',
 ]);
 
 // Checks when Parso opens and when it comes back to the front. If a blocked screen is showing then, the offer

@@ -122,6 +122,7 @@ function Screens({ session: signedIn, introSeen }: { session: boolean; introSeen
       </Stack.Protected>
       <Stack.Protected guard={!signedIn && introSeen}>
         <Stack.Screen name="welcome" />
+        <Stack.Screen name="email-sign-in" options={{ presentation: 'modal' }} />
       </Stack.Protected>
     </Stack>
   );
