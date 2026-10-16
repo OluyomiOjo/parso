@@ -12,7 +12,7 @@ Tagline: Stop DMing yourself links.
 ## v1 scope
 
 In scope:
-1. Sign in with Apple and Google (Supabase Auth), plus Continue with email (owner decision after build 23): a 6-digit code by email, no passwords (src/app/email-sign-in.tsx); the store reviewers' demo address review@parso.ai uses a fixed code from the REVIEW_CODE secret, checked by the `review-sign-in` function. Email sending (sign-in codes, then engagement emails: a day-2 nudge and a weekly digest after launch) goes through Resend as Supabase's SMTP, owner-approved after build 23.
+1. Sign in with Apple and Google (Supabase Auth), plus Continue with email (owner decision after build 23): a 6-digit code by email, no passwords (src/app/email-sign-in.tsx); the store reviewers' demo address review@parso.ai uses a fixed code from the REVIEW_CODE secret, checked by the `review-sign-in` function. Email sending (sign-in codes, then engagement emails: a day-2 nudge and a weekly digest after launch) goes through Resend as Supabase's SMTP, owner-approved after build 23. Emails are sent from hello@parso.ai; the company's contact and reply-to address is parso@pixanow.com (replies to emails, store listings' support email, the privacy policy, email footers).
 2. Save from the system share sheet (iOS Share Extension, Android share target): links, images, text.
 3. Save by pasting a link inside the app.
 4. AI processing of every save: title, one-line snippet, short summary, tags, collection choice.
